@@ -9,11 +9,17 @@ namespace SkyPlaylistManager.Models
         [BsonRepresentation(BsonType.ObjectId)]
         public string? Id { get; set; }
 
-        [BsonElement("userName")]
-        public string UserName { get; set; } = null!;
+        [BsonElement("email")]
+        public string Email { get; set; } = null!;
 
-        [BsonElement("passowrd")]
+        [BsonElement("password")]
         public string Password { get; set; } = null!;
+
+        [BsonElement("name")]
+        public string Name { get; set; } = null!;
+
+        [BsonElement("profilePhotoPath")]
+        public string? ProfilePhotoPath { get; set; }
 
 
     }

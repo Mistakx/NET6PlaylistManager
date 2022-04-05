@@ -30,34 +30,48 @@ namespace SkyPlaylistManager.Controllers;
         [HttpPost("register")]
         public async Task<IActionResult> Register(User newUser)
         {
-            var user = new User();
+        
+            var foundUser = await _usersService.GetAsyncByEmail(newUser.Email);
 
-            user.UserName = newUser.UserName;
-            BCrypt.Net.BCrypt.GenerateSalt();
-            user.Password = BCrypt.Net.BCrypt.HashPassword(newUser.Password);
-
-
-            
-            //return Ok();
-            try
+       
+            if (foundUser == null)
             {
-                await _usersService.CreateAsync(user);
-                return Ok();
-                //return CreatedAtAction(nameof(Get), new { id = user.Id }, user);
-            }
-            catch (Exception ex) {
-                Console.WriteLine(ex); 
-                return BadRequest();
-            }
+                var user = new User();
+                user.Email = newUser.Email;
+                user.Password = BCrypt.Net.BCrypt.HashPassword(newUser.Password);
+                user.Name = newUser.Name;
+                user.ProfilePhotoPath = "Path to default user profile photo";
 
-             
+                try
+                {
+                    await _usersService.CreateAsync(user);
+                    return Ok();
+                    //return CreatedAtAction(nameof(Get), new { id = user.Id }, user);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex);
+                    return BadRequest("Ocorreu um erro no registo.");
+                }
+
+
+            }
+            else return BadRequest("Já existe um utilizador com este email.");
+            
+
         }
 
 
-        //[HttpPost("login")]
-        //public async Task<IActionResult> Login(User newUser)
-        //{
+    //[HttpPost("login")]
+    //public async Task<IActionResult> Login(User newUser)
+    //{
+    //    List<User> findedUsers = await _usersService.GetAsyncByEmail(newUser.Email); // MELHOR FORMA DE FAZER ISTO ?
 
-        //}
+    //    if (findedUsers.FirstOrDefault() == null)
+    //    {
 
-    }
+    //    }
+
+    //}
+
+}

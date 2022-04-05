@@ -30,6 +30,15 @@ namespace SkyPlaylistManager.Services
         public async Task CreateAsync(User newBook) =>
             await _usersCollection.InsertOneAsync(newBook);
 
+        public async Task<User?> GetAsyncById(string id) =>
+            await _usersCollection.Find(x => x.Id == id).FirstOrDefaultAsync();
+
+        //public async Task<List<User>> GetAsyncByEmail(string email) =>
+        //    await _usersCollection.Find(x => x.Email == email).ToListAsync();
+
+        public async Task<User?> GetAsyncByEmail(string email) =>
+            await _usersCollection.Find(x => x.Email == email).FirstOrDefaultAsync();
+
 
     }
 }
