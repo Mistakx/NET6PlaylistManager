@@ -25,7 +25,10 @@ namespace SkyPlaylistManager.Services
 
 
         public async Task<List<User>> GetAsync() =>
-        await _usersCollection.Find(_ => true).ToListAsync();
+            await _usersCollection.Find(_ => true).ToListAsync();
+
+        public async Task CreateAsync(User newBook) =>
+            await _usersCollection.InsertOneAsync(newBook);
 
 
     }

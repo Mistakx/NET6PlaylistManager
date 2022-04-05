@@ -10,6 +10,11 @@ namespace SkyPlaylistManager.Models
         public string? Id { get; set; }
 
         [BsonElement("userName")]
-        public string UserName { get; set; } = null!;  
+        public string UserName { get; set; } = null!;
+
+        [BsonElement("passowrd")]
+        public string Password { get; set; } = null!;
+
+
     }
 }

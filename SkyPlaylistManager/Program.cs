@@ -3,12 +3,14 @@ using SkyPlaylistManager.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+//Add services to the container.
 builder.Services.Configure<DatabaseSettings>(builder.Configuration.GetSection("SkyPlaylistManagerDataBase"));
 
 builder.Services.AddSingleton<UsersService>();
 
 builder.Services.AddControllersWithViews();
+
+builder.Services.AddCors();
 
 var app = builder.Build();
 
@@ -20,6 +22,7 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseCors(c => c.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin());
 app.UseStaticFiles();
 app.UseRouting();
 
