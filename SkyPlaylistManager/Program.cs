@@ -1,4 +1,5 @@
 using SkyPlaylistManager.Models;
+using SkyPlaylistManager.Models.Database;
 using SkyPlaylistManager.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -7,6 +8,19 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<DatabaseSettings>(builder.Configuration.GetSection("SkyPlaylistManagerDataBase"));
 
 builder.Services.AddSingleton<UsersService>();
+builder.Services.AddSingleton<PlaylistsService>();
+builder.Services.AddSingleton<MultimediaContentsService>();
+builder.Services.AddSingleton<MultimediaContentFactory>();
+
+builder.Services.AddScoped<MultimediaContentFactory>(_ =>
+{
+    MultimediaContentFactory multimediaContentFactory = new MultimediaContentFactory();
+
+    multimediaContentFactory.RegisterType("Youtube", () => new VideosContent());
+    multimediaContentFactory.RegisterType("Spotify", () => new TracksContent());
+    multimediaContentFactory.RegisterType("Twitch", () => new LivestreamsContent());
+    return multimediaContentFactory;
+});
 
 builder.Services.AddControllersWithViews();
 

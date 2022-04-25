@@ -1,77 +1,115 @@
-﻿using MongoDB.Driver;
+﻿using AutoMapper;
+using MongoDB.Driver;
 using Microsoft.AspNetCore.Mvc;
-
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
 using SkyPlaylistManager.Services;
 using SkyPlaylistManager.Models;
+using SkyPlaylistManager.Models.Database;
+using SkyPlaylistManager.Models.DTOs;
 
 namespace SkyPlaylistManager.Controllers;
 
-    [ApiController]
-    [Route("[controller]")] // "[controller]" will define the route as /Mongo
-    public class MongoController : ControllerBase
+[ApiController]
+[Route("[controller]")] // "[controller]" will define the route as /User
+public class UserController : ControllerBase
+{
+    private readonly UsersService _usersService;
+
+
+    public UserController(UsersService usersService)
     {
-        private readonly UsersService _usersService;
+        _usersService = usersService;
+    }
 
-       
+    
 
+    [HttpGet("{userId:length(24)}")]
+    public async Task<List<UserPlaylistsDto>> UserPlaylists(string userId)
+    {
+        var userPlaylists = await _usersService.GetUserPlaylists(userId);
+        var deserializedUserPlaylists = new List<UserPlaylistsDto>();
 
-        public MongoController(UsersService usersService)
+        try
         {
-            _usersService = usersService;
-        }
-
-
-
-        [HttpGet]
-        public async Task<List<User>> Get() =>
-        await _usersService.GetAsync();
-
-
-        [HttpPost("register")]
-        public async Task<IActionResult> Register(User newUser)
-        {
-        
-            var foundUser = await _usersService.GetAsyncByEmail(newUser.Email);
-
-       
-            if (foundUser == null)
+            foreach (var user in userPlaylists)
             {
-                var user = new User();
-                user.Email = newUser.Email;
-                user.Password = BCrypt.Net.BCrypt.HashPassword(newUser.Password);
-                user.Name = newUser.Name;
-                user.ProfilePhotoPath = "Path to default user profile photo";
-
-                try
-                {
-                    await _usersService.CreateAsync(user);
-                    return Ok();
-                    //return CreatedAtAction(nameof(Get), new { id = user.Id }, user);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex);
-                    return BadRequest("Ocorreu um erro no registo.");
-                }
-
-
+                var model = BsonSerializer.Deserialize<UserPlaylistsDto>(user);
+                deserializedUserPlaylists.Add(model);
             }
-            else return BadRequest("Já existe um utilizador com este email.");
+
+            return deserializedUserPlaylists;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            return null;
+        }
+        
+
+    }
+
+   
+
+
+
+    //[HttpGet]
+    //public async Task<List<UserCollection>> Get() => 
+    //    await _usersService.GetAllUsers();
+
+
+        // MAPPER A FUNCIONA CORRETAMENTE
+        //[HttpGet]
+        //public async Task<List<UserGetDTO>> Get()
+        //{
+        //    var result = await _usersService.GetAllUsers();
+
+        //    var config = new MapperConfiguration(cfg =>
+        //        cfg.CreateMap<UserCollection, UserGetDTO>()
+        //    );
+
+        //     var mapper = new Mapper(config);
+
+        //     return mapper.Map<List<UserGetDTO>>(result);
+
+        //}
+
+
+
+
+
+
+    [HttpPost("register")]
+    public async Task<IActionResult> Register(NewUserDTO newUser)
+    {
+
+        var foundUser = await _usersService.GetUserByEmail(newUser.Email);
+
+
+        if (foundUser == null)
+        {
+            var user = new UserCollection(newUser);
             
+            try
+            {
+                await _usersService.CreateUser(user);
+                return Ok("Utilizador registado com sucesso.");
+                //return CreatedAtAction(nameof(Get), new { id = user.Id }, user);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+                return BadRequest("Ocorreu um erro no registo.");
+            }
+
 
         }
+        else return BadRequest("Já existe um utilizador com este email.");
 
 
-    //[HttpPost("login")]
-    //public async Task<IActionResult> Login(User newUser)
-    //{
-    //    List<User> findedUsers = await _usersService.GetAsyncByEmail(newUser.Email); // MELHOR FORMA DE FAZER ISTO ?
+    }
 
-    //    if (findedUsers.FirstOrDefault() == null)
-    //    {
 
-    //    }
 
-    //}
 
 }

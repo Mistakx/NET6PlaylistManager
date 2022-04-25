@@ -1,4 +1,4 @@
-﻿namespace SkyPlaylistManager.Models
+﻿namespace SkyPlaylistManager.Models.Database
 {
     public class DatabaseSettings
     {
