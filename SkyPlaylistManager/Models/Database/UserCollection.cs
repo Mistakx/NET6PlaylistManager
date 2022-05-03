@@ -33,7 +33,7 @@ namespace SkyPlaylistManager.Models.Database
             Email = newUser.Email;
             Password = BCrypt.Net.BCrypt.HashPassword(newUser.Password);
             Name = newUser.Name;
-            ProfilePhotoPath = "Path to default user profile photo";
+            ProfilePhotoPath = "Path to default user profile photo"; // TODO Change default profile path
             UserPlaylists = new List<ObjectId>();
         }
     }

@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using SkyPlaylistManager.Models;
 using SkyPlaylistManager.Models.Database;
 using SkyPlaylistManager.Services;
@@ -16,9 +17,10 @@ builder.Services.AddScoped<MultimediaContentFactory>(_ =>
 {
     MultimediaContentFactory multimediaContentFactory = new MultimediaContentFactory();
 
-    multimediaContentFactory.RegisterType("Youtube", () => new VideosContent());
-    multimediaContentFactory.RegisterType("Spotify", () => new TracksContent());
-    multimediaContentFactory.RegisterType("Twitch", () => new LivestreamsContent());
+    
+    multimediaContentFactory.RegisterType("Youtube", () => new VideosContent(multimediaContentFactory._args));
+    multimediaContentFactory.RegisterType("Spotify", () => new TracksContent(multimediaContentFactory._args));
+    multimediaContentFactory.RegisterType("Twitch", () => new LivestreamsContent(multimediaContentFactory._args));
     return multimediaContentFactory;
 });
 

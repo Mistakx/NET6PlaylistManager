@@ -1,7 +1,11 @@
-﻿using System.Text.Json;
+﻿using System.Net.Mime;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
+using MongoDB.Bson.IO;
 using SkyPlaylistManager.Services;
 using SkyPlaylistManager.Models;
 using SkyPlaylistManager.Models.Database;
@@ -32,24 +36,19 @@ namespace SkyPlaylistManager.Controllers
        
 
 
-        [HttpPost("addToPlaylist/{type}")]
-        public async Task<IActionResult> AddMultimediaContentToPlaylist(string type, [FromBody] JsonDocument Request)
+        [HttpPost("addToPlaylist")]
+        public async Task<IActionResult> AddMultimediaContentToPlaylist(JsonObject request)
         {
              MultimediaContent multimediaContent;
-            
+           
             try
             {
-                Console.WriteLine(Request);
-
+                string type = (string)request["platform"];
+                _multimediaContentFactory._args = request;
                 multimediaContent = _multimediaContentFactory[type];
-              
-               // TODO: Map the body request in multimediaContent object
-                multimediaContent.Title = "titulo";
-                multimediaContent.Platform = "plat";
-                multimediaContent.PlatformId = "45435";
-                multimediaContent.ThumbnailUrl = "thumb";
+                
+                
 
-               
                 await _multimediaContentsService.CreateMultimediaContent(multimediaContent);
                 return Ok(multimediaContent);
             }
@@ -58,7 +57,6 @@ namespace SkyPlaylistManager.Controllers
                 Console.WriteLine(ex);
                 return NotFound();
             }
-
 
         }
 

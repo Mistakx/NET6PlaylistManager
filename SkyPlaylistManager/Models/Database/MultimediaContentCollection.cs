@@ -1,6 +1,6 @@
-﻿using MongoDB.Bson;
+﻿using System.Text.Json.Nodes;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
-using SkyPlaylistManager.Models.DTOs;
 
 namespace SkyPlaylistManager.Models.Database
 {
@@ -26,12 +26,15 @@ namespace SkyPlaylistManager.Models.Database
         public abstract string Creator { get; set; }
 
         [BsonElement("creationDate")]
-        public abstract string CreationDate { get; set; }
-        //DATA
+        [BsonDateTimeOptions(Kind = DateTimeKind.Local)]
+        public abstract DateTime? CreationDate { get; set; }
         //NUMBER OF USAGES
-
-
     }
+
+
+
+
+
 
     public class VideosContent : MultimediaContent
     {
@@ -47,13 +50,25 @@ namespace SkyPlaylistManager.Models.Database
 
         public override string Creator { get; set; } = null!;
 
-        public override string CreationDate { get; set; } = null!;
+        public override DateTime? CreationDate { get; set; } = null!;
 
         [BsonElement("duration")]
         public double Duration { get; set; }
 
         [BsonElement("views")]
         public int Views { get; set; }
+
+        public VideosContent(JsonObject request)
+        {
+            this.Title = (string)request["title"];
+            this.Platform = (string)request["platform"];
+            this.PlatformId = (string)request["platformId"];
+            this.ThumbnailUrl = (string)request["thumbnailUrl"];
+            this.Creator = (string)request["Creator"];
+            this.CreationDate = DateTime.Now;
+            this.Duration = (double)request["duration"];
+            this.Views = (int)request["views"];
+        }
     }
 
     public class TracksContent : MultimediaContent
@@ -70,10 +85,21 @@ namespace SkyPlaylistManager.Models.Database
 
         public override string Creator { get; set; } = null!;
 
-        public override string CreationDate { get; set; } = null!;
+        public override DateTime? CreationDate { get; set; } = null!;
 
         [BsonElement("duration")]
-        public double Duration { get; set; }
+        public double Duration { get; set; } 
+
+        public TracksContent(JsonObject request)
+        {
+            this.Title = (string)request["title"];
+            this.Platform = (string)request["platform"];
+            this.PlatformId = (string)request["platformId"];
+            this.ThumbnailUrl = (string)request["thumbnailUrl"];
+            this.Creator = (string)request["Creator"];
+            this.CreationDate = DateTime.Now;
+            this.Duration = (double)request["duration"];
+        }
     }
 
     public class LivestreamsContent : MultimediaContent
@@ -90,10 +116,21 @@ namespace SkyPlaylistManager.Models.Database
 
         public override string Creator { get; set; } = null!;
 
-        public override string CreationDate { get; set; } = null!;
+        public override DateTime? CreationDate { get; set; } = null!;
 
         [BsonElement("category")]
-        public string Category { get; set; }
+        public string Category { get; set; } = null!;
+
+        public LivestreamsContent(JsonObject request)
+        {
+            this.Title = (string)request["title"];
+            this.Platform = (string)request["platform"];
+            this.PlatformId = (string)request["platformId"];
+            this.ThumbnailUrl = (string)request["thumbnailUrl"];
+            this.Creator = (string)request["Creator"];
+            this.CreationDate = DateTime.Now;
+            this.Category = (string)request["category"];
+        }
     }
 
 

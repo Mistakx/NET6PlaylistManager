@@ -1,4 +1,5 @@
-﻿using SkyPlaylistManager.Models.Database;
+﻿using System.Text.Json.Nodes;
+using SkyPlaylistManager.Models.Database;
 using SkyPlaylistManager.Models.DTOs;
 
 namespace SkyPlaylistManager.Models
@@ -6,18 +7,22 @@ namespace SkyPlaylistManager.Models
     public class MultimediaContentFactory
     {
         private readonly Dictionary<string, Func<MultimediaContent>> _multimedaTypes;
+        public JsonObject _args;
 
         public MultimediaContentFactory()
         {
             _multimedaTypes = new Dictionary<string, Func<MultimediaContent>>();
-
+            _args = new JsonObject();
         }
+
+        
 
 
         public MultimediaContent this[string multimediaType] => CreateMultimediaContentType(multimediaType);
 
         public MultimediaContent CreateMultimediaContentType(string multimediaType) =>
             _multimedaTypes[multimediaType]();
+          
 
         public string[] RegistredMultimediaTypes => _multimedaTypes.Keys.ToArray();
 
@@ -30,20 +35,6 @@ namespace SkyPlaylistManager.Models
             _multimedaTypes[multimediaContentType] = factoryMethod;
         }
 
-
-        //public void ConfigureServices(IServiceCollection services)
-        //{
-        //    services.AddScoped<MultimediaContentFactory>(_ =>
-        //    {
-        //        MultimediaContentFactory multimediaContentFactory = new MultimediaContentFactory();
-
-        //        multimediaContentFactory.RegisterType("Youtube", () => new VideosContent());
-        //        multimediaContentFactory.RegisterType("Spotify", () => new TracksContent());
-        //        multimediaContentFactory.RegisterType("Twitch", () => new LivestreamsContent());
-        //        return multimediaContentFactory;
-        //    });
-
-        //}
 
     }
 }
