@@ -24,17 +24,13 @@ namespace SkyPlaylistManager.Services
 
 
 
-
-
         public async Task<List<BsonDocument>> GetPlaylistContents(string playlistId)
         {
-            
             var filter = Builders<PlaylistCollection>.Filter.Eq(p => p.Id, playlistId);
             var query = _playListsCollection.Aggregate().Match(filter)
-                .Lookup("MultimediaContents", "contents", "_id", "contents");
-               // .Unwind("owner");
+                .Lookup("MultimediaContent", "contents", "_id", "contents");
 
-            List <BsonDocument> result = await query.ToListAsync();
+            List<BsonDocument> result = await query.ToListAsync();
 
             return result;
         }
@@ -57,7 +53,7 @@ namespace SkyPlaylistManager.Services
             await _playListsCollection.UpdateOneAsync(filter, update);
         }
 
-        public async Task InsertMultimediaContentInPlaylist(string playlistID, ObjectId MultimediaContentID)
+        public async Task InsertMultimediaContentInContentsArray(string playlistID, ObjectId MultimediaContentID)
         {
             var filter = Builders<PlaylistCollection>.Filter.Eq(p => p.Id, playlistID);
             var update = Builders<PlaylistCollection>.Update.Push("contents", MultimediaContentID);
