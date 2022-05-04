@@ -64,7 +64,7 @@ namespace SkyPlaylistManager.Models.Database
             this.Platform = (string)request["platform"];
             this.PlatformId = (string)request["platformId"];
             this.ThumbnailUrl = (string)request["thumbnailUrl"];
-            this.Creator = (string)request["Creator"];
+            this.Creator = (string)request["creator"];
             this.CreationDate = DateTime.Now;
             this.Duration = (double)request["duration"];
             this.Views = (int)request["views"];
@@ -96,7 +96,7 @@ namespace SkyPlaylistManager.Models.Database
             this.Platform = (string)request["platform"];
             this.PlatformId = (string)request["platformId"];
             this.ThumbnailUrl = (string)request["thumbnailUrl"];
-            this.Creator = (string)request["Creator"];
+            this.Creator = (string)request["creator"];
             this.CreationDate = DateTime.Now;
             this.Duration = (double)request["duration"];
         }
@@ -127,7 +127,7 @@ namespace SkyPlaylistManager.Models.Database
             this.Platform = (string)request["platform"];
             this.PlatformId = (string)request["platformId"];
             this.ThumbnailUrl = (string)request["thumbnailUrl"];
-            this.Creator = (string)request["Creator"];
+            this.Creator = (string)request["creator"];
             this.CreationDate = DateTime.Now;
             this.Category = (string)request["category"];
         }
