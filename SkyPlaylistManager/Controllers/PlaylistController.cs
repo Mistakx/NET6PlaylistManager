@@ -6,6 +6,7 @@ using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 using MongoDB.Bson.IO;
+using MongoDB.Bson.Serialization;
 using SkyPlaylistManager.Services;
 using SkyPlaylistManager.Models;
 using SkyPlaylistManager.Models.Database;
@@ -33,7 +34,31 @@ namespace SkyPlaylistManager.Controllers
 
         }
 
-       
+
+        [HttpGet("{playlistId:length(24)}")] // TODO: Verificar se a playlist é privada. Só retornar a playlist caso seja pública ou partilhada com o user da sessão.
+        public async Task<List<PlaylistContentsDto>> PlaylistContent(string playlistId)
+        {
+            var playlists = await _playListsService.GetPlaylistContents(playlistId);
+            var deserializedPlaylists = new List<PlaylistContentsDto>();
+          
+
+            try
+            {
+                foreach (var playlist in playlists)
+                {
+                    var desrializedPlaylist = BsonSerializer.Deserialize<PlaylistContentsDto>(playlist);
+                    deserializedPlaylists.Add(desrializedPlaylist);
+                    
+                }
+                return deserializedPlaylists;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+                return null;
+            }
+        }
+
 
 
         [HttpPost("addToPlaylist")]
@@ -43,14 +68,18 @@ namespace SkyPlaylistManager.Controllers
            
             try
             {
-                string type = (string)request["platform"];
+                string type = (string) request["platform"];
+
                 _multimediaContentFactory._args = request;
                 multimediaContent = _multimediaContentFactory[type];
-                
-                
-
                 await _multimediaContentsService.CreateMultimediaContent(multimediaContent);
+
+                string playlistId = (string)request["playlistId"];
+                ObjectId createdMultimediaContentId = ObjectId.Parse(multimediaContent.Id);
+
+                await _playListsService.InsertMultimediaContentInPlaylist(playlistId, createdMultimediaContentId);
                 return Ok(multimediaContent);
+
             }
             catch (Exception ex)
             {

@@ -45,8 +45,6 @@ public class UserController : ControllerBase
             Console.WriteLine(ex);
             return null;
         }
-        
-
     }
 
    
