@@ -26,7 +26,7 @@ namespace SkyPlaylistManager.Models.DTOs
         public string Title { get; set; } = null!;
 
         [BsonElement("owner")]
-        public ObjectId Owner { get; set; } 
+        public UserDetailsDto Owner { get; set; } 
         
         [BsonElement("visibility")]
         public string Visibility { get; set; } = null!;
@@ -39,6 +39,6 @@ namespace SkyPlaylistManager.Models.DTOs
         public List<GenericMultimediaContentDto>? Contents { get; set; }
 
         [BsonElement("sharedWith")]
-        public List<ObjectId>? SharedWith { get; set; }
+        public List<UserDetailsDto>? SharedWith { get; set; }
     }
 }

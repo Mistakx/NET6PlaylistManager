@@ -15,6 +15,9 @@ namespace SkyPlaylistManager.Models.DTOs
         [BsonElement("platform")]
         public string Platform { get; set; }
 
+        [BsonElement("_t")]
+        public string Type { get; set; }
+
         [BsonElement("platformId")]
         public string PlatformId { get; set; }
 

@@ -7,6 +7,12 @@ using SkyPlaylistManager.Models.Database;
 
 namespace SkyPlaylistManager.Models.DTOs
 {
+    public class LoginDTO
+    {
+        public string Email { get; set; } = null!;
+
+        public string Password { get; set; } = null!;
+    }
 
     public class NewUserDTO
     {
@@ -49,20 +55,13 @@ namespace SkyPlaylistManager.Models.DTOs
 
         [BsonElement("email")]
         public string Email { get; set; } = null!;
-
-        [JsonIgnore]
-        [BsonElement("password")]
-        public string Password { get; set; } = null!;
-
+        
         [BsonElement("name")]
         public string Name { get; set; } = null!;
 
         [BsonElement("profilePhotoPath")]
         public string ProfilePhotoPath { get; set; } = null!;
 
-        //[JsonIgnore]
-        //[BsonElement("userPlaylists")]
-        //public List<ObjectId>? UserPlaylists { get; set; }
     }
 
 

@@ -31,8 +31,13 @@ namespace SkyPlaylistManager.Services
             
             var filter = Builders<PlaylistCollection>.Filter.Eq(p => p.Id, playlistId);
             var query = _playListsCollection.Aggregate().Match(filter)
-                .Lookup("MultimediaContents", "contents", "_id", "contents");
-               // .Unwind("owner");
+                .Lookup("MultimediaContents", "contents", "_id", "contents")
+                .Lookup("Users", "owner", "_id", "owner")
+                .Lookup("Users", "sharedWith", "_id", "sharedWith")
+
+                .Project(Builders<BsonDocument>.Projection.Exclude("owner.userPlaylists").Exclude("owner.password"))
+                .Project(Builders<BsonDocument>.Projection.Exclude("sharedWith.userPlaylists").Exclude("sharedWith.password"))
+                .Unwind("owner");
 
             List <BsonDocument> result = await query.ToListAsync();
 

@@ -47,7 +47,7 @@ public class UserController : ControllerBase
         }
     }
 
-   
+
 
 
 
@@ -56,24 +56,50 @@ public class UserController : ControllerBase
     //    await _usersService.GetAllUsers();
 
 
-        // MAPPER A FUNCIONA CORRETAMENTE
-        //[HttpGet]
-        //public async Task<List<UserGetDTO>> Get()
-        //{
-        //    var result = await _usersService.GetAllUsers();
+    // MAPPER A FUNCIONA CORRETAMENTE
+    //[HttpGet]
+    //public async Task<List<UserGetDTO>> Get()
+    //{
+    //    var result = await _usersService.GetAllUsers();
 
-        //    var config = new MapperConfiguration(cfg =>
-        //        cfg.CreateMap<UserCollection, UserGetDTO>()
-        //    );
+    //    var config = new MapperConfiguration(cfg =>
+    //        cfg.CreateMap<UserCollection, UserGetDTO>()
+    //    );
 
-        //     var mapper = new Mapper(config);
+    //     var mapper = new Mapper(config);
 
-        //     return mapper.Map<List<UserGetDTO>>(result);
+    //     return mapper.Map<List<UserGetDTO>>(result);
 
-        //}
+    //}
 
 
+    [HttpPost("login")]
+    public async Task<IActionResult> Login(LoginDTO login)
+    {
 
+        var foundUser = await _usersService.GetUserByEmail(login.Email);
+
+        if (foundUser == null)
+        {
+            return BadRequest(new { message = "O email que introduziu não existe." });
+        }
+
+        else
+        {
+            if (!BCrypt.Net.BCrypt.Verify(login.Password, foundUser.Password))
+            {
+                return BadRequest(new { message = "A password que introduziu não é válida." });
+            }
+
+
+            HttpContext.Session.SetString("Session_user", foundUser.Id);
+            var session = HttpContext.Session.GetString("Session_user");
+            Console.WriteLine(session);
+
+            return Ok(session);
+        }
+
+    }
 
 
 
