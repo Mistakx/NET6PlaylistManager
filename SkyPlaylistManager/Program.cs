@@ -3,6 +3,7 @@ using SkyPlaylistManager.Models;
 using SkyPlaylistManager.Models.Database;
 using SkyPlaylistManager.Services;
 using Microsoft.AspNetCore.Session;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -57,5 +58,12 @@ app.MapControllerRoute(
     pattern: "{controller}/{action=Index}/{id?}");
 
 app.MapFallbackToFile("index.html"); ;
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(
+        Path.Combine(builder.Environment.ContentRootPath, "Images")),
+    RequestPath = "/ProfilePhoto"
+});
 
 app.Run();

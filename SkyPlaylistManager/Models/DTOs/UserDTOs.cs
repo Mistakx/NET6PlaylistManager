@@ -22,7 +22,7 @@ namespace SkyPlaylistManager.Models.DTOs
     }
 
 
-    public class UserPlaylistsDto
+    public class UserPlaylistsDTO
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
@@ -42,12 +42,12 @@ namespace SkyPlaylistManager.Models.DTOs
         public string ProfilePhotoPath { get; set; } = null!;
 
         [BsonElement("userPlaylists")]
-        public List<JsonObject>? UserPlaylists { get; set; }
+        public List<PlaylistBasicDetailsDTO>? UserPlaylists { get; set; }
     }
 
 
 
-    public class UserDetailsDto
+    public class UserBasicDetailsDTO
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]

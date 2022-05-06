@@ -1,12 +1,9 @@
-﻿using AutoMapper;
-using MongoDB.Driver;
-using Microsoft.AspNetCore.Mvc;
-using MongoDB.Bson;
+﻿using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson.Serialization;
 using SkyPlaylistManager.Services;
-using SkyPlaylistManager.Models;
 using SkyPlaylistManager.Models.Database;
 using SkyPlaylistManager.Models.DTOs;
+using System.IO;
 
 namespace SkyPlaylistManager.Controllers;
 
@@ -15,26 +12,74 @@ namespace SkyPlaylistManager.Controllers;
 public class UserController : ControllerBase
 {
     private readonly UsersService _usersService;
-
-
+    
     public UserController(UsersService usersService)
     {
         _usersService = usersService;
     }
 
-    
+
+
+    [HttpPost]
+    [Route("editProfilePhoto")]
+    public async Task<IActionResult> EditProfilePhoto(IFormFile file)
+    {
+        
+        try
+        {
+            FileInfo newPhotofileInfo = new FileInfo(file.FileName);
+ 
+           if (newPhotofileInfo.Extension == ".jpg" || newPhotofileInfo.Extension == ".png" || newPhotofileInfo.Extension == ".jpeg" )
+           {
+               string path = Path.Combine(Directory.GetCurrentDirectory(), "Images");
+
+               if (!Directory.Exists(path))
+                   Directory.CreateDirectory(path);
+
+                string fileName = string.Format(@"{0}" + newPhotofileInfo.Extension, Guid.NewGuid());
+                string directoryFilePath = Path.Combine(path, fileName);
+              
+
+                using (var stream = new FileStream(directoryFilePath, FileMode.Create))
+                {
+                    file.CopyTo(stream);
+                }
+
+
+                var oldPhoto = await _usersService.GetUserProfilePhoto("6261707eff67ad3d4f51d38b");  // TODO: Mudar para o Id da sessão
+                string oldPhotopath = Path.Combine(Directory.GetCurrentDirectory(), "Images",(string)oldPhoto["profilePhotoPath"]);
+                FileInfo oldPhotoFileInfo = new FileInfo(oldPhotopath);
+                oldPhotoFileInfo.Delete();
+
+                await _usersService.UpdateUserProfilePhoto("6261707eff67ad3d4f51d38b", fileName); // TODO: Mudar para o Id da sessão
+
+                return Ok("Imagem atualizada.");
+           }
+           else
+           {
+               return BadRequest("Formato de imagem inválido.");
+           }
+
+           
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
 
     [HttpGet("{userId:length(24)}")]
-    public async Task<List<UserPlaylistsDto>> UserPlaylists(string userId)
+    public async Task<List<UserPlaylistsDTO>> UserPlaylists(string userId)
     {
         var userPlaylists = await _usersService.GetUserPlaylists(userId);
-        var deserializedUserPlaylists = new List<UserPlaylistsDto>();
+        var deserializedUserPlaylists = new List<UserPlaylistsDTO>();
 
         try
         {
             foreach (var user in userPlaylists)
             {
-                var model = BsonSerializer.Deserialize<UserPlaylistsDto>(user);
+                var model = BsonSerializer.Deserialize<UserPlaylistsDTO>(user);
                 deserializedUserPlaylists.Add(model);
             }
 
@@ -98,6 +143,16 @@ public class UserController : ControllerBase
 
             return Ok(session);
         }
+    }
+
+
+    [HttpPost("teste")]
+    public IActionResult Teste()
+    {
+        var session = HttpContext.Session.GetString("Session_user");
+        Console.WriteLine(session);
+
+        return Ok(session);
 
     }
 

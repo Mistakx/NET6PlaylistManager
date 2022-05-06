@@ -1,11 +1,6 @@
-﻿using System.Net.Mime;
-using System.Text;
-using System.Text.Json;
-using System.Text.Json.Nodes;
-using AutoMapper;
+﻿using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
-using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
 using SkyPlaylistManager.Services;
 using SkyPlaylistManager.Models;
@@ -36,17 +31,17 @@ namespace SkyPlaylistManager.Controllers
 
 
         [HttpGet("{playlistId:length(24)}")] // TODO: Verificar se a playlist é privada. Só retornar a playlist caso seja pública ou partilhada com o user da sessão.
-        public async Task<List<PlaylistContentsDto>> PlaylistContent(string playlistId)
+        public async Task<List<PlaylistAndContentsDTO>> PlaylistContent(string playlistId)
         {
             var playlists = await _playListsService.GetPlaylistContents(playlistId);
-            var deserializedPlaylists = new List<PlaylistContentsDto>();
+            var deserializedPlaylists = new List<PlaylistAndContentsDTO>();
           
 
             try
             {
                 foreach (var playlist in playlists)
                 {
-                    var desrializedPlaylist = BsonSerializer.Deserialize<PlaylistContentsDto>(playlist);
+                    var desrializedPlaylist = BsonSerializer.Deserialize<PlaylistAndContentsDTO>(playlist);
                     deserializedPlaylists.Add(desrializedPlaylist);
                     
                 }

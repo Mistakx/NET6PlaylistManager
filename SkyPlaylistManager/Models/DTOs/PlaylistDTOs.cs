@@ -12,11 +12,27 @@ namespace SkyPlaylistManager.Models.DTOs
 
     }
 
+    public class PlaylistBasicDetailsDTO
+    {
+        [BsonId]
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string? Id { get; set; }
+
+        [BsonElement("title")]
+        public string Title { get; set; } = null!;
+
+
+        [BsonElement("visibility")]
+        public string Visibility { get; set; } = null!;
+
+        [BsonElement("creationDate")]
+        [BsonDateTimeOptions(Kind = DateTimeKind.Local)]
+        public DateTime? CreationDate { get; set; } = null!;
+    }
 
 
 
-
-    public class PlaylistContentsDto
+    public class PlaylistAndContentsDTO
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
@@ -26,7 +42,7 @@ namespace SkyPlaylistManager.Models.DTOs
         public string Title { get; set; } = null!;
 
         [BsonElement("owner")]
-        public UserDetailsDto Owner { get; set; } 
+        public UserBasicDetailsDTO Owner { get; set; } 
         
         [BsonElement("visibility")]
         public string Visibility { get; set; } = null!;
@@ -39,6 +55,6 @@ namespace SkyPlaylistManager.Models.DTOs
         public List<GenericMultimediaContentDto>? Contents { get; set; }
 
         [BsonElement("sharedWith")]
-        public List<UserDetailsDto>? SharedWith { get; set; }
+        public List<UserBasicDetailsDTO>? SharedWith { get; set; }
     }
 }
