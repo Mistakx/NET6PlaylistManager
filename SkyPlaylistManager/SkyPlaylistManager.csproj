@@ -6,7 +6,7 @@
     <TypeScriptCompileBlocked>true</TypeScriptCompileBlocked>
     <TypeScriptToolsVersion>Latest</TypeScriptToolsVersion>
     <IsPackable>false</IsPackable>
-    <SpaRoot>Net6React\</SpaRoot>
+    <SpaRoot>NET6React\</SpaRoot>
     <DefaultItemExcludes>$(DefaultItemExcludes);$(SpaRoot)node_modules\**</DefaultItemExcludes>
     <SpaProxyServerUrl>https://localhost:44402</SpaProxyServerUrl>
     <SpaProxyLaunchCommand>npm start</SpaProxyLaunchCommand>
@@ -25,6 +25,36 @@
   <ItemGroup>
     <!-- Don't publish the SPA source files, but do show them in the project files list -->
     <Content Remove="$(SpaRoot)**" />
+    <Content Include="NET6React\.git\config" />
+    <Content Include="NET6React\.git\description" />
+    <Content Include="NET6React\.git\HEAD" />
+    <Content Include="NET6React\.git\hooks\applypatch-msg.sample" />
+    <Content Include="NET6React\.git\hooks\commit-msg.sample" />
+    <Content Include="NET6React\.git\hooks\fsmonitor-watchman.sample" />
+    <Content Include="NET6React\.git\hooks\post-update.sample" />
+    <Content Include="NET6React\.git\hooks\pre-applypatch.sample" />
+    <Content Include="NET6React\.git\hooks\pre-commit.sample" />
+    <Content Include="NET6React\.git\hooks\pre-merge-commit.sample" />
+    <Content Include="NET6React\.git\hooks\pre-push.sample" />
+    <Content Include="NET6React\.git\hooks\pre-rebase.sample" />
+    <Content Include="NET6React\.git\hooks\pre-receive.sample" />
+    <Content Include="NET6React\.git\hooks\prepare-commit-msg.sample" />
+    <Content Include="NET6React\.git\hooks\push-to-checkout.sample" />
+    <Content Include="NET6React\.git\hooks\update.sample" />
+    <Content Include="NET6React\.git\index" />
+    <Content Include="NET6React\.git\info\exclude" />
+    <Content Include="NET6React\.git\logs\HEAD" />
+    <Content Include="NET6React\.git\logs\refs\heads\master" />
+    <Content Include="NET6React\.git\logs\refs\remotes\origin\HEAD" />
+    <Content Include="NET6React\.git\objects\pack\pack-88fc6df6837353b05720f6c89f5f591592ed3511.idx" />
+    <Content Include="NET6React\.git\objects\pack\pack-88fc6df6837353b05720f6c89f5f591592ed3511.pack" />
+    <Content Include="NET6React\.git\packed-refs" />
+    <Content Include="NET6React\.git\refs\heads\master" />
+    <Content Include="NET6React\.git\refs\remotes\origin\HEAD" />
+    <Content Include="NET6React\package-lock.json" />
+    <Content Include="NET6React\package.json" />
+    <Content Include="NET6React\public\manifest.json" />
+    <Content Include="NET6React\tsconfig.json" />
     <None Remove="$(SpaRoot)**" />
     <None Include="$(SpaRoot)**" Exclude="$(SpaRoot)node_modules\**" />
   </ItemGroup>
@@ -33,6 +63,104 @@
     <_ContentIncludedByDefault Remove="ClientApp\package-lock.json" />
     <_ContentIncludedByDefault Remove="ClientApp\package.json" />
     <_ContentIncludedByDefault Remove="ClientApp\public\manifest.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="NET6React\.git\branches" />
+    <Folder Include="NET6React\.git\objects\info" />
+    <Folder Include="NET6React\.git\refs\tags" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <TypeScriptCompile Include="NET6React\src\apiSearches\auxiliarySearches\TwitchChannelSearch.ts" />
+    <TypeScriptCompile Include="NET6React\src\apiSearches\auxiliarySearches\TwitchGameSearch.ts" />
+    <TypeScriptCompile Include="NET6React\src\apiSearches\converters\SpotifyTracksPageToListItemsConverter.ts" />
+    <TypeScriptCompile Include="NET6React\src\apiSearches\converters\TwitchChannelSearchResultToListItemsConverter.ts" />
+    <TypeScriptCompile Include="NET6React\src\apiSearches\converters\TwitchClipSearchResultToListItemsConverter.ts" />
+    <TypeScriptCompile Include="NET6React\src\apiSearches\converters\TwitchVideoSearchResultToListItemsConverter.ts" />
+    <TypeScriptCompile Include="NET6React\src\apiSearches\converters\VimeoVideoResultPageToListItemsConverter.ts" />
+    <TypeScriptCompile Include="NET6React\src\apiSearches\converters\YouTubeVideoResultPageToListItemsConverter.ts" />
+    <TypeScriptCompile Include="NET6React\src\apiSearches\platforms\Platform.ts" />
+    <TypeScriptCompile Include="NET6React\src\apiSearches\platforms\Spotify.tsx" />
+    <TypeScriptCompile Include="NET6React\src\apiSearches\platforms\Twitch.tsx" />
+    <TypeScriptCompile Include="NET6React\src\apiSearches\platforms\Vimeo.tsx" />
+    <TypeScriptCompile Include="NET6React\src\apiSearches\platforms\YouTube.tsx" />
+    <TypeScriptCompile Include="NET6React\src\apiSearches\specificSearches\ApiSearch.ts" />
+    <TypeScriptCompile Include="NET6React\src\apiSearches\specificSearches\SpotifySearchTrackByAlbum.ts" />
+    <TypeScriptCompile Include="NET6React\src\apiSearches\specificSearches\SpotifySearchTrackByName.ts" />
+    <TypeScriptCompile Include="NET6React\src\apiSearches\specificSearches\TwitchSearchClipByChannel.ts" />
+    <TypeScriptCompile Include="NET6React\src\apiSearches\specificSearches\TwitchSearchClipByGame.ts" />
+    <TypeScriptCompile Include="NET6React\src\apiSearches\specificSearches\TwitchSearchLivestreamByGeneral.ts" />
+    <TypeScriptCompile Include="NET6React\src\apiSearches\specificSearches\TwitchSearchVideoByChannel.ts" />
+    <TypeScriptCompile Include="NET6React\src\apiSearches\specificSearches\TwitchSearchVideoByGame.ts" />
+    <TypeScriptCompile Include="NET6React\src\apiSearches\specificSearches\VimeoSearchVideoByName.ts" />
+    <TypeScriptCompile Include="NET6React\src\apiSearches\specificSearches\YouTubeSearchVideoByGeneral.ts" />
+    <TypeScriptCompile Include="NET6React\src\authenticators\SpotifyAuthenticator.ts" />
+    <TypeScriptCompile Include="NET6React\src\authenticators\TwitchAuthenticator.ts" />
+    <TypeScriptCompile Include="NET6React\src\components\players\CloseVideoButton.tsx" />
+    <TypeScriptCompile Include="NET6React\src\components\players\MoveVideoButton.tsx" />
+    <TypeScriptCompile Include="NET6React\src\components\players\MultiPlatformPlayer.tsx" />
+    <TypeScriptCompile Include="NET6React\src\components\players\ResizeablePlayer.tsx" />
+    <TypeScriptCompile Include="NET6React\src\components\players\SpotifyPlayer.tsx" />
+    <TypeScriptCompile Include="NET6React\src\components\players\TwitchClipPlayer.tsx" />
+    <TypeScriptCompile Include="NET6React\src\components\playlistPage\PlaylistPage.tsx" />
+    <TypeScriptCompile Include="NET6React\src\components\profilePage\PlaylistItem.tsx" />
+    <TypeScriptCompile Include="NET6React\src\components\profilePage\PlaylistsList.tsx" />
+    <TypeScriptCompile Include="NET6React\src\components\profilePage\ProfilePage.tsx" />
+    <TypeScriptCompile Include="NET6React\src\components\profilePage\TopBar.tsx" />
+    <TypeScriptCompile Include="NET6React\src\components\profilePage\User.tsx" />
+    <TypeScriptCompile Include="NET6React\src\components\searchPage\FloatingPlayer.tsx" />
+    <TypeScriptCompile Include="NET6React\src\components\searchPage\searchBar\AuthenticatedSearchBar.tsx" />
+    <TypeScriptCompile Include="NET6React\src\components\searchPage\searchBar\MauricioSearchBar.tsx" />
+    <TypeScriptCompile Include="NET6React\src\components\searchPage\searchBar\MauricioSearchForm.tsx" />
+    <TypeScriptCompile Include="NET6React\src\components\searchPage\searchBar\PlatformDropdownButton.tsx" />
+    <TypeScriptCompile Include="NET6React\src\components\searchPage\searchBar\PlatformDropdownList.tsx" />
+    <TypeScriptCompile Include="NET6React\src\components\searchPage\searchBar\SearchLabel.tsx" />
+    <TypeScriptCompile Include="NET6React\src\components\searchPage\searchItems\LivestreamSearchItem.tsx" />
+    <TypeScriptCompile Include="NET6React\src\components\searchPage\searchItems\SearchResultsList.tsx" />
+    <TypeScriptCompile Include="NET6React\src\components\searchPage\searchItems\TrackSearchItem.tsx" />
+    <TypeScriptCompile Include="NET6React\src\components\searchPage\searchItems\VideoSearchItem.tsx" />
+    <TypeScriptCompile Include="NET6React\src\components\searchPage\SearchPage.tsx" />
+    <TypeScriptCompile Include="NET6React\src\components\SidePanel.tsx" />
+    <TypeScriptCompile Include="NET6React\src\components\userPage\UsernamePage.tsx" />
+    <TypeScriptCompile Include="NET6React\src\index.tsx" />
+    <TypeScriptCompile Include="NET6React\src\models\apiSearches\GenericResults.ts" />
+    <TypeScriptCompile Include="NET6React\src\models\apiSearches\PlatformSearches.ts" />
+    <TypeScriptCompile Include="NET6React\src\models\apiSearches\SpotifySearchResults.ts" />
+    <TypeScriptCompile Include="NET6React\src\models\apiSearches\TwitchSearchResults.ts" />
+    <TypeScriptCompile Include="NET6React\src\models\apiSearches\VimeoSearchResult.ts" />
+    <TypeScriptCompile Include="NET6React\src\models\apiSearches\YouTubeSearchResult.ts" />
+    <TypeScriptCompile Include="NET6React\src\models\authenticators\ApiAuthorizations.ts" />
+    <TypeScriptCompile Include="NET6React\src\models\components\players\MultiPlatformPlayerProperties.ts" />
+    <TypeScriptCompile Include="NET6React\src\models\components\players\SpotifyPlayerProperties.ts" />
+    <TypeScriptCompile Include="NET6React\src\models\components\players\TwitchClipPlayerProperties.ts" />
+    <TypeScriptCompile Include="NET6React\src\models\components\searchBar\PlatformDropdownButtonProperties.ts" />
+    <TypeScriptCompile Include="NET6React\src\models\components\searchBar\PlatformDropdownListProperties.ts" />
+    <TypeScriptCompile Include="NET6React\src\models\components\searchBar\SearchBarProperties.ts" />
+    <TypeScriptCompile Include="NET6React\src\models\components\searchBar\SearchFormProperties.ts" />
+    <TypeScriptCompile Include="NET6React\src\models\components\searchPage\LivestreamItemComponentProperties.ts" />
+    <TypeScriptCompile Include="NET6React\src\models\components\searchPage\TrackItemComponentProperties.ts" />
+    <TypeScriptCompile Include="NET6React\src\models\components\searchPage\VideoItemComponentProperties.ts" />
+    <TypeScriptCompile Include="NET6React\src\models\states\PlatformDropdownState.ts" />
+    <TypeScriptCompile Include="NET6React\src\models\states\PlayerState.ts" />
+    <TypeScriptCompile Include="NET6React\src\models\states\SearchListState.ts" />
+    <TypeScriptCompile Include="NET6React\src\models\states\SearchState.ts" />
+    <TypeScriptCompile Include="NET6React\src\playerCreators\MultiPlatformPlayerCreator.tsx" />
+    <TypeScriptCompile Include="NET6React\src\playerCreators\PlayerCreator.ts" />
+    <TypeScriptCompile Include="NET6React\src\playerCreators\SpotifyPlayerCreator.tsx" />
+    <TypeScriptCompile Include="NET6React\src\playerCreators\TwitchClipPlayerCreator.tsx" />
+    <TypeScriptCompile Include="NET6React\src\react-app-env.d.ts" />
+    <TypeScriptCompile Include="NET6React\src\reportWebVitals.ts" />
+    <TypeScriptCompile Include="NET6React\src\searchLists\LivestreamSearchList.tsx" />
+    <TypeScriptCompile Include="NET6React\src\searchLists\SearchList.ts" />
+    <TypeScriptCompile Include="NET6React\src\searchLists\TrackSearchList.tsx" />
+    <TypeScriptCompile Include="NET6React\src\searchLists\VideoSearchList.tsx" />
+    <TypeScriptCompile Include="NET6React\src\setupTests.ts" />
+    <TypeScriptCompile Include="NET6React\src\stores\PlatformDropdownStore.ts" />
+    <TypeScriptCompile Include="NET6React\src\stores\PlayerStore.ts" />
+    <TypeScriptCompile Include="NET6React\src\stores\SearchedListStore.ts" />
+    <TypeScriptCompile Include="NET6React\src\stores\SelectedSearchStore.ts" />
+    <TypeScriptCompile Include="NET6React\src\utils\IsEmptyObject.ts" />
   </ItemGroup>
 
   <Target Name="DebugEnsureNodeEnv" BeforeTargets="Build" Condition=" '$(Configuration)' == 'Debug' And !Exists('$(SpaRoot)node_modules') ">
