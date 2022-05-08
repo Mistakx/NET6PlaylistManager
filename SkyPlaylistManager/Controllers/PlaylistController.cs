@@ -25,27 +25,19 @@ namespace SkyPlaylistManager.Controllers
             _playListsService = playlistsService;
             _multimediaContentsService = multimediaContentsService;
             _multimediaContentFactory = multimediaContentFactory;
-
-
         }
 
 
-        [HttpGet("{playlistId:length(24)}")] // TODO: Verificar se a playlist é privada. Só retornar a playlist caso seja pública ou partilhada com o user da sessão.
-        public async Task<List<PlaylistAndContentsDTO>> PlaylistContent(string playlistId)
-        {
-            var playlists = await _playListsService.GetPlaylistContents(playlistId);
-            var deserializedPlaylists = new List<PlaylistAndContentsDTO>();
-          
 
+        [HttpGet("{playlistId:length(24)}")] // TODO: Verificar se a playlist é privada. Só retornar a playlist caso seja pública ou partilhada com o user da sessão.
+        public async Task<PlaylistAndContentsDTO> PlaylistContent(string playlistId)
+        {
+            var playlist = await _playListsService.GetPlaylistContents(playlistId);
+            
             try
             {
-                foreach (var playlist in playlists)
-                {
-                    var desrializedPlaylist = BsonSerializer.Deserialize<PlaylistAndContentsDTO>(playlist);
-                    deserializedPlaylists.Add(desrializedPlaylist);
-                    
-                }
-                return deserializedPlaylists;
+                var deserializedPlaylist = BsonSerializer.Deserialize<PlaylistAndContentsDTO>(playlist);
+                return deserializedPlaylist;
             }
             catch (Exception ex)
             {
@@ -88,11 +80,11 @@ namespace SkyPlaylistManager.Controllers
 
 
         [HttpPost("share")]
-        public async Task<IActionResult> SharePlaylist(PlaylistShare newPlaylistShare)
+        public async Task<IActionResult> SharePlaylist(PlaylistShareDto newPlaylistShareDto)
         {
             try
             {
-                await _playListsService.InsertUserInSharedWithArray(newPlaylistShare.PlaylistID, new ObjectId(newPlaylistShare.UserID));
+                await _playListsService.InsertUserInSharedWithArray(newPlaylistShareDto.PlaylistID, new ObjectId(newPlaylistShareDto.UserID));
                 return Ok("Playlist partilhada.");
                 //return CreatedAtAction(nameof(Get), new { id = user.Id }, user);
             }

@@ -4,6 +4,7 @@ using SkyPlaylistManager.Models.Database;
 using SkyPlaylistManager.Services;
 using Microsoft.AspNetCore.Session;
 using Microsoft.Extensions.FileProviders;
+using SkyPlaylistManager;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +15,7 @@ builder.Services.AddSingleton<UsersService>();
 builder.Services.AddSingleton<PlaylistsService>();
 builder.Services.AddSingleton<MultimediaContentsService>();
 builder.Services.AddSingleton<MultimediaContentFactory>();
+builder.Services.AddSingleton<FilesManager>();
 
 builder.Services.AddScoped<MultimediaContentFactory>(_ =>
 {
@@ -57,7 +59,7 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller}/{action=Index}/{id?}");
 
-app.MapFallbackToFile("index.html"); ;
+app.MapFallbackToFile("index.html");
 
 app.UseStaticFiles(new StaticFileOptions
 {
@@ -65,5 +67,15 @@ app.UseStaticFiles(new StaticFileOptions
         Path.Combine(builder.Environment.ContentRootPath, "Images")),
     RequestPath = "/ProfilePhoto"
 });
+
+//app.MapGet("/ProfilePhoto/", (int id) =>
+//{
+//    var filename = "file_example.mp4";
+//    //Build the File Path.
+//    string path = Path.Combine(builder.Environment.ContentRootPath, "Images") + filename;  
+
+//    var filestream = System.IO.File.OpenRead(path);
+//    return Results.File(filestream, contentType: "image");
+//});
 
 app.Run();

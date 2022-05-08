@@ -9,8 +9,15 @@ namespace SkyPlaylistManager.Models.DTOs
     {
         public string Title { get; set; } = null!;
         public string Visibility { get; set; } = null!;
-
     }
+
+
+    public class PlaylistShareDto
+    {
+        public string PlaylistID { get; set; } = null!;
+        public string UserID { get; set; } = null!;
+    }
+
 
     public class PlaylistBasicDetailsDTO
     {
@@ -20,14 +27,16 @@ namespace SkyPlaylistManager.Models.DTOs
 
         [BsonElement("title")]
         public string Title { get; set; } = null!;
-
-
+        
         [BsonElement("visibility")]
         public string Visibility { get; set; } = null!;
 
         [BsonElement("creationDate")]
         [BsonDateTimeOptions(Kind = DateTimeKind.Local)]
         public DateTime? CreationDate { get; set; } = null!;
+
+        [BsonElement("description")] 
+        public string? Description { get; set; }
     }
 
 
@@ -46,7 +55,10 @@ namespace SkyPlaylistManager.Models.DTOs
         
         [BsonElement("visibility")]
         public string Visibility { get; set; } = null!;
-        
+
+        [BsonElement("description")]
+        public string? Description { get; set; }
+
         [BsonElement("creationDate")]
         [BsonDateTimeOptions(Kind = DateTimeKind.Local)]
         public DateTime? CreationDate { get; set; } = null!;

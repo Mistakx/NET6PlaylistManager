@@ -24,9 +24,16 @@ namespace SkyPlaylistManager.Services
 
 
 
+        public async Task<List<BsonDocument>> GetPlaylistsByOwner(string userId)
+        {
+            var filter = Builders<PlaylistCollection>.Filter.Eq(p => p.Owner, userId);
+            var projection = Builders<PlaylistCollection>.Projection.Exclude("owner").Exclude("sharedWith").Exclude("contents");
 
+            var result = await _playListsCollection.Find(filter).Project(projection).ToListAsync();
+            return result;
+        }
 
-        public async Task<List<BsonDocument>> GetPlaylistContents(string playlistId)
+        public async Task<BsonDocument> GetPlaylistContents(string playlistId)
         {
             
             var filter = Builders<PlaylistCollection>.Filter.Eq(p => p.Id, playlistId);
@@ -39,7 +46,7 @@ namespace SkyPlaylistManager.Services
                 .Project(Builders<BsonDocument>.Projection.Exclude("sharedWith.userPlaylists").Exclude("sharedWith.password"))
                 .Unwind("owner");
 
-            List <BsonDocument> result = await query.ToListAsync();
+            var result = await query.FirstOrDefaultAsync();
 
             return result;
         }
