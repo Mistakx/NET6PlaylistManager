@@ -1,9 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Net;
+using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using SkyPlaylistManager.Services;
 using SkyPlaylistManager.Models.Database;
 using SkyPlaylistManager.Models.DTOs;
-using System.IO;
 
 namespace SkyPlaylistManager.Controllers;
 
@@ -12,78 +14,33 @@ namespace SkyPlaylistManager.Controllers;
 public class UserController : ControllerBase
 {
     private readonly UsersService _usersService;
+    private readonly PlaylistsService _playlistsService;
+    private readonly FilesManager _filesManager;
     
-    public UserController(UsersService usersService)
+    public UserController(UsersService usersService, PlaylistsService playlistsService, FilesManager filesManager)
     {
         _usersService = usersService;
+        _filesManager = filesManager;
+        _playlistsService = playlistsService;
     }
 
 
 
-    [HttpPost]
-    [Route("editProfilePhoto")]
-    public async Task<IActionResult> EditProfilePhoto(IFormFile file)
+    [HttpGet("Playlists/{userId:length(24)}")]
+    public async Task<List<PlaylistBasicDetailsDTO>> UserPlaylists(string userId)
     {
-        
-        try
-        {
-            FileInfo newPhotofileInfo = new FileInfo(file.FileName);
- 
-           if (newPhotofileInfo.Extension == ".jpg" || newPhotofileInfo.Extension == ".png" || newPhotofileInfo.Extension == ".jpeg" )
-           {
-               string path = Path.Combine(Directory.GetCurrentDirectory(), "Images");
-
-               if (!Directory.Exists(path))
-                   Directory.CreateDirectory(path);
-
-                string fileName = string.Format(@"{0}" + newPhotofileInfo.Extension, Guid.NewGuid());
-                string directoryFilePath = Path.Combine(path, fileName);
-              
-
-                using (var stream = new FileStream(directoryFilePath, FileMode.Create))
-                {
-                    file.CopyTo(stream);
-                }
-
-
-                var oldPhoto = await _usersService.GetUserProfilePhoto("6261707eff67ad3d4f51d38b");  // TODO: Mudar para o Id da sessão
-                string oldPhotopath = Path.Combine(Directory.GetCurrentDirectory(), "Images",(string)oldPhoto["profilePhotoPath"]);
-                FileInfo oldPhotoFileInfo = new FileInfo(oldPhotopath);
-                oldPhotoFileInfo.Delete();
-
-                await _usersService.UpdateUserProfilePhoto("6261707eff67ad3d4f51d38b", fileName); // TODO: Mudar para o Id da sessão
-
-                return Ok("Imagem atualizada.");
-           }
-           else
-           {
-               return BadRequest("Formato de imagem inválido.");
-           }
-
-           
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(ex.Message);
-        }
-    }
-
-
-    [HttpGet("{userId:length(24)}")]
-    public async Task<List<UserPlaylistsDTO>> UserPlaylists(string userId)
-    {
-        var userPlaylists = await _usersService.GetUserPlaylists(userId);
-        var deserializedUserPlaylists = new List<UserPlaylistsDTO>();
+        var userPlaylists = await _playlistsService.GetPlaylistsByOwner(userId);
+        var deserializedPlaylists = new List<PlaylistBasicDetailsDTO>();
 
         try
         {
-            foreach (var user in userPlaylists)
+            foreach (var playlist in userPlaylists)
             {
-                var model = BsonSerializer.Deserialize<UserPlaylistsDTO>(user);
-                deserializedUserPlaylists.Add(model);
-            }
+                var desrializedPlaylist = BsonSerializer.Deserialize<PlaylistBasicDetailsDTO>(playlist);
+                deserializedPlaylists.Add(desrializedPlaylist);
 
-            return deserializedUserPlaylists;
+            }
+            return deserializedPlaylists;
         }
         catch (Exception ex)
         {
@@ -91,6 +48,71 @@ public class UserController : ControllerBase
             return null;
         }
     }
+
+
+
+    [HttpGet("Profile/{userId:length(24)}")]
+    public async Task<UserBasicDetailsDTO> UserProfile(string userId)
+    {
+        var userProfile = await _usersService.GetUserBasicDetails(userId);
+       
+        try
+        {
+            var deserializedUserProfile = BsonSerializer.Deserialize<UserBasicDetailsDTO>(userProfile);
+            return deserializedUserProfile = BsonSerializer.Deserialize<UserBasicDetailsDTO>(userProfile);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            return null;
+        }
+    }
+
+
+
+    [HttpGet("{userId:length(24)}")]
+    public async Task<UserPlaylistsDTO> UserCompleteProfile (string userId)
+    {
+        var userCompelteProfile = await _usersService.GetUserDetailsAndPlaylists(userId);
+
+        try
+        {
+            var deserializedUserCompelteProfile = BsonSerializer.Deserialize<UserPlaylistsDTO>(userCompelteProfile);
+            return deserializedUserCompelteProfile;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            return null;
+        }
+    }
+
+
+
+
+    [HttpPost]
+    [Route("editProfilePhoto")]
+    public async Task<IActionResult> EditProfilePhoto(IFormFile file)
+    {
+       
+        FileInfo newPhotofileInfo = new FileInfo(file.FileName);
+
+       if (_filesManager.IsValidImage(file))
+       {
+           var generatedFileName = _filesManager.InsertInDiretory(file);
+           _filesManager.DeleteFromDiretory();
+           await _usersService.UpdateUserProfilePhoto("6261707eff67ad3d4f51d38b", generatedFileName); // TODO: Mudar para o Id da sessão
+           
+           return Ok("Imagem atualizada.");
+       }
+       else
+       {
+           return BadRequest("Formato de imagem inválido.");
+       }
+    }
+
+
+    
 
 
 
@@ -135,8 +157,7 @@ public class UserController : ControllerBase
             {
                 return BadRequest(new { message = "A password que introduziu não é válida." });
             }
-
-
+            
             HttpContext.Session.SetString("Session_user", foundUser.Id);
             var session = HttpContext.Session.GetString("Session_user");
             Console.WriteLine(session);
@@ -146,15 +167,15 @@ public class UserController : ControllerBase
     }
 
 
-    [HttpPost("teste")]
-    public IActionResult Teste()
-    {
-        var session = HttpContext.Session.GetString("Session_user");
-        Console.WriteLine(session);
+    //[HttpPost("teste")]
+    //public IActionResult Teste()
+    //{
+    //    var session = HttpContext.Session.GetString("Session_user");
+    //    Console.WriteLine(session);
 
-        return Ok(session);
+    //    return Ok(session);
 
-    }
+    //}
 
 
 
