@@ -40,5 +40,8 @@ namespace SkyPlaylistManager.Models.DTOs
         [BsonElement("category")]
         public string? Category { get; set; }
 
+
+        [BsonElement("usages")]
+        public int Usages { get; set; }
     }
 }

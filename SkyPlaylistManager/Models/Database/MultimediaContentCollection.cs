@@ -28,7 +28,9 @@ namespace SkyPlaylistManager.Models.Database
         [BsonElement("creationDate")]
         [BsonDateTimeOptions(Kind = DateTimeKind.Local)]
         public abstract DateTime? CreationDate { get; set; }
-        //NUMBER OF USAGES
+
+        [BsonElement("usages")]
+        public abstract int Usages { get; set; }
     }
 
 
@@ -51,6 +53,8 @@ namespace SkyPlaylistManager.Models.Database
         public override string Creator { get; set; } = null!;
 
         public override DateTime? CreationDate { get; set; } = null!;
+
+        public override int Usages { get; set; }
 
         [BsonElement("duration")]
         public double Duration { get; set; }
@@ -87,6 +91,8 @@ namespace SkyPlaylistManager.Models.Database
 
         public override DateTime? CreationDate { get; set; } = null!;
 
+        public override int Usages { get; set; }
+
         [BsonElement("duration")]
         public double Duration { get; set; } 
 
@@ -117,6 +123,8 @@ namespace SkyPlaylistManager.Models.Database
         public override string Creator { get; set; } = null!;
 
         public override DateTime? CreationDate { get; set; } = null!;
+
+        public override int Usages { get; set; }
 
         [BsonElement("category")]
         public string Category { get; set; } = null!;
