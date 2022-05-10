@@ -6,6 +6,7 @@ using MongoDB.Bson.Serialization;
 using SkyPlaylistManager.Services;
 using SkyPlaylistManager.Models.Database;
 using SkyPlaylistManager.Models.DTOs;
+using SkyPlaylistManager.Models.DTOs.User;
 
 namespace SkyPlaylistManager.Controllers;
 
@@ -27,7 +28,7 @@ public class UserController : ControllerBase
 
 
     [HttpGet("Playlists/{userId:length(24)}")]
-    public async Task<List<PlaylistBasicDetailsDTO>> UserPlaylists(string userId)
+    public async Task<List<PlaylistBasicDetailsDTO>?> UserPlaylists(string userId)
     {
         var userPlaylists = await _playlistsService.GetPlaylistsByOwner(userId);
         var deserializedPlaylists = new List<PlaylistBasicDetailsDTO>();
@@ -36,8 +37,8 @@ public class UserController : ControllerBase
         {
             foreach (var playlist in userPlaylists)
             {
-                var desrializedPlaylist = BsonSerializer.Deserialize<PlaylistBasicDetailsDTO>(playlist);
-                deserializedPlaylists.Add(desrializedPlaylist);
+                var deserializedPlaylist = BsonSerializer.Deserialize<PlaylistBasicDetailsDTO>(playlist);
+                deserializedPlaylists.Add(deserializedPlaylist);
 
             }
             return deserializedPlaylists;
@@ -52,14 +53,14 @@ public class UserController : ControllerBase
 
 
     [HttpGet("Profile/{userId:length(24)}")]
-    public async Task<UserBasicDetailsDTO> UserProfile(string userId)
+    public async Task<UserBasicDetailsDto?> UserProfile(string userId)
     {
         var userProfile = await _usersService.GetUserBasicDetails(userId);
        
         try
         {
-            var deserializedUserProfile = BsonSerializer.Deserialize<UserBasicDetailsDTO>(userProfile);
-            return deserializedUserProfile = BsonSerializer.Deserialize<UserBasicDetailsDTO>(userProfile);
+            var deserializedUserProfile = BsonSerializer.Deserialize<UserBasicDetailsDto>(userProfile);
+            return deserializedUserProfile;
         }
         catch (Exception ex)
         {
@@ -71,14 +72,14 @@ public class UserController : ControllerBase
 
 
     [HttpGet("{userId:length(24)}")]
-    public async Task<UserPlaylistsDTO> UserCompleteProfile (string userId)
+    public async Task<UserPlaylistsDto?> UserCompleteProfile (string userId)
     {
-        var userCompelteProfile = await _usersService.GetUserDetailsAndPlaylists(userId);
+        var userCompleteProfile = await _usersService.GetUserDetailsAndPlaylists(userId);
 
         try
         {
-            var deserializedUserCompelteProfile = BsonSerializer.Deserialize<UserPlaylistsDTO>(userCompelteProfile);
-            return deserializedUserCompelteProfile;
+            var deserializedUserCompleteProfile = BsonSerializer.Deserialize<UserPlaylistsDto>(userCompleteProfile);
+            return deserializedUserCompleteProfile;
         }
         catch (Exception ex)
         {
@@ -95,7 +96,7 @@ public class UserController : ControllerBase
     public async Task<IActionResult> EditProfilePhoto(IFormFile file)
     {
        
-        FileInfo newPhotofileInfo = new FileInfo(file.FileName);
+        FileInfo newPhotoFileInfo = new FileInfo(file.FileName);
 
        if (_filesManager.IsValidImage(file))
        {
@@ -141,7 +142,7 @@ public class UserController : ControllerBase
 
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login(LoginDTO login)
+    public async Task<IActionResult> Login(LoginDto login)
     {
 
         var foundUser = await _usersService.GetUserByEmail(login.Email);
@@ -180,7 +181,7 @@ public class UserController : ControllerBase
 
 
     [HttpPost("register")]
-    public async Task<IActionResult> Register(NewUserDTO newUser)
+    public async Task<IActionResult> Register(NewUserDto newUser)
     {
 
         var foundUser = await _usersService.GetUserByEmail(newUser.Email);

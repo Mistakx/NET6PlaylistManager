@@ -1,13 +1,10 @@
 ﻿using System.Text.Json.Serialization;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
-using SkyPlaylistManager.Models.DTOs;
-using SkyPlaylistManager.Models.DTOs.User;
 
-namespace SkyPlaylistManager.Models.Database
-{
-    public class UserCollection
-    {
+namespace SkyPlaylistManager.Models.DTOs.User {
+    
+    public class UserPlaylistsDto {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
         public string? Id { get; set; }
@@ -15,6 +12,7 @@ namespace SkyPlaylistManager.Models.Database
         [BsonElement("email")]
         public string Email { get; set; } = null!;
 
+        [JsonIgnore]
         [BsonElement("password")]
         public string Password { get; set; } = null!;
 
@@ -25,17 +23,7 @@ namespace SkyPlaylistManager.Models.Database
         public string ProfilePhotoPath { get; set; } = null!;
 
         [BsonElement("userPlaylists")]
-        public List<ObjectId>? UserPlaylists { get; set; }
-
-
-
-        public UserCollection(NewUserDto newUser)
-        {
-            Email = newUser.Email;
-            Password = BCrypt.Net.BCrypt.HashPassword(newUser.Password);
-            Name = newUser.Name;
-            ProfilePhotoPath = "Path to default user profile photo"; // TODO Change default profile path
-            UserPlaylists = new List<ObjectId>();
-        }
+        public List<PlaylistBasicDetailsDTO>? UserPlaylists { get; set; }
     }
+    
 }

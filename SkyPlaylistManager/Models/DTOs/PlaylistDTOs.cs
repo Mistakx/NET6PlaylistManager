@@ -2,6 +2,7 @@
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using SkyPlaylistManager.Models.Database;
+using SkyPlaylistManager.Models.DTOs.User;
 
 namespace SkyPlaylistManager.Models.DTOs
 {
@@ -48,25 +49,25 @@ namespace SkyPlaylistManager.Models.DTOs
         public string? Id { get; set; }
 
         [BsonElement("title")]
-        public string Title { get; set; } = null!;
+        public string? Title { get; set; }
 
         [BsonElement("owner")]
-        public UserBasicDetailsDTO Owner { get; set; } 
+        public UserBasicDetailsDto? Owner { get; set; } 
         
         [BsonElement("visibility")]
-        public string Visibility { get; set; } = null!;
+        public string? Visibility { get; set; }
 
         [BsonElement("description")]
         public string? Description { get; set; }
 
         [BsonElement("creationDate")]
         [BsonDateTimeOptions(Kind = DateTimeKind.Local)]
-        public DateTime? CreationDate { get; set; } = null!;
+        public DateTime? CreationDate { get; set; }
 
         [BsonElement("contents")]
         public List<GenericMultimediaContentDto>? Contents { get; set; }
 
         [BsonElement("sharedWith")]
-        public List<UserBasicDetailsDTO>? SharedWith { get; set; }
+        public List<UserBasicDetailsDto>? SharedWith { get; set; }
     }
 }
