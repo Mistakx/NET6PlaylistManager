@@ -26,7 +26,15 @@ public class UserController : ControllerBase
     }
 
 
+    [HttpGet("GetImage/{imageName}")] // https://stackoverflow.com/questions/186062/can-an-asp-net-mvc-controller-return-an-image
+    public async Task<IActionResult> GetImage(string imageName)
+   { 
+       var path = Path.Combine(Directory.GetCurrentDirectory(), "Images", imageName); 
+       return PhysicalFile(path, "image/jpeg");
+   }
 
+
+        
     [HttpGet("Playlists/{userId:length(24)}")]
     public async Task<List<PlaylistBasicDetailsDTO>?> UserPlaylists(string userId)
     {

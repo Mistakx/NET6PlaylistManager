@@ -26,5 +26,13 @@ namespace SkyPlaylistManager.Services
 
         public async Task CreateMultimediaContent(MultimediaContent newMultimediaContent) =>
             await _multimediaContentsCollection.InsertOneAsync(newMultimediaContent);
+
+        public async Task UpdateMultimediaContentUsage(string multimediaContentId, int increment)
+        {
+            var filter = Builders<MultimediaContent>.Filter.Eq(m => m.Id, multimediaContentId);
+            var update = Builders<MultimediaContent>.Update.Inc(m => m.Usages, increment);
+
+            await _multimediaContentsCollection.FindOneAndUpdateAsync(filter, update);
+        }
     }
 }
