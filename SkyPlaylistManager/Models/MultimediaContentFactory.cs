@@ -6,12 +6,12 @@ namespace SkyPlaylistManager.Models
 {
     public class MultimediaContentFactory
     {
-        private readonly Dictionary<string, Func<MultimediaContent>> _multimedaTypes;
+        private readonly Dictionary<string, Func<MultimediaContent>> _multimediaTypes;
         public JsonObject _args;
 
         public MultimediaContentFactory()
         {
-            _multimedaTypes = new Dictionary<string, Func<MultimediaContent>>();
+            _multimediaTypes = new Dictionary<string, Func<MultimediaContent>>();
             _args = new JsonObject();
         }
 
@@ -21,10 +21,10 @@ namespace SkyPlaylistManager.Models
         public MultimediaContent this[string multimediaType] => CreateMultimediaContentType(multimediaType);
 
         public MultimediaContent CreateMultimediaContentType(string multimediaType) =>
-            _multimedaTypes[multimediaType]();
+            _multimediaTypes[multimediaType]();
           
 
-        public string[] RegistredMultimediaTypes => _multimedaTypes.Keys.ToArray();
+        public string[] RegistredMultimediaTypes => _multimediaTypes.Keys.ToArray();
 
 
         public void RegisterType(string multimediaContentType, Func<MultimediaContent> factoryMethod)
@@ -32,7 +32,7 @@ namespace SkyPlaylistManager.Models
             if (string.IsNullOrEmpty(multimediaContentType)) return;
             if (factoryMethod is null) return;
 
-            _multimedaTypes[multimediaContentType] = factoryMethod;
+            _multimediaTypes[multimediaContentType] = factoryMethod;
         }
 
 

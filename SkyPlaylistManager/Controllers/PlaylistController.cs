@@ -46,8 +46,6 @@ namespace SkyPlaylistManager.Controllers
             }
         }
 
-
-
         [HttpPost("addToPlaylist")]
         public async Task<IActionResult> AddMultimediaContentToPlaylist(JsonObject request)
         {

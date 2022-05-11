@@ -22,9 +22,9 @@ builder.Services.AddScoped<MultimediaContentFactory>(_ =>
     MultimediaContentFactory multimediaContentFactory = new MultimediaContentFactory();
 
     //TODO: Registar as restantes plataformas
-    multimediaContentFactory.RegisterType("Youtube", () => new VideosContent(multimediaContentFactory._args));
-    multimediaContentFactory.RegisterType("Spotify", () => new TracksContent(multimediaContentFactory._args));
-    multimediaContentFactory.RegisterType("Twitch", () => new LivestreamsContent(multimediaContentFactory._args));
+    multimediaContentFactory.RegisterType("GenericVideoResult", () => new VideosContent(multimediaContentFactory._args));
+    multimediaContentFactory.RegisterType("GenericTrackResult", () => new TracksContent(multimediaContentFactory._args));
+    multimediaContentFactory.RegisterType("GenericLivestreamResult", () => new LivestreamsContent(multimediaContentFactory._args));
     return multimediaContentFactory;
 });
 
@@ -52,7 +52,7 @@ app.UseHttpsRedirection();
 app.UseCors(c => c.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin());
 app.UseStaticFiles();
 app.UseRouting();
-app.UseSession();         //usa para as variáveis de sesssão
+app.UseSession();
 
 
 app.MapControllerRoute(
@@ -60,13 +60,6 @@ app.MapControllerRoute(
     pattern: "{controller}/{action=Index}/{id?}");
 
 app.MapFallbackToFile("index.html");
-
-app.UseStaticFiles(new StaticFileOptions
-{
-    FileProvider = new PhysicalFileProvider(
-        Path.Combine(builder.Environment.ContentRootPath, "Images")),
-    RequestPath = "/ProfilePhoto"
-});
 
 //app.MapGet("/ProfilePhoto/", (int id) =>
 //{
