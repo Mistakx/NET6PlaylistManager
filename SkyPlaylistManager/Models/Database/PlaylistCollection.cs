@@ -1,6 +1,7 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using SkyPlaylistManager.Models.DTOs;
+using SkyPlaylistManager.Models.DTOs.Playlist;
 
 namespace SkyPlaylistManager.Models.Database
 {

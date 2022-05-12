@@ -6,6 +6,7 @@ using MongoDB.Bson.Serialization;
 using SkyPlaylistManager.Services;
 using SkyPlaylistManager.Models.Database;
 using SkyPlaylistManager.Models.DTOs;
+using SkyPlaylistManager.Models.DTOs.Playlist;
 using SkyPlaylistManager.Models.DTOs.User;
 
 namespace SkyPlaylistManager.Controllers;
@@ -36,16 +37,16 @@ public class UserController : ControllerBase
 
         
     [HttpGet("Playlists/{userId:length(24)}")]
-    public async Task<List<PlaylistBasicDetailsDTO>?> UserPlaylists(string userId)
+    public async Task<List<PlaylistBasicDetailsDto>?> UserPlaylists(string userId)
     {
         var userPlaylists = await _playlistsService.GetPlaylistsByOwner(userId);
-        var deserializedPlaylists = new List<PlaylistBasicDetailsDTO>();
+        var deserializedPlaylists = new List<PlaylistBasicDetailsDto>();
 
         try
         {
             foreach (var playlist in userPlaylists)
             {
-                var deserializedPlaylist = BsonSerializer.Deserialize<PlaylistBasicDetailsDTO>(playlist);
+                var deserializedPlaylist = BsonSerializer.Deserialize<PlaylistBasicDetailsDto>(playlist);
                 deserializedPlaylists.Add(deserializedPlaylist);
 
             }
@@ -53,7 +54,7 @@ public class UserController : ControllerBase
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex);
+            Console.WriteLine(ex.StackTrace);
             return null;
         }
     }
@@ -80,13 +81,13 @@ public class UserController : ControllerBase
 
 
     [HttpGet("{userId:length(24)}")]
-    public async Task<UserPlaylistsDto?> UserCompleteProfile (string userId)
+    public async Task<UserProfileDto?> UserCompleteProfile (string userId)
     {
         var userCompleteProfile = await _usersService.GetUserDetailsAndPlaylists(userId);
 
         try
         {
-            var deserializedUserCompleteProfile = BsonSerializer.Deserialize<UserPlaylistsDto>(userCompleteProfile);
+            var deserializedUserCompleteProfile = BsonSerializer.Deserialize<UserProfileDto>(userCompleteProfile);
             return deserializedUserCompleteProfile;
         }
         catch (Exception ex)

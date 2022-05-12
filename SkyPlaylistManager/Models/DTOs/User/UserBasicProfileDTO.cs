@@ -4,7 +4,7 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace SkyPlaylistManager.Models.DTOs.User {
     
-    public record UserBasicDetailsDto {
+    public class UserBasicDetailsDto {
         
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]

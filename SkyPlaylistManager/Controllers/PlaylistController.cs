@@ -5,7 +5,9 @@ using MongoDB.Bson.Serialization;
 using SkyPlaylistManager.Services;
 using SkyPlaylistManager.Models;
 using SkyPlaylistManager.Models.Database;
+using SkyPlaylistManager.Models.Database.GenericResults;
 using SkyPlaylistManager.Models.DTOs;
+using SkyPlaylistManager.Models.DTOs.Playlist;
 
 namespace SkyPlaylistManager.Controllers
 {
@@ -30,18 +32,18 @@ namespace SkyPlaylistManager.Controllers
 
 
         [HttpGet("{playlistId:length(24)}")] // TODO: Verificar se a playlist é privada. Só retornar a playlist caso seja pública ou partilhada com o user da sessão.
-        public async Task<PlaylistAndContentsDTO?> PlaylistContent(string playlistId)
+        public async Task<PlaylistAndContentsDto?> PlaylistContent(string playlistId)
         {
             var playlist = await _playListsService.GetPlaylistContents(playlistId);
             
             try
             {
-                var deserializedPlaylist = BsonSerializer.Deserialize<PlaylistAndContentsDTO>(playlist);
+                var deserializedPlaylist = BsonSerializer.Deserialize<PlaylistAndContentsDto>(playlist);
                 return deserializedPlaylist;
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex);
+                Console.WriteLine(ex.StackTrace);
                 return null;
             }
         }
@@ -49,26 +51,27 @@ namespace SkyPlaylistManager.Controllers
         [HttpPost("addToPlaylist")]
         public async Task<IActionResult> AddMultimediaContentToPlaylist(JsonObject request)
         {
-             MultimediaContent multimediaContent;
+             GenericResult genericResult;
            
             try
             {
-                string type = (string) request["platform"];
+                string type = (string) request["interface"];
 
                 _multimediaContentFactory._args = request;
-                multimediaContent = _multimediaContentFactory[type];
-                await _multimediaContentsService.CreateMultimediaContent(multimediaContent);
+                genericResult = _multimediaContentFactory[type];
+                await _multimediaContentsService.CreateMultimediaContent(genericResult);
 
                 string playlistId = (string)request["playlistId"];
-                ObjectId createdMultimediaContentId = ObjectId.Parse(multimediaContent.Id);
+                ObjectId createdMultimediaContentId = ObjectId.Parse(genericResult.Id);
 
                 await _playListsService.InsertMultimediaContentInPlaylist(playlistId, createdMultimediaContentId);
-                return Ok(multimediaContent);
+                return Ok(genericResult);
 
             }
+            
             catch (Exception ex)
             {
-                Console.WriteLine(ex);
+                Console.WriteLine(ex.StackTrace);
                 return NotFound();
             }
 

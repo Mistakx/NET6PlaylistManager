@@ -22,9 +22,9 @@ builder.Services.AddScoped<MultimediaContentFactory>(_ =>
     MultimediaContentFactory multimediaContentFactory = new MultimediaContentFactory();
 
     //TODO: Registar as restantes plataformas
-    multimediaContentFactory.RegisterType("GenericVideoResult", () => new VideosContent(multimediaContentFactory._args));
-    multimediaContentFactory.RegisterType("GenericTrackResult", () => new TracksContent(multimediaContentFactory._args));
-    multimediaContentFactory.RegisterType("GenericLivestreamResult", () => new LivestreamsContent(multimediaContentFactory._args));
+    multimediaContentFactory.RegisterType("GenericVideoResult", () => new GenericVideoResult(multimediaContentFactory._args));
+    multimediaContentFactory.RegisterType("GenericTrackResult", () => new GenericTrackResult(multimediaContentFactory._args));
+    multimediaContentFactory.RegisterType("GenericLivestreamResult", () => new GenericLivestreamResult(multimediaContentFactory._args));
     return multimediaContentFactory;
 });
 
