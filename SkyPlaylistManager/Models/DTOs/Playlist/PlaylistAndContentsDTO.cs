@@ -6,6 +6,7 @@ namespace SkyPlaylistManager.Models.DTOs.Playlist;
 
 public class PlaylistAndContentsDto
 {
+    
     [BsonId]
     [BsonRepresentation(BsonType.ObjectId)]
     public string? Id { get; set; }
@@ -31,4 +32,5 @@ public class PlaylistAndContentsDto
     
     [BsonElement("sharedWith")]
     public List<UserBasicDetailsDto>? SharedWith { get; set; }
+    
 }

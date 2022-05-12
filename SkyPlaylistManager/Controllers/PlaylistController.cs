@@ -55,13 +55,13 @@ namespace SkyPlaylistManager.Controllers
            
             try
             {
-                string type = (string) request["interface"];
+                string? type = (string?) request["interface"];
 
                 _multimediaContentFactory._args = request;
                 genericResult = _multimediaContentFactory[type];
                 await _multimediaContentsService.CreateMultimediaContent(genericResult);
 
-                string playlistId = (string)request["playlistId"];
+                string? playlistId = (string?) request["playlistId"];
                 ObjectId createdMultimediaContentId = ObjectId.Parse(genericResult.Id);
 
                 await _playListsService.InsertMultimediaContentInPlaylist(playlistId, createdMultimediaContentId);

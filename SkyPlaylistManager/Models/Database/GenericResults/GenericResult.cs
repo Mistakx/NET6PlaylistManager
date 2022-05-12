@@ -12,23 +12,26 @@ namespace SkyPlaylistManager.Models.Database.GenericResults
         [BsonRepresentation(BsonType.ObjectId)]
         public string? Id { get; set; }
 
-        [BsonElement("id")] public string? PlaftormId { get; set; }
+        [BsonElement("id")] private string? PlatformId { get; set; }
 
-        [BsonElement("titCle")] public string? Title { get; set; }
+        [BsonElement("title")] private string? Title { get; set; }
 
-        [BsonElement("thumbnailUrl")] public string? ThumbnailUrl { get; set; }
+        [BsonElement("thumbnailUrl")] private string? ThumbnailUrl { get; set; }
 
-        [BsonElement("creator")] public string? Creator { get; set; }
+        [BsonElement("creator")] private string? Creator { get; set; }
 
-        // [BsonElement("playerFactory")] public Object? PlayerFactory { get; set; }
+        [BsonElement("playerFactoryName")] private string? PlayerFactoryName { get; set; }
+        
+        [BsonElement("platformPlayerUrl")] private string? PlatformPlayerUrl { get; set; }
 
         protected GenericResult(JsonObject request)
         {
-            this.PlaftormId = (string?) request["id"];
+            this.PlatformId = (string?) request["id"];
             this.Title = (string?) request["title"];
             this.ThumbnailUrl = (string?) request["thumbnailUrl"];
             this.Creator = (string?) request["creator"];
-            // this.PlayerFactory = request["playerFactory"];
+            this.PlayerFactoryName = (string?) request["playerFactoryName"];
+            this.PlatformPlayerUrl = (string?) request["platformPlayerUrl"];
         }
         
     }

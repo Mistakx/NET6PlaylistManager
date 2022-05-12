@@ -4,19 +4,19 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using SkyPlaylistManager.Models.Database.GenericResults;
 
-namespace SkyPlaylistManager.Models.Database
+namespace SkyPlaylistManager.Models.Database.GenericResults
 {
  
     public class GenericTrackResult : GenericResult
     {
         
-        [BsonElement("interface")] public string? Interface { get; set; }
-        [BsonElement("albumName")] public string? AlbumName { get; set; }
+        [BsonElement("interface")] private string? Interface { get; set; }
+        [BsonElement("albumName")] private string? AlbumName { get; set; }
 
         public GenericTrackResult(JsonObject request): base(request)
         {
             this.Interface = "GenericTrackResult";
-            this.AlbumName = (string?)request["albumName"];
+            this.AlbumName = (string?) request["albumName"];
         }
         
     }
