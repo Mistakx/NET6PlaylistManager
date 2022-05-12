@@ -10,6 +10,7 @@ namespace SkyPlaylistManager.Models.DTOs
     {
         public string Title { get; set; } = null!;
         public string Visibility { get; set; } = null!;
+        public string Description { get; set; } = null!;
     }
 
 
@@ -69,5 +70,53 @@ namespace SkyPlaylistManager.Models.DTOs
 
         [BsonElement("sharedWith")]
         public List<UserBasicDetailsDto>? SharedWith { get; set; }
+    }
+    
+    public class EditTitleDTO
+    {
+        [BsonId]
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string? Id { get; set; }
+
+        public string NewTitle { get; set; } = null!;
+    }
+
+    public class EditDescriptionDTO
+    {
+        [BsonId]
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string? Id { get; set; }
+
+        public string NewDescription { get; set; } = null!;
+    }
+
+    public class EditVisibilityDTO
+    {
+        [BsonId]
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string? Id { get; set; }
+
+        public string NewVisibility { get; set; } = null!;
+    }
+
+    public class DeletePlaylistDTO
+    {
+        [BsonId]
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string? Id { get; set; }
+    }
+
+    public class PlaylistShareDTO
+    {
+       
+        public string? PlaylistID { get; set; }
+       
+        public string? UserID { get; set; }
+    }
+
+    public class DeletePlaylistContentDTO
+    {
+        public string? PlaylistID { get; set; }
+        public string? MultimediaContentID { get; set; }
     }
 }

@@ -16,13 +16,15 @@ namespace SkyPlaylistManager.Controllers
     public class PlaylistController : Controller
     {
         private readonly PlaylistsService _playListsService;
+        private readonly UsersService _usersService;
         private readonly MultimediaContentsService _multimediaContentsService;
         private readonly MultimediaContentFactory _multimediaContentFactory;
 
-        public PlaylistController(PlaylistsService playlistsService, MultimediaContentsService multimediaContentsService, 
+        public PlaylistController(PlaylistsService playlistsService,UsersService usersService, MultimediaContentsService multimediaContentsService, 
             MultimediaContentFactory multimediaContentFactory)
         {
             _playListsService = playlistsService;
+            _usersService = usersService;
             _multimediaContentsService = multimediaContentsService;
             _multimediaContentFactory = multimediaContentFactory;
         }
@@ -111,6 +113,145 @@ namespace SkyPlaylistManager.Controllers
                     Console.WriteLine(ex);
                     return BadRequest("Ocorreu um erro na criação da playlist.");
                 }
+        }
+        
+        [HttpPost("editTitle")]
+        public async Task<IActionResult> EditTitle(EditTitleDTO title)
+        {
+            var foundPlaylist = await _playListsService.GetPlaylistById(title.Id);
+
+            if (foundPlaylist == null)
+            {
+                return BadRequest(new { message = "O id da playlist que introduziu não existe." });
+            }
+            else
+            {
+                await _playListsService.UpdateTitle(title.Id, title.NewTitle);
+
+                return Ok("O título da playlist foi atualizado com sucesso.");
+            }
+        }
+        
+        [HttpPost("editDescription")]
+        public async Task<IActionResult> EditDescription(EditDescriptionDTO description)
+        {
+            var foundPlaylist = await _playListsService.GetPlaylistById(description.Id);
+
+            if (foundPlaylist == null)
+            {
+                return BadRequest(new { message = "O id da playlist que introduziu não existe." });
+            }
+            else
+            {
+                await _playListsService.UpdateDescription(description.Id, description.NewDescription);
+                return Ok("A descrição da playlist foi atualizada com sucesso.");
+            }
+        }
+        
+        [HttpPost("editVisibility")]
+        public async Task<IActionResult> EditVisibility(EditVisibilityDTO visibility)
+        {
+            var foundPlaylist = await _playListsService.GetPlaylistById(visibility.Id);
+
+            if (foundPlaylist == null)
+            {
+                return BadRequest(new { message = "O id da playlist que introduziu não existe." });
+            }
+            else
+            {
+                await _playListsService.UpdateVisibility(visibility.Id, visibility.NewVisibility);
+                return Ok("A visibilidade da playlist foi atualizada com sucesso.");
+            }
+        }
+        
+        [HttpPost("deletePlaylist")]
+        public async Task<IActionResult> DeletePlaylist(DeletePlaylistDTO playlist)
+        {
+            var foundPlaylist = await _playListsService.GetPlaylistById(playlist.Id);
+            
+
+            if (foundPlaylist == null)
+            {
+                return BadRequest(new { message = "O id da playlist que introduziu não existe." });
+            }
+            else
+            {
+                string Owner = foundPlaylist.Owner;
+                ObjectId id = ObjectId.Parse(playlist.Id);
+                
+                await _playListsService.DeletePlaylist(playlist.Id);
+                await _usersService.DeleteUserPlaylist(Owner, id);
+
+                return Ok("A playlist selecionada foi removida.");
+            }
+        }
+        
+        [HttpPost("removeShare")]
+        public async Task<IActionResult> RemoveShare(PlaylistShareDTO playlist)
+        {
+            var foundPlaylist = await _playListsService.GetPlaylistById(playlist.PlaylistID);
+            var foundUser = await _usersService.GetUserById(playlist.UserID);
+
+            if (foundPlaylist == null)
+            {
+                return BadRequest(new { message = "O id da playlist que introduziu não existe." });
+            }
+            else
+            {
+                if (foundUser == null)
+                {
+                    return BadRequest(new { message = "O id do utilizador que introduziu não existe." });
+                }
+                else
+                {
+                    try
+                    {
+                        await _playListsService.DeleteShare(playlist.PlaylistID, new ObjectId(playlist.UserID));
+                        return Ok("O utilizador escolhido foi removido.");
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine(e);
+                        return NotFound();
+                    }
+
+                }
+            }
+        }
+        
+        [HttpPost("removeMultimediaContent")]
+        public async Task<IActionResult> DeleteMultimediaContent(DeletePlaylistContentDTO multimediaContent)
+        {
+            var foundPlaylist = await _playListsService.GetPlaylistById(multimediaContent.PlaylistID);
+
+
+
+            //var foundMultimediaContent = await _multimediaContentsService.GetMultimediContentById(multimediaContent.MultimediaContentID);
+
+            if (foundPlaylist == null)
+            {
+                return BadRequest(new { message = "O id da playlist que introduziu não existe." });
+            }
+            else
+            {
+                //if (foundMultimediaContent == null)
+                //{
+                //    return BadRequest(new { message = "O multimediaContent que introduziu não existe." });
+                //}
+                //else
+                //{
+                try
+                {
+                    await _playListsService.DeleteMultimediaContentInPlaylist(multimediaContent.PlaylistID, new ObjectId(multimediaContent.MultimediaContentID));
+                    return Ok("O multimediaContent escolhido foi removido.");
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                    return NotFound();
+                }
+                //}
+            }
         }
 
 
