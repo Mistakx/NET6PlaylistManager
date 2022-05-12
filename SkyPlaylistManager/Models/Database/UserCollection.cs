@@ -14,6 +14,8 @@ namespace SkyPlaylistManager.Models.Database
 
         [BsonElement("email")]
         public string Email { get; set; } = null!;
+        [BsonElement("username")]
+        public string Username { get; set; }= null!;
 
         [BsonElement("password")]
         public string Password { get; set; } = null!;
@@ -26,6 +28,8 @@ namespace SkyPlaylistManager.Models.Database
 
         [BsonElement("userPlaylists")]
         public List<ObjectId>? UserPlaylists { get; set; }
+        [BsonElement("favorites")]
+        public List<ObjectId>? Favorites { get; set; }
 
 
 
@@ -34,8 +38,10 @@ namespace SkyPlaylistManager.Models.Database
             Email = newUser.Email;
             Password = BCrypt.Net.BCrypt.HashPassword(newUser.Password);
             Name = newUser.Name;
+            Username = newUser.Username;
             ProfilePhotoPath = "Path to default user profile photo"; // TODO Change default profile path
             UserPlaylists = new List<ObjectId>();
+            Favorites = new List<ObjectId>();
         }
     }
 }

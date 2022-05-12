@@ -32,6 +32,8 @@ namespace SkyPlaylistManager.Models.Database
 
         [BsonElement("contents")]
         public List<ObjectId>? Contents { get; set; }
+        [BsonElement("description")]
+        public string Description { get; set; } = null!;
 
 
         public PlaylistCollection(NewPlaylistDto newPlaylist)
@@ -39,6 +41,7 @@ namespace SkyPlaylistManager.Models.Database
             Title = newPlaylist.Title;
             CreationDate = DateTime.Now;
             Visibility = newPlaylist.Visibility;
+            Description = newPlaylist.Description;
             Owner = "6261707eff67ad3d4f51d38b";  // TODO: Change to session user ID
             SharedWith = new List<ObjectId>();
             Contents = new List<ObjectId>();

@@ -28,7 +28,7 @@ namespace SkyPlaylistManager.Services
         }
 
 
-        public async Task<BsonDocument> GetUserDetailsAndPlaylists(string userId) // TODO: está a retornar apenas uma playlist
+        public async Task<List<BsonDocument>> GetUserDetailsAndPlaylists(string userId) // TODO: está a retornar apenas uma playlist
         {
 
             var filter = Builders<UserCollection>.Filter.Eq(u => u.Id, userId);
@@ -38,14 +38,48 @@ namespace SkyPlaylistManager.Services
                 .Project(Builders<BsonDocument>.Projection.Exclude("password"))
                 .Project(Builders<BsonDocument>.Projection.Exclude("userPlaylists.owner")
                     .Exclude("userPlaylists.sharedWith")
-                    .Exclude("userPlaylists.sharedWith")
                     .Exclude("userPlaylists.contents"));
 
-            var result = await query.FirstOrDefaultAsync();
+            //var result = await query.FirstOrDefaultAsync();
+            List<BsonDocument> result = await query.ToListAsync();
 
             return result;
         }
+        
+        public async Task<List<BsonDocument>> GetUserPlaylists(string userId)
+        {
+           
+            var filter = Builders<UserCollection>.Filter.Eq(u => u.Id, userId);
+            var query = _usersCollection.Aggregate().Match(filter)
+                .Lookup("Playlists", "userPlaylists", "_id", "userPlaylists")
 
+                .Project(Builders<BsonDocument>.Projection.Exclude("password"))
+                .Project(Builders<BsonDocument>.Projection.Exclude("userPlaylists.owner")
+                    .Exclude("userPlaylists.sharedWith")
+                    .Exclude("userPlaylists.contents"));
+
+            List<BsonDocument> result = await query.ToListAsync();
+
+            return result;
+        }
+        
+        public async Task<List<BsonDocument>> GetUserNamePlaylists(string username)
+        {
+
+            var filter = Builders<UserCollection>.Filter.Eq(u => u.Username, username);
+            var query = _usersCollection.Aggregate().Match(filter)
+                .Lookup("Playlists", "userPlaylists", "_id", "userPlaylists")
+
+                .Project(Builders<BsonDocument>.Projection.Exclude("password"))
+                .Project(Builders<BsonDocument>.Projection.Exclude("userPlaylists.owner")
+                    .Exclude("userPlaylists.sharedWith")
+                    .Exclude("userPlaylists.sharedWith")
+                    .Exclude("userPlaylists.contents"));
+
+            List<BsonDocument> result = await query.ToListAsync();
+
+            return result;
+        }
 
         public async Task<BsonDocument> GetUserBasicDetails(string userId)
         {
@@ -55,11 +89,7 @@ namespace SkyPlaylistManager.Services
             var result = await _usersCollection.Find(filter).Project(projection).FirstOrDefaultAsync();
             return result;
         }
-
-
-      
-
-
+        
 
         public async Task<List<UserCollection>> GetAllUsers()
         {
@@ -97,13 +127,38 @@ namespace SkyPlaylistManager.Services
 
             await _usersCollection.UpdateOneAsync(filter, update);
         }
+        
+        public async Task UpdatePassword(string userID, string newPassword)
+        {
+            var filter = Builders<UserCollection>.Filter.Eq(p => p.Id, userID);
+            var update = Builders<UserCollection>.Update.Set("password", newPassword);
 
+            await _usersCollection.UpdateOneAsync(filter, update);
+        }
+        
+        public async Task UpdateEmail(string userID, string newEmail)
+        {
+            var filter = Builders<UserCollection>.Filter.Eq(p => p.Id, userID);
+            var update = Builders<UserCollection>.Update.Set("email", newEmail);
 
-      
-            
+            await _usersCollection.UpdateOneAsync(filter, update);
+        }
+        
+        public async Task UpdateName(string userID, string newName)
+        {
+            var filter = Builders<UserCollection>.Filter.Eq(p =>p.Id, userID);
+            var updated = Builders<UserCollection>.Update.Set("name", newName);
 
+            await _usersCollection.UpdateOneAsync(filter, updated);
+        }
+        
+        public async Task DeleteUserPlaylist(string userID, ObjectId playlist)
+        {
+            var filter = Builders<UserCollection>.Filter.Eq(u=>u.Id, userID);
+            var update = Builders<UserCollection>.Update.Pull("userPlaylists", playlist);
 
-
-
+            await _usersCollection.UpdateOneAsync(filter, update);
+        }
+        
     }
 }

@@ -9,6 +9,7 @@ namespace SkyPlaylistManager.Services
     public class PlaylistsService
     {
         private readonly IMongoCollection<PlaylistCollection> _playListsCollection;
+        private readonly IMongoCollection<UserCollection> _usersCollection;
 
 
         public PlaylistsService(IOptions<DatabaseSettings> SkyPlaylistManagerDatabaseSettings)
@@ -20,6 +21,7 @@ namespace SkyPlaylistManager.Services
                 SkyPlaylistManagerDatabaseSettings.Value.DatabaseName);
 
             _playListsCollection = mongoDatabase.GetCollection<PlaylistCollection>(("Playlists"));
+            _usersCollection = mongoDatabase.GetCollection<UserCollection>(("Users"));
         }
 
 
@@ -50,9 +52,7 @@ namespace SkyPlaylistManager.Services
 
             return result;
         }
-
-
-
+        
         public async Task<List<PlaylistCollection>> GetAllPlaylists() =>
             await _playListsCollection.Find(_ => true).ToListAsync();
 
@@ -60,7 +60,14 @@ namespace SkyPlaylistManager.Services
         public async Task CreatePlaylist(PlaylistCollection newPlaylist) =>
             await _playListsCollection.InsertOneAsync(newPlaylist);
 
+        public async Task InsertUserPlaylist(string userID, ObjectId playlistID)
+        {
+            var filter = Builders<UserCollection>.Filter.Eq(u => u.Id, userID);
+            var update = Builders<UserCollection>.Update.Push("userPlaylists", playlistID);
 
+            await _usersCollection.UpdateOneAsync(filter, update);
+        }
+        
         public async Task InsertUserInSharedWithArray(string playlistID, ObjectId userID)
         {
             var filter = Builders<PlaylistCollection>.Filter.Eq(p => p.Id, playlistID);
@@ -76,7 +83,57 @@ namespace SkyPlaylistManager.Services
 
             await _playListsCollection.UpdateOneAsync(filter, update);
         }
+    
+        public async Task<PlaylistCollection?> GetPlaylistById(string playlistId) =>
+            await _playListsCollection.Find(p => p.Id == playlistId).FirstOrDefaultAsync();
+        
+        public async Task UpdateTitle(string playlistID, string newTitle)
+        {
+            var filter = Builders<PlaylistCollection>.Filter.Eq(p => p.Id, playlistID);
+            var updated = Builders<PlaylistCollection>.Update.Set("title", newTitle);
 
+            await _playListsCollection.UpdateOneAsync(filter, updated);
+        }
+        
+        public async Task UpdateDescription(string playlistID, string newDescription)
+        {
+            var filter = Builders<PlaylistCollection>.Filter.Eq(p => p.Id, playlistID);
+            var updated = Builders<PlaylistCollection>.Update.Set("description", newDescription);
+
+            await _playListsCollection.UpdateOneAsync(filter, updated);
+        }
+        
+        public async Task UpdateVisibility(string playlistID, string newVisibility)
+        {
+            var filter = Builders<PlaylistCollection>.Filter.Eq(p => p.Id,playlistID);
+            var updated = Builders<PlaylistCollection>.Update.Set("visibility", newVisibility);
+
+            await _playListsCollection.UpdateOneAsync(filter, updated);
+        }
+        
+        public async Task DeletePlaylist(string playlistID)
+        {
+            var deleteFilter = Builders<PlaylistCollection>.Filter.Eq(p => p.Id, playlistID);
+
+            await _playListsCollection.DeleteOneAsync(deleteFilter);
+        }
+        
+        public async Task DeleteShare(string playlistID, ObjectId userID)
+        {
+            var deleteFilter = Builders<PlaylistCollection>.Filter.Eq(p => p.Id, playlistID);
+            var update = Builders<PlaylistCollection>.Update.Pull("sharedWith", userID);
+
+            await _playListsCollection.UpdateOneAsync(deleteFilter, update);
+
+        }
+        
+        public async Task DeleteMultimediaContentInPlaylist(string playlistID, ObjectId MultimediaContentID)
+        {
+            var filter = Builders<PlaylistCollection>.Filter.Eq(p => p.Id, playlistID);
+            var update = Builders<PlaylistCollection>.Update.Pull("contents", MultimediaContentID);
+
+            await _playListsCollection.UpdateOneAsync(filter, update);
+        }
 
 
     }

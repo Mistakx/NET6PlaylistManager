@@ -59,6 +59,28 @@ public class UserController : ControllerBase
         }
     }
 
+    [HttpGet("{username}")]
+    public async Task<List<UserProfileDto>> UsernamePlaylists(string username)
+    {
+        var usernamePlaylists = await _usersService.GetUserNamePlaylists(username);
+        var deserializedUsernamePlaylists = new List<UserProfileDto>();
+
+        try
+        {
+            foreach (var user in usernamePlaylists)
+            {
+                var model = BsonSerializer.Deserialize<UserProfileDto>(user);
+                deserializedUsernamePlaylists.Add(model);
+            }
+
+            return deserializedUsernamePlaylists;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            return null;
+        }
+    }
 
 
     [HttpGet("Profile/{userId:length(24)}")]
@@ -97,9 +119,7 @@ public class UserController : ControllerBase
         }
     }
 
-
-
-
+    
     [HttpPost]
     [Route("editProfilePhoto")]
     public async Task<IActionResult> EditProfilePhoto(IFormFile file)
@@ -218,6 +238,65 @@ public class UserController : ControllerBase
 
 
     }
+    
+    [HttpPost("editPassword")]
+    public async Task<IActionResult> EditPassword(EditPasswordDTO password)
+    {
+        var foundUser = await _usersService.GetUserById(password.Id);
+
+        if (foundUser == null)
+        {
+            return BadRequest(new { message = "O ID que introduziu não existe." });
+        }
+        else
+        {
+            if (!BCrypt.Net.BCrypt.Verify(password.OldPassword, foundUser.Password))
+            {
+                return BadRequest(new { message = "A password atual é inválida." });
+            }
+            else
+            {
+                var EncryptedPassword = BCrypt.Net.BCrypt.HashPassword(password.NewPassword);
+                await _usersService.UpdatePassword(password.Id, EncryptedPassword);
+                return Ok("A password foi atualizada com sucesso.");
+            }
+        }
+    }
+    
+    [HttpPost("editEmail")]
+    public async Task<IActionResult> EditEmail(EditEmailDTO email)
+    {
+        var foundUser = await _usersService.GetUserById(email.Id);
+
+        if(foundUser == null)
+        {
+            return BadRequest(new { message = "O email que introduziu não existe." });
+        }
+        else
+        {
+            await _usersService.UpdateEmail(email.Id, email.NewEmail);
+            return Ok("O email foi atualizado com sucesso.");
+        }
+    }
+    
+    [HttpPost("editName")]
+    public async Task<IActionResult> EditName(EditNameDTO name)
+    {
+        var foundUser = await _usersService.GetUserById(name.Id);
+
+        if (foundUser == null)
+        {
+            return BadRequest(new { message = "O id que introduziu não existe." });
+        }
+        else
+        {
+            await _usersService.UpdateName(name.Id, name.NewName);
+
+            return Ok("O nome foi atualizado com sucesso.");
+        }
+    }
+    
+    
 
 
 
