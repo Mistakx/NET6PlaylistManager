@@ -19,8 +19,8 @@ namespace SkyPlaylistManager.Models.DTOs.User {
         [BsonElement("username")] 
         public string? Username { get; set; }
 
-        [BsonElement("profilePhotoPath")]
-        public string? ProfilePhotoPath { get; set; }
+        [BsonElement("profilePhotoUrl")]
+        public string? ProfilePhotoUrl { get; set; }
         
     }
 

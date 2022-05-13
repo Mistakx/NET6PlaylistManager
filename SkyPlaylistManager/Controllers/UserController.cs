@@ -37,16 +37,16 @@ public class UserController : ControllerBase
 
         
     [HttpGet("Playlists/{userId:length(24)}")]
-    public async Task<List<PlaylistBasicDetailsDto>?> UserPlaylists(string userId)
+    public async Task<List<PlaylistInformationDto>?> UserPlaylists(string userId)
     {
         var userPlaylists = await _playlistsService.GetPlaylistsByOwner(userId);
-        var deserializedPlaylists = new List<PlaylistBasicDetailsDto>();
+        var deserializedPlaylists = new List<PlaylistInformationDto>();
 
         try
         {
             foreach (var playlist in userPlaylists)
             {
-                var deserializedPlaylist = BsonSerializer.Deserialize<PlaylistBasicDetailsDto>(playlist);
+                var deserializedPlaylist = BsonSerializer.Deserialize<PlaylistInformationDto>(playlist);
                 deserializedPlaylists.Add(deserializedPlaylist);
 
             }

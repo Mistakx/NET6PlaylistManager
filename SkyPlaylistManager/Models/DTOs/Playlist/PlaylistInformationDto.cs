@@ -1,9 +1,10 @@
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using SkyPlaylistManager.Models.DTOs.User;
 
 namespace SkyPlaylistManager.Models.DTOs.Playlist;
 
-public class PlaylistBasicDetailsDto
+public class PlaylistInformationDto
 {
     [BsonId]
     [BsonRepresentation(BsonType.ObjectId)]
@@ -21,5 +22,11 @@ public class PlaylistBasicDetailsDto
 
     [BsonElement("description")] 
     public string? Description { get; set; }
+    
+    [BsonElement("thumbnailUrl")] 
+    public string? ThumbnailUrl { get; set; }
+    
+    [BsonElement("owner")]
+    public UserBasicDetailsDto? Owner { get; set; } 
 }
 

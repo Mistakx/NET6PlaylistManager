@@ -34,13 +34,13 @@ namespace SkyPlaylistManager.Controllers
 
 
         [HttpGet("{playlistId:length(24)}")] // TODO: Verificar se a playlist é privada. Só retornar a playlist caso seja pública ou partilhada com o user da sessão.
-        public async Task<PlaylistAndContentsDto?> PlaylistContent(string playlistId)
+        public async Task<PlaylistInformationWithContentsDto?> PlaylistContent(string playlistId)
         {
             var playlist = await _playListsService.GetPlaylistContents(playlistId);
             
             try
             {
-                var deserializedPlaylist = BsonSerializer.Deserialize<PlaylistAndContentsDto>(playlist);
+                var deserializedPlaylist = BsonSerializer.Deserialize<PlaylistInformationWithContentsDto>(playlist);
                 return deserializedPlaylist;
             }
             catch (Exception ex)
