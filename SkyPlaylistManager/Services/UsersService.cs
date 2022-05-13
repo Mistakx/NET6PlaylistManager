@@ -28,7 +28,7 @@ namespace SkyPlaylistManager.Services
         }
 
 
-        public async Task<List<BsonDocument>> GetUserDetailsAndPlaylists(string userId) // TODO: está a retornar apenas uma playlist
+        public async Task<BsonDocument> GetUserDetailsAndPlaylists(string userId) // TODO: está a retornar apenas uma playlist
         {
 
             var filter = Builders<UserCollection>.Filter.Eq(u => u.Id, userId);
@@ -43,7 +43,7 @@ namespace SkyPlaylistManager.Services
             //var result = await query.FirstOrDefaultAsync();
             List<BsonDocument> result = await query.ToListAsync();
 
-            return result;
+            return result[0];
         }
         
         public async Task<List<BsonDocument>> GetUserPlaylists(string userId)

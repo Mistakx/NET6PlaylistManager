@@ -32,6 +32,7 @@ namespace SkyPlaylistManager.Models.Database
 
         [BsonElement("contents")]
         public List<ObjectId>? Contents { get; set; }
+        
         [BsonElement("description")]
         public string Description { get; set; } = null!;
 

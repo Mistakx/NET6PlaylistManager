@@ -1,25 +1,9 @@
-﻿using System.Text.Json.Serialization;
-using MongoDB.Bson;
+﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
-using SkyPlaylistManager.Models.Database;
 using SkyPlaylistManager.Models.DTOs.User;
 
 namespace SkyPlaylistManager.Models.DTOs
 {
-    public class NewPlaylistDto
-    {
-        public string Title { get; set; } = null!;
-        public string Visibility { get; set; } = null!;
-        public string Description { get; set; } = null!;
-    }
-
-
-    public class PlaylistShareDto
-    {
-        public string PlaylistID { get; set; } = null!;
-        public string UserID { get; set; } = null!;
-    }
-
 
     public class PlaylistBasicDetailsDTO
     {
@@ -66,7 +50,7 @@ namespace SkyPlaylistManager.Models.DTOs
         public DateTime? CreationDate { get; set; }
 
         [BsonElement("contents")]
-        public List<GenericMultimediaContentDto>? Contents { get; set; }
+        public List<UnknownGenericResultDto>? Contents { get; set; }
 
         [BsonElement("sharedWith")]
         public List<UserBasicDetailsDto>? SharedWith { get; set; }
