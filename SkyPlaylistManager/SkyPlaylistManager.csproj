@@ -25,6 +25,37 @@
   <ItemGroup>
     <!-- Don't publish the SPA source files, but do show them in the project files list -->
     <Content Remove="$(SpaRoot)**" />
+    <Content Include="NET6PlaylistManager\.git\config" />
+    <Content Include="NET6PlaylistManager\.git\description" />
+    <Content Include="NET6PlaylistManager\.git\HEAD" />
+    <Content Include="NET6PlaylistManager\.git\hooks\applypatch-msg.sample" />
+    <Content Include="NET6PlaylistManager\.git\hooks\commit-msg.sample" />
+    <Content Include="NET6PlaylistManager\.git\hooks\fsmonitor-watchman.sample" />
+    <Content Include="NET6PlaylistManager\.git\hooks\post-update.sample" />
+    <Content Include="NET6PlaylistManager\.git\hooks\pre-applypatch.sample" />
+    <Content Include="NET6PlaylistManager\.git\hooks\pre-commit.sample" />
+    <Content Include="NET6PlaylistManager\.git\hooks\pre-merge-commit.sample" />
+    <Content Include="NET6PlaylistManager\.git\hooks\pre-push.sample" />
+    <Content Include="NET6PlaylistManager\.git\hooks\pre-rebase.sample" />
+    <Content Include="NET6PlaylistManager\.git\hooks\pre-receive.sample" />
+    <Content Include="NET6PlaylistManager\.git\hooks\prepare-commit-msg.sample" />
+    <Content Include="NET6PlaylistManager\.git\hooks\push-to-checkout.sample" />
+    <Content Include="NET6PlaylistManager\.git\hooks\update.sample" />
+    <Content Include="NET6PlaylistManager\.git\index" />
+    <Content Include="NET6PlaylistManager\.git\info\exclude" />
+    <Content Include="NET6PlaylistManager\.git\logs\HEAD" />
+    <Content Include="NET6PlaylistManager\.git\logs\refs\heads\master" />
+    <Content Include="NET6PlaylistManager\.git\logs\refs\remotes\origin\HEAD" />
+    <Content Include="NET6PlaylistManager\.git\objects\pack\pack-99a6dfa410588399706a005149ef2df18f26e625.idx" />
+    <Content Include="NET6PlaylistManager\.git\objects\pack\pack-99a6dfa410588399706a005149ef2df18f26e625.pack" />
+    <Content Include="NET6PlaylistManager\.git\packed-refs" />
+    <Content Include="NET6PlaylistManager\.git\refs\heads\master" />
+    <Content Include="NET6PlaylistManager\.git\refs\remotes\origin\HEAD" />
+    <Content Include="NET6PlaylistManager\.vs\SkyPlaylistManager\DesignTimeBuild\.dtbcache.v2" />
+    <Content Include="NET6PlaylistManager\.vs\SkyPlaylistManager\v17\.futdcache.v1" />
+    <Content Include="NET6PlaylistManager\.vs\SkyPlaylistManager\v17\.suo" />
+    <Content Include="NET6PlaylistManager\SkyPlaylistManager.sln" />
+    <Content Include="NET6PlaylistManager\SkyPlaylistManager\SkyPlaylistManager.csproj" />
     <Content Include="NET6React\.git\config" />
     <Content Include="NET6React\.git\description" />
     <Content Include="NET6React\.git\HEAD" />
@@ -46,6 +77,8 @@
     <Content Include="NET6React\.git\logs\HEAD" />
     <Content Include="NET6React\.git\logs\refs\heads\master" />
     <Content Include="NET6React\.git\logs\refs\remotes\origin\HEAD" />
+    <Content Include="NET6React\.git\objects\pack\pack-4c1e606afa1e7ca3a2eaab20ab663a2ade4864d6.idx" />
+    <Content Include="NET6React\.git\objects\pack\pack-4c1e606afa1e7ca3a2eaab20ab663a2ade4864d6.pack" />
     <Content Include="NET6React\.git\objects\pack\pack-7b531af66c6c09d7b1b6c3e075b513530ae33ce4.idx" />
     <Content Include="NET6React\.git\objects\pack\pack-7b531af66c6c09d7b1b6c3e075b513530ae33ce4.pack" />
     <Content Include="NET6React\.git\objects\pack\pack-88fc6df6837353b05720f6c89f5f591592ed3511.idx" />
@@ -61,6 +94,8 @@
     <Content Include="NET6React\tsconfig.json" />
     <None Remove="$(SpaRoot)**" />
     <None Include="$(SpaRoot)**" Exclude="$(SpaRoot)node_modules\**" />
+    <None Remove="NET6PlaylistManager\**" />
+    <Content Remove="NET6PlaylistManager\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -179,6 +214,14 @@
     <TypeScriptCompile Include="NET6React\src\stores\SearchedListStore.ts" />
     <TypeScriptCompile Include="NET6React\src\stores\SelectedSearchStore.ts" />
     <TypeScriptCompile Include="NET6React\src\utils\IsEmptyObject.ts" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="NET6PlaylistManager\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Remove="NET6PlaylistManager\**" />
   </ItemGroup>
 
   <Target Name="DebugEnsureNodeEnv" BeforeTargets="Build" Condition=" '$(Configuration)' == 'Debug' And !Exists('$(SpaRoot)node_modules') ">
