@@ -131,9 +131,9 @@ public class UserController : ControllerBase
        {
            var generatedFileName = _filesManager.InsertInDiretory(file);
            _filesManager.DeleteFromDiretory();
-           await _usersService.UpdateUserProfilePhoto("6261707eff67ad3d4f51d38b", generatedFileName); // TODO: Mudar para o Id da sessão
+           await _usersService.UpdateUserProfilePhoto("6261707eff67ad3d4f51d38b", "User/GetImage/" + generatedFileName); // TODO: Mudar para o Id da sessão
            
-           return Ok("Imagem atualizada.");
+           return Ok("User/GetImage/" + generatedFileName);
        }
        else
        {

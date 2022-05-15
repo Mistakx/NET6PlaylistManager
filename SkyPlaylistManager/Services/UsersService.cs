@@ -113,7 +113,7 @@ namespace SkyPlaylistManager.Services
         public async Task<BsonDocument> GetUserProfilePhoto(string userId)
         {
             var filter = Builders<UserCollection>.Filter.Eq(u => u.Id, userId);
-            var projection = Builders<UserCollection>.Projection.Include("profilePhotoPath");
+            var projection = Builders<UserCollection>.Projection.Include("profilePhotoUrl");
 
             var result =await _usersCollection.Find(filter).Project(projection).FirstOrDefaultAsync();
             return result;
@@ -123,7 +123,7 @@ namespace SkyPlaylistManager.Services
         public async Task UpdateUserProfilePhoto(string userId, string photoPath)
         {
             var filter = Builders<UserCollection>.Filter.Eq(u => u.Id, userId);
-            var update = Builders<UserCollection>.Update.Set("profilePhotoPath", photoPath);
+            var update = Builders<UserCollection>.Update.Set("profilePhotoUrl", photoPath);
 
             await _usersCollection.UpdateOneAsync(filter, update);
         }

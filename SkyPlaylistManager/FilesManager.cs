@@ -60,8 +60,9 @@ namespace SkyPlaylistManager
             try
             {
                 var oldPhoto = await _usersService.GetUserProfilePhoto("6261707eff67ad3d4f51d38b"); // TODO: Mudar para o Id da sessão
-                string oldPhotopath = Path.Combine(Directory.GetCurrentDirectory(), "Images", (string)oldPhoto["profilePhotoPath"]);
-                FileInfo oldPhotoFileInfo = new FileInfo(oldPhotopath);
+                string oldUserPhotoPath = Path.Combine(Directory.GetCurrentDirectory(), "Images/", (string)oldPhoto["profilePhotoUrl"]);
+                oldUserPhotoPath = oldUserPhotoPath.Replace("User/GetImage/", "");
+                FileInfo oldPhotoFileInfo = new FileInfo(oldUserPhotoPath);
                 oldPhotoFileInfo.Delete();
             }
             catch (Exception ex)
