@@ -1,53 +1,51 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
-using SkyPlaylistManager.Models.DTOs;
-using SkyPlaylistManager.Models.DTOs.Playlist;
+using SkyPlaylistManager.Models.DTOs.PlaylistRequests;
+using SkyPlaylistManager.Services;
 
 namespace SkyPlaylistManager.Models.Database
 {
-
-
     public class PlaylistCollection
     {
+        private readonly SessionTokensService sessionTokensService;
+
+        public PlaylistCollection(SessionTokensService sessionTokensService)
+        {
+            this.sessionTokensService = sessionTokensService;
+        }
+
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
         public string? Id { get; set; }
 
-        [BsonElement("title")]
-        public string? Title { get; set; }
+        [BsonElement("title")] public string? Title { get; set; }
 
         [BsonElement("creationDate")]
         [BsonDateTimeOptions(Kind = DateTimeKind.Local)]
         public DateTime? CreationDate { get; set; }
 
-        [BsonElement("visibility")]
-        public string Visibility { get; set; } = null!;
+        [BsonElement("visibility")] public string Visibility { get; set; }
 
         [BsonElement("owner")]
         [BsonRepresentation(BsonType.ObjectId)]
-        public string Owner { get; set; } = null!;
+        public string Owner { get; set; }
 
-        [BsonElement("sharedWith")] 
-        public List<ObjectId>? SharedWith { get; set; }
+        [BsonElement("sharedWith")] public List<ObjectId>? SharedWith { get; set; }
 
-        [BsonElement("contents")]
-        public List<ObjectId>? Contents { get; set; }
-        
-        [BsonElement("description")]
-        public string Description { get; set; } = null!;
+        [BsonElement("contents")] public List<ObjectId>? Contents { get; set; }
+
+        [BsonElement("description")] public string Description { get; set; }
 
 
-        public PlaylistCollection(NewPlaylistDto newPlaylist)
+        public PlaylistCollection(NewPlaylistDto request)
         {
-            Title = newPlaylist.Title;
+            Title = request.Title;
             CreationDate = DateTime.Now;
-            Visibility = newPlaylist.Visibility;
-            Description = newPlaylist.Description;
-            Owner = "6261707eff67ad3d4f51d38b";  // TODO: Change to session user ID
+            Visibility = request.Visibility!;
+            Description = request.Description!;
+            Owner = sessionTokensService.GetUserId(request.SessionToken!);
             SharedWith = new List<ObjectId>();
             Contents = new List<ObjectId>();
         }
-
-       
     }
 }

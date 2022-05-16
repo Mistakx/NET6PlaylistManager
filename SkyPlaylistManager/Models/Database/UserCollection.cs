@@ -1,8 +1,6 @@
-﻿using System.Text.Json.Serialization;
-using MongoDB.Bson;
+﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
-using SkyPlaylistManager.Models.DTOs;
-using SkyPlaylistManager.Models.DTOs.User;
+using SkyPlaylistManager.Models.DTOs.UserRequests;
 
 namespace SkyPlaylistManager.Models.Database
 {

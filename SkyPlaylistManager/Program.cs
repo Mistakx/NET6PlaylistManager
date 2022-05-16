@@ -6,20 +6,20 @@ using SkyPlaylistManager.Models.Database.GenericResults;
 
 var builder = WebApplication.CreateBuilder(args);
 
-//Add services to the container.
+// Add services to the container.
 builder.Services.Configure<DatabaseSettings>(builder.Configuration.GetSection("SkyPlaylistManagerDataBase"));
 
 builder.Services.AddSingleton<UsersService>();
 builder.Services.AddSingleton<PlaylistsService>();
-builder.Services.AddSingleton<MultimediaContentsService>();
+builder.Services.AddSingleton<SessionTokensService>();
+builder.Services.AddSingleton<GeneralizedResultsService>();
 builder.Services.AddSingleton<MultimediaContentFactory>();
 builder.Services.AddSingleton<FilesManager>();
 
-builder.Services.AddScoped<MultimediaContentFactory>(_ =>
-{
-    MultimediaContentFactory multimediaContentFactory = new MultimediaContentFactory();
 
-    //TODO: Registar as restantes plataformas
+builder.Services.AddScoped(_ =>
+{
+    var multimediaContentFactory = new MultimediaContentFactory();
     multimediaContentFactory.RegisterType("GenericVideoResult", () => new GenericVideoResult(multimediaContentFactory._args));
     multimediaContentFactory.RegisterType("GenericTrackResult", () => new GenericTrackResult(multimediaContentFactory._args));
     multimediaContentFactory.RegisterType("GenericLivestreamResult", () => new GenericLivestreamResult(multimediaContentFactory._args));
@@ -58,15 +58,5 @@ app.MapControllerRoute(
     pattern: "{controller}/{action=Index}/{id?}");
 
 app.MapFallbackToFile("index.html");
-
-//app.MapGet("/ProfilePhoto/", (int id) =>
-//{
-//    var filename = "file_example.mp4";
-//    //Build the File Path.
-//    string path = Path.Combine(builder.Environment.ContentRootPath, "Images") + filename;  
-
-//    var filestream = System.IO.File.OpenRead(path);
-//    return Results.File(filestream, contentType: "image");
-//});
 
 app.Run();

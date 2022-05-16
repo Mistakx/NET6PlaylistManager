@@ -2,7 +2,6 @@
 
 namespace SkyPlaylistManager
 {
-
     public interface IFileManager
     {
         bool IsValidImage(IFormFile file);
@@ -25,7 +24,7 @@ namespace SkyPlaylistManager
             FileInfo fileInfo = new FileInfo(file.FileName);
             if (fileInfo.Extension == ".jpg" || fileInfo.Extension == ".png" ||
                 fileInfo.Extension == ".jpeg") return true;
-            
+
             else return false;
         }
 
@@ -34,17 +33,18 @@ namespace SkyPlaylistManager
             try
             {
                 FileInfo fileInfo = new FileInfo(file.FileName);
-           
+
                 if (!Directory.Exists("Images"))
                     Directory.CreateDirectory("Images");
 
                 string generatedFileName = string.Format(@"{0}" + fileInfo.Extension, Guid.NewGuid());
                 string directoryFilePath = Path.Combine("Images", generatedFileName);
-                
+
                 using (var stream = new FileStream(directoryFilePath, FileMode.Create))
                 {
                     file.CopyTo(stream);
                 }
+
                 return generatedFileName;
             }
             catch (Exception ex)
@@ -60,7 +60,8 @@ namespace SkyPlaylistManager
             try
             {
                 var oldPhoto = await _usersService.GetUserProfilePhoto(sessionToken);
-                string oldUserPhotoPath = Path.Combine(Directory.GetCurrentDirectory(), "Images/", (string)oldPhoto["profilePhotoUrl"]);
+                string oldUserPhotoPath = Path.Combine(Directory.GetCurrentDirectory(), "Images/",
+                    (string) oldPhoto["profilePhotoUrl"]);
                 oldUserPhotoPath = oldUserPhotoPath.Replace("User/GetImage/", "");
                 FileInfo oldPhotoFileInfo = new FileInfo(oldUserPhotoPath);
                 oldPhotoFileInfo.Delete();
@@ -70,13 +71,5 @@ namespace SkyPlaylistManager
                 Console.WriteLine(ex);
             }
         }
-
-       
     }
-
-
-
-
-
-
 }

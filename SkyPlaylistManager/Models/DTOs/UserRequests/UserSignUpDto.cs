@@ -1,4 +1,4 @@
-﻿namespace SkyPlaylistManager.Models.DTOs.User {
+﻿namespace SkyPlaylistManager.Models.DTOs.UserRequests {
 
     public class UserSignupDto {
         

@@ -1,6 +1,6 @@
 ﻿using MongoDB.Bson.Serialization.Attributes;
 
-namespace SkyPlaylistManager.Models.DTOs.User {
+namespace SkyPlaylistManager.Models.DTOs.UserRequests {
     
     public class LoginDto {
     

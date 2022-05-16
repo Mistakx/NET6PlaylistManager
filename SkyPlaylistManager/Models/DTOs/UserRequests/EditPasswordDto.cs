@@ -1,7 +1,9 @@
-namespace SkyPlaylistManager.Models.DTOs.User;
+namespace SkyPlaylistManager.Models.DTOs.UserRequests;
+
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
-public class EditPasswordDTO
+
+public class EditPasswordDto
 {
     [BsonId]
     [BsonRepresentation(BsonType.ObjectId)]

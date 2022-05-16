@@ -3,7 +3,7 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace SkyPlaylistManager.Models.DTOs
 {
-    public class UnknownGenericResultDto
+    public class UnknownGeneralizedResultDto
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]

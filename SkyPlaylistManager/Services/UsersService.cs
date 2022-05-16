@@ -1,9 +1,5 @@
-﻿using System.Text.Json;
-using AutoMapper;
-using SkyPlaylistManager.Models;
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
 using MongoDB.Bson;
-using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using SkyPlaylistManager.Models.Database;
 

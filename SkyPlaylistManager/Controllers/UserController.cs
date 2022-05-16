@@ -1,37 +1,40 @@
-﻿using System.Net;
-using AutoMapper;
-using Microsoft.AspNetCore.Mvc;
-using MongoDB.Bson;
+﻿using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson.Serialization;
 using SkyPlaylistManager.Services;
 using SkyPlaylistManager.Models.Database;
-using SkyPlaylistManager.Models.DTOs;
-using SkyPlaylistManager.Models.DTOs.Playlist;
-using SkyPlaylistManager.Models.DTOs.User;
+using SkyPlaylistManager.Models.DTOs.PlaylistRequests;
+using SkyPlaylistManager.Models.DTOs.UserRequests;
 
 namespace SkyPlaylistManager.Controllers;
 
 [ApiController]
-[Route("[controller]")] // "[controller]" will define the route as /User
+[Route("[controller]")]
 public class UserController : ControllerBase
 {
     private readonly UsersService _usersService;
     private readonly PlaylistsService _playlistsService;
     private readonly FilesManager _filesManager;
+    private readonly SessionTokensService _sessionTokensService;
 
-    public UserController(UsersService usersService, PlaylistsService playlistsService, FilesManager filesManager)
+    public UserController(
+        UsersService usersService,
+        PlaylistsService playlistsService,
+        FilesManager filesManager,
+        SessionTokensService sessionTokensService
+    )
     {
         _usersService = usersService;
         _filesManager = filesManager;
         _playlistsService = playlistsService;
+        _sessionTokensService = sessionTokensService;
     }
 
 
     [HttpGet("GetImage/{imageName}")] // https://stackoverflow.com/questions/186062/can-an-asp-net-mvc-controller-return-an-image
-    public async Task<IActionResult> GetImage(string imageName)
+    public Task<IActionResult> GetImage(string imageName)
     {
         var path = Path.Combine(Directory.GetCurrentDirectory(), "Images", imageName);
-        return PhysicalFile(path, "image/jpeg");
+        return Task.FromResult<IActionResult>(PhysicalFile(path, "image/jpeg"));
     }
 
 
@@ -60,16 +63,16 @@ public class UserController : ControllerBase
 
 
     [HttpGet("{username}")]
-    public async Task<List<UserProfileDto>> UsernamePlaylists(string username)
+    public async Task<List<UserCompleteProfileDto>?> UsernamePlaylists(string username)
     {
         var usernamePlaylists = await _usersService.GetUserNamePlaylists(username);
-        var deserializedUsernamePlaylists = new List<UserProfileDto>();
+        var deserializedUsernamePlaylists = new List<UserCompleteProfileDto>();
 
         try
         {
             foreach (var user in usernamePlaylists)
             {
-                var model = BsonSerializer.Deserialize<UserProfileDto>(user);
+                var model = BsonSerializer.Deserialize<UserCompleteProfileDto>(user);
                 deserializedUsernamePlaylists.Add(model);
             }
 
@@ -83,32 +86,32 @@ public class UserController : ControllerBase
     }
 
 
-    [HttpGet("Profile/{userId:length(24)}")]
-    public async Task<UserBasicDetailsDto?> UserProfile(string userId)
+    [HttpGet("Profile/{sessionToken:length(24)}")]
+    public async Task<UserBasicProfileDto?> UserProfile(string sessionToken)
     {
-        var userProfile = await _usersService.GetUserBasicDetails(userId);
+        var userProfile = await _usersService.GetUserBasicDetails(_sessionTokensService.GetUserId(sessionToken));
 
         try
         {
-            var deserializedUserProfile = BsonSerializer.Deserialize<UserBasicDetailsDto>(userProfile);
+            var deserializedUserProfile = BsonSerializer.Deserialize<UserBasicProfileDto>(userProfile);
             return deserializedUserProfile;
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex);
+            Console.WriteLine(ex.StackTrace);
             return null;
         }
     }
 
 
-    [HttpGet("{userId:length(24)}")]
-    public async Task<UserProfileDto?> UserCompleteProfile(string userId)
+    [HttpGet("{sessionToken:length(24)}")]
+    public async Task<UserCompleteProfileDto?> UserCompleteProfile(string sessionToken)
     {
-        var userCompleteProfile = await _usersService.GetUserDetailsAndPlaylists(userId);
+        var userCompleteProfile = await _usersService.GetUserDetailsAndPlaylists(_sessionTokensService.GetUserId(sessionToken));
 
         try
         {
-            var deserializedUserCompleteProfile = BsonSerializer.Deserialize<UserProfileDto>(userCompleteProfile);
+            var deserializedUserCompleteProfile = BsonSerializer.Deserialize<UserCompleteProfileDto>(userCompleteProfile);
             return deserializedUserCompleteProfile;
         }
         catch (Exception ex)
@@ -123,20 +126,13 @@ public class UserController : ControllerBase
     [Route("editProfilePhoto")]
     public async Task<IActionResult> EditProfilePhoto([FromForm] EditProfilePhotoDto request)
     {
-        FileInfo newPhotoFileInfo = new FileInfo(request.UserPhoto!.FileName);
+        if (_filesManager.IsValidImage(request.UserPhoto!)) return BadRequest("Invalid image format.");
 
-        if (_filesManager.IsValidImage(request.UserPhoto))
-        {
-            var generatedFileName = _filesManager.InsertInDirectory(request.UserPhoto);
-            _filesManager.DeleteFromDirectory(request.SessionToken!);
-            await _usersService.UpdateUserProfilePhoto(request.SessionToken!, "User/GetImage/" + generatedFileName);
+        var generatedFileName = _filesManager.InsertInDirectory(request.UserPhoto!);
+        _filesManager.DeleteFromDirectory(request.SessionToken!);
+        await _usersService.UpdateUserProfilePhoto(request.SessionToken!, "User/GetImage/" + generatedFileName);
 
-            return Ok("User/GetImage/" + generatedFileName);
-        }
-        else
-        {
-            return BadRequest("Formato de imagem inválido.");
-        }
+        return Ok("User/GetImage/" + generatedFileName);
     }
 
 
@@ -145,24 +141,18 @@ public class UserController : ControllerBase
     {
         var foundUser = await _usersService.GetUserByEmail(login.Email);
 
-        if (foundUser == null)
+        if (foundUser == null) return BadRequest(new {message = "Email doesn't exist."});
+
+        if (!BCrypt.Net.BCrypt.Verify(login.Password, foundUser.Password))
         {
-            return BadRequest(new {message = "O email que introduziu não existe."});
+            return BadRequest(new {message = "Invalid password."});
         }
 
-        else
-        {
-            if (!BCrypt.Net.BCrypt.Verify(login.Password, foundUser.Password))
-            {
-                return BadRequest(new {message = "A password que introduziu não é válida."});
-            }
+        HttpContext.Session.SetString("Session_user", foundUser.Id!);
+        var session = HttpContext.Session.GetString("Session_user");
+        Console.WriteLine(session);
 
-            HttpContext.Session.SetString("Session_user", foundUser.Id!);
-            var session = HttpContext.Session.GetString("Session_user");
-            Console.WriteLine(session);
-
-            return Ok(session);
-        }
+        return Ok(session);
     }
 
 
@@ -186,67 +176,48 @@ public class UserController : ControllerBase
         catch (Exception ex)
         {
             Console.WriteLine(ex);
-            return BadRequest("Error on user register.");
+            return BadRequest("Error occurred on user register.");
         }
     }
 
 
     [HttpPost("editPassword")]
-    public async Task<IActionResult> EditPassword(EditPasswordDTO password)
+    public async Task<IActionResult> EditPassword(EditPasswordDto password)
     {
-        var foundUser = await _usersService.GetUserById(password.Id);
+        var foundUser = await _usersService.GetUserById(password.Id!);
 
-        if (foundUser == null)
+        if (foundUser == null) return BadRequest(new {message = "ID doesn't exist."});
+
+        if (!BCrypt.Net.BCrypt.Verify(password.OldPassword, foundUser.Password))
         {
-            return BadRequest(new {message = "O ID que introduziu não existe."});
+            return BadRequest(new {message = "Invalid current password."});
         }
-        else
-        {
-            if (!BCrypt.Net.BCrypt.Verify(password.OldPassword, foundUser.Password))
-            {
-                return BadRequest(new {message = "A password atual é inválida."});
-            }
-            else
-            {
-                var EncryptedPassword = BCrypt.Net.BCrypt.HashPassword(password.NewPassword);
-                await _usersService.UpdatePassword(password.Id, EncryptedPassword);
-                return Ok("A password foi atualizada com sucesso.");
-            }
-        }
+
+        var encryptedPassword = BCrypt.Net.BCrypt.HashPassword(password.NewPassword);
+        await _usersService.UpdatePassword(password.Id!, encryptedPassword);
+        return Ok("Password successfully updated.");
     }
 
-
     [HttpPost("editEmail")]
-    public async Task<IActionResult> EditEmail(EditEmailDTO email)
+    public async Task<IActionResult> EditEmail(EditEmailDto email)
     {
-        var foundUser = await _usersService.GetUserById(email.Id);
+        var foundUser = await _usersService.GetUserById(email.Id!);
 
-        if (foundUser == null)
-        {
-            return BadRequest(new {message = "O email que introduziu não existe."});
-        }
-        else
-        {
-            await _usersService.UpdateEmail(email.Id, email.NewEmail);
-            return Ok("O email foi atualizado com sucesso.");
-        }
+        if (foundUser == null) return BadRequest(new {message = "Email doesn't exist."});
+
+        await _usersService.UpdateEmail(email.Id!, email.NewEmail);
+        return Ok("Email successfully updated.");
     }
 
 
     [HttpPost("editName")]
-    public async Task<IActionResult> EditName(EditNameDTO name)
+    public async Task<IActionResult> EditName(EditNameDto name)
     {
-        var foundUser = await _usersService.GetUserById(name.Id);
+        var foundUser = await _usersService.GetUserById(name.Id!);
 
-        if (foundUser == null)
-        {
-            return BadRequest(new {message = "O id que introduziu não existe."});
-        }
-        else
-        {
-            await _usersService.UpdateName(name.Id, name.NewName);
+        if (foundUser == null) return BadRequest(new {message = "ID doesn't exist."});
 
-            return Ok("O nome foi atualizado com sucesso.");
-        }
+        await _usersService.UpdateName(name.Id!, name.NewName!);
+        return Ok("Name successfully updated.");
     }
 }
