@@ -10,25 +10,13 @@ namespace SkyPlaylistManager.Models.Database
         [BsonRepresentation(BsonType.ObjectId)]
         public string? Id { get; set; }
 
-        [BsonElement("email")]
-        public string Email { get; set; } = null!;
-        [BsonElement("username")]
-        public string Username { get; set; }= null!;
-
-        [BsonElement("password")]
-        public string Password { get; set; } = null!;
-
-        [BsonElement("name")]
-        public string Name { get; set; } = null!;
-
-        [BsonElement("profilePhotoUrl")]
-        public string ProfilePhotoUrl { get; set; } = null!;
-
-        [BsonElement("userPlaylists")]
-        public List<ObjectId>? UserPlaylists { get; set; }
-        [BsonElement("favorites")]
-        public List<ObjectId>? Favorites { get; set; }
-
+        [BsonElement("email")] public string Email { get; set; }
+        [BsonElement("username")] public string Username { get; set; }
+        [BsonElement("password")] public string Password { get; set; }
+        [BsonElement("name")] public string Name { get; set; }
+        [BsonElement("profilePhotoUrl")] public string ProfilePhotoUrl { get; set; }
+        [BsonElement("userPlaylists")] public List<ObjectId>? UserPlaylists { get; set; }
+        [BsonElement("favorites")] public List<ObjectId>? Favorites { get; set; }
 
 
         public UserCollection(UserSignupDto userSignup, string profilePhotoUrl)
