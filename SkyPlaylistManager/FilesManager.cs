@@ -6,8 +6,8 @@ namespace SkyPlaylistManager
     public interface IFileManager
     {
         bool IsValidImage(IFormFile file);
-        string InsertInDiretory(IFormFile file);
-        void DeleteFromDiretory();
+        string InsertInDirectory(IFormFile file);
+        void DeleteFromDirectory(string sessionToken);
     }
 
     public class FilesManager : IFileManager
@@ -29,7 +29,7 @@ namespace SkyPlaylistManager
             else return false;
         }
 
-        public string InsertInDiretory(IFormFile file)
+        public string InsertInDirectory(IFormFile file)
         {
             try
             {
@@ -55,11 +55,11 @@ namespace SkyPlaylistManager
         }
 
 
-        public async void DeleteFromDiretory()
+        public async void DeleteFromDirectory(string sessionToken)
         {
             try
             {
-                var oldPhoto = await _usersService.GetUserProfilePhoto("6261707eff67ad3d4f51d38b"); // TODO: Mudar para o Id da sessão
+                var oldPhoto = await _usersService.GetUserProfilePhoto(sessionToken);
                 string oldUserPhotoPath = Path.Combine(Directory.GetCurrentDirectory(), "Images/", (string)oldPhoto["profilePhotoUrl"]);
                 oldUserPhotoPath = oldUserPhotoPath.Replace("User/GetImage/", "");
                 FileInfo oldPhotoFileInfo = new FileInfo(oldUserPhotoPath);

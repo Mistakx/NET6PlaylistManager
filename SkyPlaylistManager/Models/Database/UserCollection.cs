@@ -33,13 +33,13 @@ namespace SkyPlaylistManager.Models.Database
 
 
 
-        public UserCollection(NewUserDto newUser)
+        public UserCollection(UserSignupDto userSignup, string profilePhotoUrl)
         {
-            Email = newUser.Email;
-            Password = BCrypt.Net.BCrypt.HashPassword(newUser.Password);
-            Name = newUser.Name;
-            Username = newUser.Username;
-            ProfilePhotoUrl = "Path to default user profile photo"; // TODO Change default profile path
+            Email = userSignup.Email;
+            Password = BCrypt.Net.BCrypt.HashPassword(userSignup.Password);
+            Name = userSignup.Name;
+            Username = userSignup.Username;
+            ProfilePhotoUrl = profilePhotoUrl;
             UserPlaylists = new List<ObjectId>();
             Favorites = new List<ObjectId>();
         }

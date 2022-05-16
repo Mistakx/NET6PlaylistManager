@@ -18,7 +18,7 @@ public class UserController : ControllerBase
     private readonly UsersService _usersService;
     private readonly PlaylistsService _playlistsService;
     private readonly FilesManager _filesManager;
-    
+
     public UserController(UsersService usersService, PlaylistsService playlistsService, FilesManager filesManager)
     {
         _usersService = usersService;
@@ -29,13 +29,12 @@ public class UserController : ControllerBase
 
     [HttpGet("GetImage/{imageName}")] // https://stackoverflow.com/questions/186062/can-an-asp-net-mvc-controller-return-an-image
     public async Task<IActionResult> GetImage(string imageName)
-   { 
-       var path = Path.Combine(Directory.GetCurrentDirectory(), "Images", imageName); 
-       return PhysicalFile(path, "image/jpeg");
-   }
+    {
+        var path = Path.Combine(Directory.GetCurrentDirectory(), "Images", imageName);
+        return PhysicalFile(path, "image/jpeg");
+    }
 
 
-        
     [HttpGet("Playlists/{userId:length(24)}")]
     public async Task<List<PlaylistInformationDto>?> UserPlaylists(string userId)
     {
@@ -48,8 +47,8 @@ public class UserController : ControllerBase
             {
                 var deserializedPlaylist = BsonSerializer.Deserialize<PlaylistInformationDto>(playlist);
                 deserializedPlaylists.Add(deserializedPlaylist);
-
             }
+
             return deserializedPlaylists;
         }
         catch (Exception ex)
@@ -58,6 +57,7 @@ public class UserController : ControllerBase
             return null;
         }
     }
+
 
     [HttpGet("{username}")]
     public async Task<List<UserProfileDto>> UsernamePlaylists(string username)
@@ -87,7 +87,7 @@ public class UserController : ControllerBase
     public async Task<UserBasicDetailsDto?> UserProfile(string userId)
     {
         var userProfile = await _usersService.GetUserBasicDetails(userId);
-       
+
         try
         {
             var deserializedUserProfile = BsonSerializer.Deserialize<UserBasicDetailsDto>(userProfile);
@@ -101,9 +101,8 @@ public class UserController : ControllerBase
     }
 
 
-
     [HttpGet("{userId:length(24)}")]
-    public async Task<UserProfileDto?> UserCompleteProfile (string userId)
+    public async Task<UserProfileDto?> UserCompleteProfile(string userId)
     {
         var userCompleteProfile = await _usersService.GetUserDetailsAndPlaylists(userId);
 
@@ -119,76 +118,46 @@ public class UserController : ControllerBase
         }
     }
 
-    
+
     [HttpPost]
     [Route("editProfilePhoto")]
-    public async Task<IActionResult> EditProfilePhoto(IFormFile file)
+    public async Task<IActionResult> EditProfilePhoto([FromForm] EditProfilePhotoDto request)
     {
-       
-        FileInfo newPhotoFileInfo = new FileInfo(file.FileName);
+        FileInfo newPhotoFileInfo = new FileInfo(request.UserPhoto!.FileName);
 
-       if (_filesManager.IsValidImage(file))
-       {
-           var generatedFileName = _filesManager.InsertInDiretory(file);
-           _filesManager.DeleteFromDiretory();
-           await _usersService.UpdateUserProfilePhoto("6261707eff67ad3d4f51d38b", "User/GetImage/" + generatedFileName); // TODO: Mudar para o Id da sessão
-           
-           return Ok("User/GetImage/" + generatedFileName);
-       }
-       else
-       {
-           return BadRequest("Formato de imagem inválido.");
-       }
+        if (_filesManager.IsValidImage(request.UserPhoto))
+        {
+            var generatedFileName = _filesManager.InsertInDirectory(request.UserPhoto);
+            _filesManager.DeleteFromDirectory(request.SessionToken!);
+            await _usersService.UpdateUserProfilePhoto(request.SessionToken!, "User/GetImage/" + generatedFileName);
+
+            return Ok("User/GetImage/" + generatedFileName);
+        }
+        else
+        {
+            return BadRequest("Formato de imagem inválido.");
+        }
     }
-
-
-    
-
-
-
-
-
-    //[HttpGet]
-    //public async Task<List<UserCollection>> Get() => 
-    //    await _usersService.GetAllUsers();
-
-
-    // MAPPER A FUNCIONA CORRETAMENTE
-    //[HttpGet]
-    //public async Task<List<UserGetDTO>> Get()
-    //{
-    //    var result = await _usersService.GetAllUsers();
-
-    //    var config = new MapperConfiguration(cfg =>
-    //        cfg.CreateMap<UserCollection, UserGetDTO>()
-    //    );
-
-    //     var mapper = new Mapper(config);
-
-    //     return mapper.Map<List<UserGetDTO>>(result);
-
-    //}
 
 
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginDto login)
     {
-
         var foundUser = await _usersService.GetUserByEmail(login.Email);
 
         if (foundUser == null)
         {
-            return BadRequest(new { message = "O email que introduziu não existe." });
+            return BadRequest(new {message = "O email que introduziu não existe."});
         }
 
         else
         {
             if (!BCrypt.Net.BCrypt.Verify(login.Password, foundUser.Password))
             {
-                return BadRequest(new { message = "A password que introduziu não é válida." });
+                return BadRequest(new {message = "A password que introduziu não é válida."});
             }
-            
-            HttpContext.Session.SetString("Session_user", foundUser.Id);
+
+            HttpContext.Session.SetString("Session_user", foundUser.Id!);
             var session = HttpContext.Session.GetString("Session_user");
             Console.WriteLine(session);
 
@@ -197,48 +166,31 @@ public class UserController : ControllerBase
     }
 
 
-    //[HttpPost("teste")]
-    //public IActionResult Teste()
-    //{
-    //    var session = HttpContext.Session.GetString("Session_user");
-    //    Console.WriteLine(session);
-
-    //    return Ok(session);
-
-    //}
-
-
-
     [HttpPost("register")]
-    public async Task<IActionResult> Register(NewUserDto newUser)
+    public async Task<IActionResult> Register([FromForm] UserSignupDto request)
     {
+        var foundUser = await _usersService.GetUserByEmail(request.Email);
 
-        var foundUser = await _usersService.GetUserByEmail(newUser.Email);
+        if (foundUser != null) return BadRequest("Email already taken.");
 
+        if (!_filesManager.IsValidImage(request.UserPhoto)) return BadRequest("Invalid image used on user register.");
 
-        if (foundUser == null)
+        try
         {
-            var user = new UserCollection(newUser);
-            
-            try
-            {
-                await _usersService.CreateUser(user);
-                return Ok("Utilizador registado com sucesso.");
-                //return CreatedAtAction(nameof(Get), new { id = user.Id }, user);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex);
-                return BadRequest("Ocorreu um erro no registo.");
-            }
+            var generatedFileName = _filesManager.InsertInDirectory(request.UserPhoto);
+            var user = new UserCollection(request, "User/GetImage/" + generatedFileName);
 
-
+            await _usersService.CreateUser(user);
+            return Ok("User successfully registered.");
         }
-        else return BadRequest("Já existe um utilizador com este email.");
-
-
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            return BadRequest("Error on user register.");
+        }
     }
-    
+
+
     [HttpPost("editPassword")]
     public async Task<IActionResult> EditPassword(EditPasswordDTO password)
     {
@@ -246,13 +198,13 @@ public class UserController : ControllerBase
 
         if (foundUser == null)
         {
-            return BadRequest(new { message = "O ID que introduziu não existe." });
+            return BadRequest(new {message = "O ID que introduziu não existe."});
         }
         else
         {
             if (!BCrypt.Net.BCrypt.Verify(password.OldPassword, foundUser.Password))
             {
-                return BadRequest(new { message = "A password atual é inválida." });
+                return BadRequest(new {message = "A password atual é inválida."});
             }
             else
             {
@@ -262,15 +214,16 @@ public class UserController : ControllerBase
             }
         }
     }
-    
+
+
     [HttpPost("editEmail")]
     public async Task<IActionResult> EditEmail(EditEmailDTO email)
     {
         var foundUser = await _usersService.GetUserById(email.Id);
 
-        if(foundUser == null)
+        if (foundUser == null)
         {
-            return BadRequest(new { message = "O email que introduziu não existe." });
+            return BadRequest(new {message = "O email que introduziu não existe."});
         }
         else
         {
@@ -278,7 +231,8 @@ public class UserController : ControllerBase
             return Ok("O email foi atualizado com sucesso.");
         }
     }
-    
+
+
     [HttpPost("editName")]
     public async Task<IActionResult> EditName(EditNameDTO name)
     {
@@ -286,7 +240,7 @@ public class UserController : ControllerBase
 
         if (foundUser == null)
         {
-            return BadRequest(new { message = "O id que introduziu não existe." });
+            return BadRequest(new {message = "O id que introduziu não existe."});
         }
         else
         {
@@ -295,10 +249,4 @@ public class UserController : ControllerBase
             return Ok("O nome foi atualizado com sucesso.");
         }
     }
-    
-    
-
-
-
-
 }

@@ -2,7 +2,7 @@
 
 namespace SkyPlaylistManager.Models.DTOs.User {
     
-    public struct LoginDto {
+    public class LoginDto {
     
         public string Email { get; set; }
 
