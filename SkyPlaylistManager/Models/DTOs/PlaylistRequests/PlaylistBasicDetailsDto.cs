@@ -10,15 +10,18 @@ public class PlaylistBasicDetailsDto
     public string? Id { get; set; }
 
     [BsonElement("title")]
-    public string Title { get; set; } = null!;
+    public string Title { get; set; }
         
     [BsonElement("visibility")]
-    public string Visibility { get; set; } = null!;
+    public string Visibility { get; set; }
 
     [BsonElement("creationDate")]
     [BsonDateTimeOptions(Kind = DateTimeKind.Local)]
-    public DateTime? CreationDate { get; set; } = null!;
+    public DateTime? CreationDate { get; set; }
 
     [BsonElement("description")] 
     public string? Description { get; set; }
+
+    [BsonElement("thumbnailUrl")]
+    public string ThumbnailUrl { get; set; }
 }

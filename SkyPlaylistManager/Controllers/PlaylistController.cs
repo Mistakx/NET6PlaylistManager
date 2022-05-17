@@ -41,12 +41,12 @@ namespace SkyPlaylistManager.Controllers
         [HttpGet("getBasicDetails/{playlistId:length(24)}")] // TODO: Verificar se a playlist é privada. Só retornar a playlist caso seja pública ou partilhada com o user da sessão.
         public async Task<PlaylistBasicDetailsDto?> PlaylistBasicDetails(string playlistId)
         {
-            var playlist = await _playListsService.GetPlaylistContents(playlistId);
+            var basicDetails = await _playListsService.GetPlaylistDetails(playlistId);
 
             try
             {
-                var deserializedPlaylist = BsonSerializer.Deserialize<PlaylistInformationWithContentsDto>(playlist);
-                return deserializedPlaylist;
+                var deserializedBasicDetails = BsonSerializer.Deserialize<PlaylistBasicDetailsDto>(basicDetails);
+                return deserializedBasicDetails;
             }
             catch (Exception ex)
             {
@@ -55,15 +55,15 @@ namespace SkyPlaylistManager.Controllers
             }
         }
 
-        [HttpGet("getGeneralizedResults{playlistId:length(24)}")] // TODO: Verificar se a playlist é privada. Só retornar a playlist caso seja pública ou partilhada com o user da sessão.
-        public async Task<List<UnknownGeneralizedResultDto>?> PlaylistContent(string playlistId)
+        [HttpGet("getGeneralizedResults/{playlistId:length(24)}")] // TODO: Verificar se a playlist é privada. Só retornar a playlist caso seja pública ou partilhada com o user da sessão.
+        public async Task<PlaylistContentsDto>? PlaylistContent(string playlistId)
         {
-            var playlist = await _playListsService.GetPlaylistContents(playlistId);
+            var playlistContents = await _playListsService.GetPlaylistContents(playlistId);
 
             try
             {
-                var deserializedPlaylist = BsonSerializer.Deserialize<PlaylistInformationWithContentsDto>(playlist);
-                return deserializedPlaylist;
+                var deserializedPlaylistContents = BsonSerializer.Deserialize<PlaylistContentsDto>(playlistContents);
+                return deserializedPlaylistContents;
             }
             catch (Exception ex)
             {
@@ -72,7 +72,7 @@ namespace SkyPlaylistManager.Controllers
             }
         }
 
-        
+
         [HttpPost("addToPlaylist")]
         public async Task<IActionResult> AddMultimediaContentToPlaylist(JsonObject request)
         {

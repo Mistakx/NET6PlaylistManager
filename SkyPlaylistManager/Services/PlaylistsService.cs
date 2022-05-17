@@ -35,25 +35,30 @@ namespace SkyPlaylistManager.Services
             return result;
         }
 
+        public async Task<BsonDocument> GetPlaylistDetails(string playlistId)
+        {
+
+            var filter = Builders<PlaylistCollection>.Filter.Eq(p => p.Id, playlistId);
+            var projection = Builders<PlaylistCollection>.Projection.Exclude("contents").Exclude("owner").Exclude("sharedWith");
+
+            var result = await _playListsCollection.Find(filter).Project(projection).FirstOrDefaultAsync();
+            
+            return result;
+        }
+
         public async Task<BsonDocument> GetPlaylistContents(string playlistId)
         {
-            
             var filter = Builders<PlaylistCollection>.Filter.Eq(p => p.Id, playlistId);
             var query = _playListsCollection.Aggregate().Match(filter)
                 .Lookup("MultimediaContents", "contents", "_id", "contents")
-                .Lookup("Users", "owner", "_id", "owner")
-                // .Lookup("Users", "sharedWith", "_id", "sharedWith")
-
-                .Project(Builders<BsonDocument>.Projection.Exclude("sharedWith"))
-                .Project(Builders<BsonDocument>.Projection.Exclude("owner.userPlaylists").Exclude("owner.password"))
-                .Project(Builders<BsonDocument>.Projection.Exclude("sharedWith.userPlaylists").Exclude("sharedWith.password"))
-                .Unwind("owner");
-
+                .Project(Builders<BsonDocument>.Projection.Include("contents").Exclude("_id"));
+                
             var result = await query.FirstOrDefaultAsync();
 
             return result;
         }
-        
+
+
         public async Task<List<PlaylistCollection>> GetAllPlaylists() =>
             await _playListsCollection.Find(_ => true).ToListAsync();
 
