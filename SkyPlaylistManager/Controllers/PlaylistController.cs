@@ -33,6 +33,14 @@ namespace SkyPlaylistManager.Controllers
 
 
 
+        [HttpPost("teste")]
+        public async Task<IActionResult> Teste(SortContentsDTO newSortContents)
+        {
+            await _playListsService.InsertMultimediaContentInSpecificPosition(newSortContents);
+            return Ok();
+        }
+
+
         [HttpGet("{playlistId:length(24)}")] // TODO: Verificar se a playlist é privada. Só retornar a playlist caso seja pública ou partilhada com o user da sessão.
         public async Task<PlaylistInformationWithContentsDto?> PlaylistContent(string playlistId)
         {
