@@ -7,11 +7,13 @@ namespace SkyPlaylistManager.Models.Database
 {
     public class PlaylistCollection
     {
-        private readonly SessionTokensService sessionTokensService;
-
-        public PlaylistCollection(SessionTokensService sessionTokensService)
+        public PlaylistCollection(CreatePlaylistDto request, SessionTokensService sessionTokensService)
         {
-            this.sessionTokensService = sessionTokensService;
+            Title = request.Title;
+            CreationDate = DateTime.Now;
+            Owner = sessionTokensService.GetUserId(request.SessionToken!);
+            SharedWith = new List<ObjectId>();
+            Contents = new List<ObjectId>();
         }
 
         [BsonId]
@@ -24,7 +26,7 @@ namespace SkyPlaylistManager.Models.Database
         [BsonDateTimeOptions(Kind = DateTimeKind.Local)]
         public DateTime? CreationDate { get; set; }
 
-        [BsonElement("visibility")] public string Visibility { get; set; }
+        [BsonElement("visibility")] public string Visibility { get; set; } = "Public";
 
         [BsonElement("owner")]
         [BsonRepresentation(BsonType.ObjectId)]
@@ -34,18 +36,6 @@ namespace SkyPlaylistManager.Models.Database
 
         [BsonElement("contents")] public List<ObjectId>? Contents { get; set; }
 
-        [BsonElement("description")] public string Description { get; set; }
-
-
-        public PlaylistCollection(NewPlaylistDto request)
-        {
-            Title = request.Title;
-            CreationDate = DateTime.Now;
-            Visibility = request.Visibility!;
-            Description = request.Description!;
-            Owner = sessionTokensService.GetUserId(request.SessionToken!);
-            SharedWith = new List<ObjectId>();
-            Contents = new List<ObjectId>();
-        }
+        [BsonElement("description")] public string Description { get; set; } = "";
     }
 }

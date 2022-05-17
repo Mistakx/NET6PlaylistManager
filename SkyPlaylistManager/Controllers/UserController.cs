@@ -127,12 +127,20 @@ public class UserController : ControllerBase
     public async Task<IActionResult> EditProfilePhoto([FromForm] EditProfilePhotoDto request)
     {
         if (_filesManager.IsValidImage(request.UserPhoto!)) return BadRequest("Invalid image format.");
+        try
+        {
+            var generatedFileName = _filesManager.InsertInDirectory(request.UserPhoto!);
+            _filesManager.DeleteFromDirectory(request.SessionToken!);
+            await _usersService.UpdateUserProfilePhoto(request.SessionToken!, "User/GetImage/" + generatedFileName);
+            return Ok("User/GetImage/" + generatedFileName);
+        } 
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.StackTrace);
+            return BadRequest("Error occured while changing profile picture.");
+        }
 
-        var generatedFileName = _filesManager.InsertInDirectory(request.UserPhoto!);
-        _filesManager.DeleteFromDirectory(request.SessionToken!);
-        await _usersService.UpdateUserProfilePhoto(request.SessionToken!, "User/GetImage/" + generatedFileName);
 
-        return Ok("User/GetImage/" + generatedFileName);
     }
 
 

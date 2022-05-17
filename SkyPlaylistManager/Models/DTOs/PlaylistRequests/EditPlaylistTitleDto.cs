@@ -9,5 +9,6 @@ public class EditTitleDto
     [BsonRepresentation(BsonType.ObjectId)]
     public string? Id { get; set; }
 
-    public string NewTitle { get; set; } = null!;
+    public string? NewTitle { get; set; }
+    public string? SessionToken { get; set; }
 }
