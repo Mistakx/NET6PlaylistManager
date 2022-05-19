@@ -19,6 +19,7 @@ namespace SkyPlaylistManager.Controllers
         private readonly GeneralizedResultsService _generalizedResultsService;
         private readonly MultimediaContentFactory _multimediaContentFactory;
         private readonly SessionTokensService _sessionTokensService;
+        private readonly FilesManager _filesManager;
 
         private const string PlaylistIdDoesntExistMessage = "Playlist ID doesn't exist.";
 
@@ -27,7 +28,8 @@ namespace SkyPlaylistManager.Controllers
             UsersService usersService,
             GeneralizedResultsService generalizedResultsService,
             MultimediaContentFactory multimediaContentFactory,
-            SessionTokensService sessionTokensService
+            SessionTokensService sessionTokensService,
+            FilesManager filesManager
         )
         {
             _playListsService = playlistsService;
@@ -35,6 +37,7 @@ namespace SkyPlaylistManager.Controllers
             _generalizedResultsService = generalizedResultsService;
             _multimediaContentFactory = multimediaContentFactory;
             _sessionTokensService = sessionTokensService;
+            _filesManager = filesManager;
         }
 
 
@@ -221,6 +224,50 @@ namespace SkyPlaylistManager.Controllers
             {
                 Console.WriteLine(e);
                 return BadRequest("Error while removing from playlist");
+            }
+        }
+
+        [HttpPost("editPlaylistPhoto")]
+        public async Task<IActionResult> EditProfilePhoto([FromForm] EditPlaylistThumbnail request)
+        {
+            if (!_filesManager.IsValidImage(request.PlaylistPhoto!)) return BadRequest("Invalid image format.");
+            try
+            {
+                var playlistId = request.PlaylistId;
+                var generatedFileName = _filesManager.InsertInDirectory(request.PlaylistPhoto!, "PlaylistsThumbnails");
+
+                var oldPhoto = await _playListsService.GetPlaylistPhoto(playlistId);
+
+                await _playListsService.UpdatePlaylistPhoto(playlistId, "GetImage/PlaylistsThumbnails/" + generatedFileName);
+                _filesManager.DeleteFromDirectory((string)oldPhoto["thumbnailUrl"], "PlaylistsThumbnails");
+                return Ok("GetImage/PlaylistsThumbnails/" + generatedFileName);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.StackTrace);
+                return BadRequest("Error occured while changing profile picture.");
+            }
+        }
+
+
+        [HttpPost("setCoverItem")]
+        public async Task<IActionResult> SetCoverItem(SetCoverItem request)
+        {
+            
+            try
+            {
+                var playlistId = request.PlaylistId;
+
+                var oldPhoto = await _playListsService.GetPlaylistPhoto(playlistId);
+
+                await _playListsService.UpdatePlaylistPhoto(playlistId, request.CoverUrl);
+                _filesManager.DeleteFromDirectory((string)oldPhoto["thumbnailUrl"], "PlaylistsThumbnails");
+                return Ok(request.CoverUrl);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.StackTrace);
+                return BadRequest("Error occured while changing profile picture.");
             }
         }
     }

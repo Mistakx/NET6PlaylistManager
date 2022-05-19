@@ -142,5 +142,21 @@ namespace SkyPlaylistManager.Services
         }
 
 
+        public async Task UpdatePlaylistPhoto(string playlistId, string photoPath)
+        {
+            var filter = Builders<PlaylistCollection>.Filter.Eq(u => u.Id, playlistId);
+            var update = Builders<PlaylistCollection>.Update.Set("thumbnailUrl", photoPath);
+
+            await _playListsCollection.UpdateOneAsync(filter, update);
+        }
+
+        public async Task<BsonDocument> GetPlaylistPhoto(string playlistId)
+        {
+            var filter = Builders<PlaylistCollection>.Filter.Eq(u => u.Id, playlistId);
+            var projection = Builders<PlaylistCollection>.Projection.Include("thumbnailUrl");
+
+            var result = await _playListsCollection.Find(filter).Project(projection).FirstOrDefaultAsync();
+            return result;
+        }
     }
 }
