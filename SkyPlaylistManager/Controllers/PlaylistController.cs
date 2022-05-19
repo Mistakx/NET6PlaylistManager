@@ -135,39 +135,8 @@ namespace SkyPlaylistManager.Controllers
             }
         }
 
-        [HttpPost("editTitle")]
-        public async Task<IActionResult> EditTitle(EditTitleDto title)
-        {
-            var foundPlaylist = await _playListsService.GetPlaylistById(title.Id!);
-
-            if (foundPlaylist == null) return BadRequest(PlaylistIdDoesntExistMessage);
-            await _playListsService.UpdateTitle(title.Id!, title.NewTitle);
-
-            return Ok("Playlist title successfully updated.");
-        }
-
-        [HttpPost("editDescription")]
-        public async Task<IActionResult> EditDescription(EditDescriptionDto description)
-        {
-            var foundPlaylist = await _playListsService.GetPlaylistById(description.Id!);
-
-            if (foundPlaylist == null) return BadRequest(PlaylistIdDoesntExistMessage);
-
-            await _playListsService.UpdateDescription(description.Id!, description.NewDescription);
-            return Ok("Playlist description successfully updated.");
-        }
-
-        [HttpPost("editVisibility")]
-        public async Task<IActionResult> EditVisibility(EditVisibilityDto visibility)
-        {
-            var foundPlaylist = await _playListsService.GetPlaylistById(visibility.Id!);
-
-            if (foundPlaylist == null) return BadRequest(PlaylistIdDoesntExistMessage);
-
-            await _playListsService.UpdateVisibility(visibility.Id!, visibility.NewVisibility);
-            return Ok("Playlist visibility successfully updated.");
-        }
-
+       
+       
         [HttpPost("deletePlaylist")]
         public async Task<IActionResult> DeletePlaylist(DeletePlaylistDto playlist)
         {
@@ -268,6 +237,21 @@ namespace SkyPlaylistManager.Controllers
             {
                 Console.WriteLine(ex.StackTrace);
                 return BadRequest("Error occured while changing profile picture.");
+            }
+        }
+
+        [HttpPost("edit")]
+        public async Task<IActionResult> EditPlaylist(EditPlaylistDto request)
+        {
+            try
+            {
+                await _playListsService.UpdatePlaylist(request);
+                return Ok("Playlist successfully edited.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+                return BadRequest("Error while editing playlist.");
             }
         }
     }
