@@ -1,13 +1,10 @@
+namespace SkyPlaylistManager.Models.DTOs.User;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
-
-namespace SkyPlaylistManager.Models.DTOs.PlaylistRequests;
-
-public class EditDescriptionDto
+public class EditNameDTO
 {
     [BsonId]
     [BsonRepresentation(BsonType.ObjectId)]
     public string? Id { get; set; }
-
-    public string NewDescription { get; set; } = null!;
+    public string NewName { get; set; } = null!;
 }

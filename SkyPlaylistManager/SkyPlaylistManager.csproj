@@ -105,6 +105,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Images\PlaylistsThumbnails\" />
+    <Folder Include="Images\UsersProfilePhotos\" />
     <Folder Include="NET6React\.git\branches" />
     <Folder Include="NET6React\.git\objects\info" />
     <Folder Include="NET6React\.git\refs\tags" />

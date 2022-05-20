@@ -5,8 +5,8 @@ namespace SkyPlaylistManager
     public interface IFileManager
     {
         bool IsValidImage(IFormFile file);
-        string InsertInDirectory(IFormFile file);
-        void DeleteFromDirectory(string sessionToken);
+        string InsertInDirectory(IFormFile file, string folder);
+        void DeleteFromDirectory(string sessionToken, string folder);
     }
 
     public class FilesManager : IFileManager
@@ -28,17 +28,19 @@ namespace SkyPlaylistManager
             else return false;
         }
 
-        public string InsertInDirectory(IFormFile file)
+        public string InsertInDirectory(IFormFile file, string folder)
         {
             try
             {
                 FileInfo fileInfo = new FileInfo(file.FileName);
 
-                if (!Directory.Exists("Images"))
-                    Directory.CreateDirectory("Images");
+                var destinationFolder = Path.Combine("Images", folder);
+
+                if (!Directory.Exists(destinationFolder))
+                    Directory.CreateDirectory(destinationFolder);
 
                 string generatedFileName = string.Format(@"{0}" + fileInfo.Extension, Guid.NewGuid());
-                string directoryFilePath = Path.Combine("Images", generatedFileName);
+                string directoryFilePath = Path.Combine(destinationFolder, generatedFileName);
 
                 using (var stream = new FileStream(directoryFilePath, FileMode.Create))
                 {
@@ -50,26 +52,37 @@ namespace SkyPlaylistManager
             catch (Exception ex)
             {
                 Console.WriteLine(ex);
-                return ("Erro ao inserir ao fazer upload do ficheiro.");
+                return ("Erro ao fazer upload do ficheiro.");
             }
         }
 
 
-        public async void DeleteFromDirectory(string sessionToken)
+        public void DeleteFromDirectory(string fileToDelete, string folder)
         {
             try
             {
-                var oldPhoto = await _usersService.GetUserProfilePhoto(sessionToken);
-                string oldUserPhotoPath = Path.Combine(Directory.GetCurrentDirectory(), "Images/",
-                    (string) oldPhoto["profilePhotoUrl"]);
-                oldUserPhotoPath = oldUserPhotoPath.Replace("User/GetImage/", "");
-                FileInfo oldPhotoFileInfo = new FileInfo(oldUserPhotoPath);
-                oldPhotoFileInfo.Delete();
+                var fileName = fileToDelete.Replace("GetImage/" + folder +"/", "");
+                string completeFilePath = Path.Combine(Directory.GetCurrentDirectory(), "Images/", folder, fileName);
+                FileInfo completeFilePathInfo = new FileInfo(completeFilePath);
+                completeFilePathInfo.Delete();
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex);
             }
+            //try
+            //{
+            //    var oldPhoto = await _usersService.GetUserProfilePhoto(sessionToken);
+            //    string oldUserPhotoPath = Path.Combine(Directory.GetCurrentDirectory(), "Images/",
+            //        (string) oldPhoto["profilePhotoUrl"]);
+            //    oldUserPhotoPath = oldUserPhotoPath.Replace("User/GetImage/", "");
+            //    FileInfo oldPhotoFileInfo = new FileInfo(oldUserPhotoPath);
+            //    oldPhotoFileInfo.Delete();
+            //}
+            //catch (Exception ex)
+            //{
+            //    Console.WriteLine(ex);
+            //}
         }
     }
 }

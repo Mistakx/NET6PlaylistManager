@@ -30,12 +30,7 @@ public class UserController : ControllerBase
     }
 
 
-    [HttpGet("GetImage/{imageName}")] // https://stackoverflow.com/questions/186062/can-an-asp-net-mvc-controller-return-an-image
-    public Task<IActionResult> GetImage(string imageName)
-    {
-        var path = Path.Combine(Directory.GetCurrentDirectory(), "Images", imageName);
-        return Task.FromResult<IActionResult>(PhysicalFile(path, "image/jpeg"));
-    }
+
 
 
     [HttpGet("Playlists/{userId:length(24)}")]
@@ -122,25 +117,26 @@ public class UserController : ControllerBase
     }
 
 
-    [HttpPost]
-    [Route("editProfilePhoto")]
+    [HttpPost("editProfilePhoto")]
     public async Task<IActionResult> EditProfilePhoto([FromForm] EditProfilePhotoDto request)
     {
         if (!_filesManager.IsValidImage(request.UserPhoto!)) return BadRequest("Invalid image format.");
         try
         {
-            var generatedFileName = _filesManager.InsertInDirectory(request.UserPhoto!);
-            _filesManager.DeleteFromDirectory(request.SessionToken!);
-            await _usersService.UpdateUserProfilePhoto(request.SessionToken!, "User/GetImage/" + generatedFileName);
+            var userId = _sessionTokensService.GetUserId(request.SessionToken!);
+            var generatedFileName = _filesManager.InsertInDirectory(request.UserPhoto!, "UsersProfilePhotos");
+            
+            var oldPhoto = await _usersService.GetUserProfilePhoto(userId);
+         
+            await _usersService.UpdateUserProfilePhoto(userId, "GetImage/UsersProfilePhotos/" + generatedFileName);
+            _filesManager.DeleteFromDirectory((string)oldPhoto["profilePhotoUrl"], "UsersProfilePhotos");
             return Ok("Profile photo updated successfully.");
-        } 
+        }
         catch (Exception ex)
         {
             Console.WriteLine(ex.StackTrace);
             return BadRequest("Error occured while changing profile picture.");
         }
-
-
     }
 
 
@@ -175,7 +171,7 @@ public class UserController : ControllerBase
 
         try
         {
-            var generatedFileName = _filesManager.InsertInDirectory(request.UserPhoto);
+            var generatedFileName = _filesManager.InsertInDirectory(request.UserPhoto, "UsersProfilePhotos");
             var user = new UserCollection(request, "User/GetImage/" + generatedFileName);
 
             await _usersService.CreateUser(user);

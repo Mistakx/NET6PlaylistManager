@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using SkyPlaylistManager.Models.Database;
+using SkyPlaylistManager.Models.DTOs.PlaylistRequests;
 
 namespace SkyPlaylistManager.Services
 {
@@ -93,29 +94,17 @@ namespace SkyPlaylistManager.Services
         public async Task<PlaylistCollection?> GetPlaylistById(string playlistId) =>
             await _playListsCollection.Find(p => p.Id == playlistId).FirstOrDefaultAsync();
         
-        public async Task UpdateTitle(string playlistID, string newTitle)
+        public async Task UpdatePlaylist(EditPlaylistDto updadetPlaylist)
         {
-            var filter = Builders<PlaylistCollection>.Filter.Eq(p => p.Id, playlistID);
-            var updated = Builders<PlaylistCollection>.Update.Set("title", newTitle);
+            var filter = Builders<PlaylistCollection>.Filter.Eq(p => p.Id, updadetPlaylist.PlaylistId);
+            var updated = Builders<PlaylistCollection>.Update.Set(p => p.Title, updadetPlaylist.Title)
+                .Set(p => p.Description, updadetPlaylist.Description)
+                .Set( p => p.Visibility, updadetPlaylist.Visibility);
 
             await _playListsCollection.UpdateOneAsync(filter, updated);
         }
         
-        public async Task UpdateDescription(string playlistID, string newDescription)
-        {
-            var filter = Builders<PlaylistCollection>.Filter.Eq(p => p.Id, playlistID);
-            var updated = Builders<PlaylistCollection>.Update.Set("description", newDescription);
-
-            await _playListsCollection.UpdateOneAsync(filter, updated);
-        }
         
-        public async Task UpdateVisibility(string playlistID, string newVisibility)
-        {
-            var filter = Builders<PlaylistCollection>.Filter.Eq(p => p.Id,playlistID);
-            var updated = Builders<PlaylistCollection>.Update.Set("visibility", newVisibility);
-
-            await _playListsCollection.UpdateOneAsync(filter, updated);
-        }
         
         public async Task DeletePlaylist(string playlistID)
         {
@@ -142,5 +131,21 @@ namespace SkyPlaylistManager.Services
         }
 
 
+        public async Task UpdatePlaylistPhoto(string playlistId, string photoPath)
+        {
+            var filter = Builders<PlaylistCollection>.Filter.Eq(u => u.Id, playlistId);
+            var update = Builders<PlaylistCollection>.Update.Set("thumbnailUrl", photoPath);
+
+            await _playListsCollection.UpdateOneAsync(filter, update);
+        }
+
+        public async Task<BsonDocument> GetPlaylistPhoto(string playlistId)
+        {
+            var filter = Builders<PlaylistCollection>.Filter.Eq(u => u.Id, playlistId);
+            var projection = Builders<PlaylistCollection>.Projection.Include("thumbnailUrl");
+
+            var result = await _playListsCollection.Find(filter).Project(projection).FirstOrDefaultAsync();
+            return result;
+        }
     }
 }
