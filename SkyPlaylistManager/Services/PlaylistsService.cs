@@ -4,6 +4,7 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using SkyPlaylistManager.Models.Database;
 using SkyPlaylistManager.Models.DTOs.PlaylistRequests;
+using SkyPlaylistManager.Models.DTOs.Playlist;
 
 namespace SkyPlaylistManager.Services
 {
@@ -23,6 +24,22 @@ namespace SkyPlaylistManager.Services
 
             _playListsCollection = mongoDatabase.GetCollection<PlaylistCollection>(("Playlists"));
             _usersCollection = mongoDatabase.GetCollection<UserCollection>(("Users"));
+        }
+
+
+
+
+
+        public async Task InsertMultimediaContentInSpecificPosition(SortContentsDTO newSortContents)
+        {
+            var contentsList = new List<ObjectId>(); // The method "PushEach" only works with lists
+            ObjectId multimediaContentId = ObjectId.Parse(newSortContents.MultimediaContentId);
+            contentsList.Add(multimediaContentId);
+
+            var filter = Builders<PlaylistCollection>.Filter.Eq(p => p.Id, newSortContents.PlaylistId);
+            var update = Builders<PlaylistCollection>.Update.PushEach("contents", contentsList, position: newSortContents.NewPosition);
+
+            await _playListsCollection.UpdateOneAsync(filter, update);
         }
 
 
