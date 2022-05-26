@@ -3,7 +3,9 @@ using MongoDB.Bson.Serialization;
 using SkyPlaylistManager.Services;
 using SkyPlaylistManager.Models.Database;
 using SkyPlaylistManager.Models.DTOs.PlaylistRequests;
+using SkyPlaylistManager.Models.DTOs.User;
 using SkyPlaylistManager.Models.DTOs.UserRequests;
+using LoginDto = SkyPlaylistManager.Models.DTOs.UserRequests.LoginDto;
 
 namespace SkyPlaylistManager.Controllers;
 
@@ -172,7 +174,7 @@ public class UserController : ControllerBase
         try
         {
             var generatedFileName = _filesManager.InsertInDirectory(request.UserPhoto, "UsersProfilePhotos");
-            var user = new UserCollection(request, "User/GetImage/" + generatedFileName);
+            var user = new UserCollection(request, "GetImage/UsersProfilePhotos/" + generatedFileName);
 
             await _usersService.CreateUser(user);
             return Ok("User successfully registered.");
@@ -202,6 +204,32 @@ public class UserController : ControllerBase
         return Ok("Password successfully updated.");
     }
 
+    [HttpPost("editUserInfo")]
+    public async Task<IActionResult> EditUserInfo(EditUserInfoDto request)
+    {
+        
+        var userId = _sessionTokensService.GetUserId(request.SessionToken!);
+        
+        var userCurrentInformation = await _usersService.GetUserById(userId);
+        
+        if (request.NewUsername != userCurrentInformation?.Username)
+        {
+            var foundUserByUsername = await _usersService.GetUserByUsername(request.NewUsername!);
+            if (foundUserByUsername == null) return BadRequest("Username already exists.");
+        }
+        
+        if (request.NewEmail != userCurrentInformation?.Email)
+        {
+            var foundUserByEmail = await _usersService.GetUserByEmail(request.NewEmail!);
+            if (foundUserByEmail == null) return BadRequest("Email already exists.");
+        }
+        
+        await _usersService.UpdateEmail(userId, request.NewEmail!);
+        await _usersService.UpdateName(userId, request.NewName!);
+        await _usersService.UpdateUsername(userId, request.NewUsername);
+        return Ok("User information successfully updated.");
+    }
+    
     [HttpPost("editEmail")]
     public async Task<IActionResult> EditEmail(EditEmailDto email)
     {

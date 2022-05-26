@@ -41,7 +41,8 @@ namespace SkyPlaylistManager.Controllers
         }
 
 
-        [HttpGet("getBasicDetails/{playlistId:length(24)}")] // TODO: Verificar se a playlist é privada. Só retornar a playlist caso seja pública ou partilhada com o user da sessão.
+        [HttpGet(
+            "getBasicDetails/{playlistId:length(24)}")] // TODO: Verificar se a playlist é privada. Só retornar a playlist caso seja pública ou partilhada com o user da sessão.
         public async Task<PlaylistBasicDetailsDto?> PlaylistBasicDetails(string playlistId)
         {
             var basicDetails = await _playListsService.GetPlaylistDetails(playlistId);
@@ -58,7 +59,8 @@ namespace SkyPlaylistManager.Controllers
             }
         }
 
-        [HttpGet("getGeneralizedResults/{playlistId:length(24)}")] // TODO: Verificar se a playlist é privada. Só retornar a playlist caso seja pública ou partilhada com o user da sessão.
+        [HttpGet(
+            "getGeneralizedResults/{playlistId:length(24)}")] // TODO: Verificar se a playlist é privada. Só retornar a playlist caso seja pública ou partilhada com o user da sessão.
         public async Task<PlaylistContentsDto>? PlaylistContent(string playlistId)
         {
             var playlistContents = await _playListsService.GetPlaylistContents(playlistId);
@@ -135,23 +137,30 @@ namespace SkyPlaylistManager.Controllers
             }
         }
 
-       
-       
+
         [HttpPost("deletePlaylist")]
         public async Task<IActionResult> DeletePlaylist(DeletePlaylistDto playlist)
         {
-            var foundPlaylist = await _playListsService.GetPlaylistById(playlist.Id!);
+            try
+            {
+                var foundPlaylist = await _playListsService.GetPlaylistById(playlist.Id!);
 
 
-            if (foundPlaylist == null) return BadRequest(PlaylistIdDoesntExistMessage);
+                if (foundPlaylist == null) return BadRequest(PlaylistIdDoesntExistMessage);
 
-            var id = ObjectId.Parse(playlist.Id);
-            await _playListsService.DeletePlaylist(playlist.Id!);
+                var id = ObjectId.Parse(playlist.Id);
+                await _playListsService.DeletePlaylist(playlist.Id!);
 
-            var owner = foundPlaylist.Owner;
-            await _usersService.DeleteUserPlaylist(owner, id);
+                var owner = foundPlaylist.Owner;
+                await _usersService.DeleteUserPlaylist(owner, id);
 
-            return Ok("Playlist successfully deleted.");
+                return Ok("Playlist successfully deleted.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+                return BadRequest("Error while deleting playlist.");
+            }
         }
 
         [HttpPost("removeShare")]
@@ -181,7 +190,7 @@ namespace SkyPlaylistManager.Controllers
             var foundPlaylist = await _playListsService.GetPlaylistById(request.PlaylistId!);
 
             if (foundPlaylist == null) return BadRequest(PlaylistIdDoesntExistMessage);
-            
+
             try
             {
                 var generalizedResultToDeleteId = new ObjectId(request.GeneralizedResultDatabaseId);
@@ -207,8 +216,9 @@ namespace SkyPlaylistManager.Controllers
 
                 var oldPhoto = await _playListsService.GetPlaylistPhoto(playlistId);
 
-                await _playListsService.UpdatePlaylistPhoto(playlistId, "GetImage/PlaylistsThumbnails/" + generatedFileName);
-                _filesManager.DeleteFromDirectory((string)oldPhoto["thumbnailUrl"], "PlaylistsThumbnails");
+                await _playListsService.UpdatePlaylistPhoto(playlistId,
+                    "GetImage/PlaylistsThumbnails/" + generatedFileName);
+                _filesManager.DeleteFromDirectory((string) oldPhoto["thumbnailUrl"], "PlaylistsThumbnails");
                 return Ok("GetImage/PlaylistsThumbnails/" + generatedFileName);
             }
             catch (Exception ex)
@@ -222,7 +232,6 @@ namespace SkyPlaylistManager.Controllers
         [HttpPost("setCoverItem")]
         public async Task<IActionResult> SetCoverItem(SetCoverItem request)
         {
-            
             try
             {
                 var playlistId = request.PlaylistId;
@@ -230,13 +239,21 @@ namespace SkyPlaylistManager.Controllers
                 var oldPhoto = await _playListsService.GetPlaylistPhoto(playlistId);
 
                 await _playListsService.UpdatePlaylistPhoto(playlistId, request.CoverUrl);
-                _filesManager.DeleteFromDirectory((string)oldPhoto["thumbnailUrl"], "PlaylistsThumbnails");
-                return Ok(request.CoverUrl);
+                try
+                {
+                    _filesManager.DeleteFromDirectory((string) oldPhoto["thumbnailUrl"], "PlaylistsThumbnails");
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                }
+
+                return Ok("Successfully set cover photo.");
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.StackTrace);
-                return BadRequest("Error occured while changing profile picture.");
+                return BadRequest("Error occured while changing cover photo.");
             }
         }
 

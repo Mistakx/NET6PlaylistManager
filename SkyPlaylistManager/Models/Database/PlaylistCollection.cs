@@ -11,6 +11,8 @@ namespace SkyPlaylistManager.Models.Database
         {
             Title = request.Title;
             CreationDate = DateTime.Now;
+            Description = request.Description;
+            Visibility = request.Visibility;
             Owner = sessionTokensService.GetUserId(request.SessionToken!);
             SharedWith = new List<ObjectId>();
             Contents = new List<ObjectId>();
@@ -26,7 +28,7 @@ namespace SkyPlaylistManager.Models.Database
         [BsonDateTimeOptions(Kind = DateTimeKind.Local)]
         public DateTime? CreationDate { get; set; }
 
-        [BsonElement("visibility")] public string Visibility { get; set; } = "Public";
+        [BsonElement("visibility")] public string Visibility { get; set; }
 
         [BsonElement("owner")]
         [BsonRepresentation(BsonType.ObjectId)]
@@ -36,6 +38,8 @@ namespace SkyPlaylistManager.Models.Database
 
         [BsonElement("contents")] public List<ObjectId>? Contents { get; set; }
 
-        [BsonElement("description")] public string Description { get; set; } = "";
+        [BsonElement("description")] public string Description { get; set; }
+        
+        [BsonElement("thumbnailUrl")] public string ThumbnailUrl { get; set; }
     }
 }
