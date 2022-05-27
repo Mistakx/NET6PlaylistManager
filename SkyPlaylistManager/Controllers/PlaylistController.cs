@@ -7,6 +7,10 @@ using SkyPlaylistManager.Models;
 using SkyPlaylistManager.Models.Database;
 using SkyPlaylistManager.Models.DTOs;
 using SkyPlaylistManager.Models.DTOs.PlaylistRequests;
+using DeletePlaylistContentDto = SkyPlaylistManager.Models.DTOs.PlaylistRequests.DeletePlaylistContentDto;
+using DeletePlaylistDto = SkyPlaylistManager.Models.DTOs.PlaylistRequests.DeletePlaylistDto;
+using PlaylistBasicDetailsDto = SkyPlaylistManager.Models.DTOs.PlaylistRequests.PlaylistBasicDetailsDto;
+using PlaylistShareDto = SkyPlaylistManager.Models.DTOs.PlaylistRequests.PlaylistShareDto;
 
 namespace SkyPlaylistManager.Controllers
 {
@@ -21,7 +25,7 @@ namespace SkyPlaylistManager.Controllers
         private readonly SessionTokensService _sessionTokensService;
         private readonly FilesManager _filesManager;
 
-        private const string PlaylistIdDoesntExistMessage = "Playlist ID doesn't exist.";
+        private const string PlaylistIdDoesntExistMessage = "Playlist ID doesn't exist";
 
         public PlaylistController(
             PlaylistsService playlistsService,
@@ -61,7 +65,7 @@ namespace SkyPlaylistManager.Controllers
 
         [HttpGet(
             "getGeneralizedResults/{playlistId:length(24)}")] // TODO: Verificar se a playlist é privada. Só retornar a playlist caso seja pública ou partilhada com o user da sessão.
-        public async Task<PlaylistContentsDto>? PlaylistContent(string playlistId)
+        public async Task<PlaylistContentsDto?> PlaylistContent(string playlistId)
         {
             var playlistContents = await _playListsService.GetPlaylistContents(playlistId);
 
@@ -93,7 +97,7 @@ namespace SkyPlaylistManager.Controllers
                 var createdMultimediaContentId = ObjectId.Parse(genericResult.Id);
 
                 await _playListsService.InsertMultimediaContentInPlaylist(playlistId!, createdMultimediaContentId);
-                return Ok("Successfully added to playlist.");
+                return Ok("Successfully added to playlist");
             }
 
             catch (Exception ex)
@@ -111,12 +115,12 @@ namespace SkyPlaylistManager.Controllers
             {
                 await _playListsService.InsertUserInSharedWithArray(newPlaylistShareDto.PlaylistId,
                     new ObjectId(newPlaylistShareDto.UserId));
-                return Ok("Playlist successfully shared.");
+                return Ok("Playlist successfully shared");
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex);
-                return BadRequest("Ocorreu um erro na partilha da playlist.");
+                return BadRequest("An error occurred while sharing the playlist");
             }
         }
 
@@ -128,12 +132,12 @@ namespace SkyPlaylistManager.Controllers
             {
                 var playlist = new PlaylistCollection(request, _sessionTokensService);
                 await _playListsService.CreatePlaylist(playlist);
-                return Ok("Playlist successfully created.");
+                return Ok("Playlist successfully created");
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex);
-                return BadRequest("Error while creating playlist.");
+                return BadRequest("Error while creating playlist");
             }
         }
 
@@ -154,12 +158,12 @@ namespace SkyPlaylistManager.Controllers
                 var owner = foundPlaylist.Owner;
                 await _usersService.DeleteUserPlaylist(owner, id);
 
-                return Ok("Playlist successfully deleted.");
+                return Ok("Playlist successfully deleted");
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex);
-                return BadRequest("Error while deleting playlist.");
+                return BadRequest("Error while deleting playlist");
             }
         }
 
@@ -167,15 +171,15 @@ namespace SkyPlaylistManager.Controllers
         public async Task<IActionResult> RemoveShare(PlaylistShareDto request)
         {
             var foundPlaylist = await _playListsService.GetPlaylistById(request.PlaylistId);
-            if (foundPlaylist == null) return BadRequest(new {message = "No playlist with that ID exists."});
+            if (foundPlaylist == null) return BadRequest(new {message = "No playlist with that ID exists"});
 
             var foundUser = await _usersService.GetUserById(request.UserId);
-            if (foundUser == null) return BadRequest(new {message = "No user with that ID exists."});
+            if (foundUser == null) return BadRequest(new {message = "No user with that ID exists"});
 
             try
             {
                 await _playListsService.DeleteShare(request.PlaylistId, new ObjectId(request.UserId));
-                return Ok("User successfully removed.");
+                return Ok("User successfully removed");
             }
             catch (Exception e)
             {
@@ -196,7 +200,7 @@ namespace SkyPlaylistManager.Controllers
                 var generalizedResultToDeleteId = new ObjectId(request.GeneralizedResultDatabaseId);
                 await _playListsService.DeleteMultimediaContentInPlaylist(request.PlaylistId!,
                     generalizedResultToDeleteId);
-                return Ok("Successfully removed from playlist.");
+                return Ok("Successfully removed from playlist");
             }
             catch (Exception e)
             {
@@ -208,7 +212,7 @@ namespace SkyPlaylistManager.Controllers
         [HttpPost("editPlaylistPhoto")]
         public async Task<IActionResult> EditProfilePhoto([FromForm] EditPlaylistThumbnail request)
         {
-            if (!_filesManager.IsValidImage(request.PlaylistPhoto!)) return BadRequest("Invalid image format.");
+            if (!_filesManager.IsValidImage(request.PlaylistPhoto!)) return BadRequest("Invalid image format");
             try
             {
                 var playlistId = request.PlaylistId;
@@ -224,7 +228,7 @@ namespace SkyPlaylistManager.Controllers
             catch (Exception ex)
             {
                 Console.WriteLine(ex.StackTrace);
-                return BadRequest("Error occured while changing profile picture.");
+                return BadRequest("Error occured while changing profile picture");
             }
         }
 
@@ -248,12 +252,12 @@ namespace SkyPlaylistManager.Controllers
                     Console.WriteLine(e);
                 }
 
-                return Ok("Successfully set cover photo.");
+                return Ok("Successfully set cover photo");
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.StackTrace);
-                return BadRequest("Error occured while changing cover photo.");
+                return BadRequest("Error occured while changing cover photo");
             }
         }
 
@@ -263,12 +267,12 @@ namespace SkyPlaylistManager.Controllers
             try
             {
                 await _playListsService.UpdatePlaylist(request);
-                return Ok("Playlist successfully edited.");
+                return Ok("Playlist successfully edited");
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex);
-                return BadRequest("Error while editing playlist.");
+                return BadRequest("Error while editing playlist");
             }
         }
     }

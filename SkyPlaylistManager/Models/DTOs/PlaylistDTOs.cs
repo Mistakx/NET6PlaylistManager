@@ -5,21 +5,21 @@ using SkyPlaylistManager.Models.DTOs.User;
 namespace SkyPlaylistManager.Models.DTOs
 {
 
-    public class PlaylistBasicDetailsDTO
+    public class PlaylistBasicDetailsDto
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
         public string? Id { get; set; }
 
         [BsonElement("title")]
-        public string Title { get; set; } = null!;
+        public string? Title { get; set; }
         
         [BsonElement("visibility")]
-        public string Visibility { get; set; } = null!;
+        public string? Visibility { get; set; } 
 
         [BsonElement("creationDate")]
         [BsonDateTimeOptions(Kind = DateTimeKind.Local)]
-        public DateTime? CreationDate { get; set; } = null!;
+        public DateTime? CreationDate { get; set; }
 
         [BsonElement("description")] 
         public string? Description { get; set; }
@@ -27,7 +27,7 @@ namespace SkyPlaylistManager.Models.DTOs
 
 
 
-    public class PlaylistAndContentsDTO
+    public class PlaylistAndContentsDto
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
@@ -56,51 +56,51 @@ namespace SkyPlaylistManager.Models.DTOs
         public List<UserBasicDetailsDto>? SharedWith { get; set; }
     }
     
-    public class EditTitleDTO
+    public class EditTitleDto
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
         public string? Id { get; set; }
 
-        public string NewTitle { get; set; } = null!;
+        public string? NewTitle { get; set; }
     }
 
-    public class EditDescriptionDTO
+    public class EditDescriptionDto
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
         public string? Id { get; set; }
 
-        public string NewDescription { get; set; } = null!;
+        public string? NewDescription { get; set; } 
     }
 
-    public class EditVisibilityDTO
+    public class EditVisibilityDto
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
         public string? Id { get; set; }
 
-        public string NewVisibility { get; set; } = null!;
+        public string? NewVisibility { get; set; } 
     }
 
-    public class DeletePlaylistDTO
+    public class DeletePlaylistDto
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
         public string? Id { get; set; }
     }
 
-    public class PlaylistShareDTO
+    public class PlaylistShareDto
     {
        
-        public string? PlaylistID { get; set; }
+        public string? PlaylistId { get; set; }
        
-        public string? UserID { get; set; }
+        public string? UserId { get; set; }
     }
 
-    public class DeletePlaylistContentDTO
+    public class DeletePlaylistContentDto
     {
-        public string? PlaylistID { get; set; }
-        public string? MultimediaContentID { get; set; }
+        public string? PlaylistId { get; set; }
+        public string? MultimediaContentId { get; set; }
     }
 }

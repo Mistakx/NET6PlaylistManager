@@ -19,5 +19,5 @@ public class UserDetailsDto
 
     [BsonElement("profilePhotoUrl")] public string ProfilePhotoUrl { get; set; } = null!;
 
-    [BsonElement("favorites")] public List<PlaylistBasicDetailsDto>? Favorites { get; set; }
+    [BsonElement("favorites")] public List<PlaylistRequests.PlaylistBasicDetailsDto>? Favorites { get; set; }
 }

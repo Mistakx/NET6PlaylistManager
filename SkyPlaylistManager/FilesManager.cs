@@ -52,7 +52,7 @@ namespace SkyPlaylistManager
             catch (Exception ex)
             {
                 Console.WriteLine(ex);
-                return ("Erro ao fazer upload do ficheiro.");
+                return ("Error uploading file");
             }
         }
 

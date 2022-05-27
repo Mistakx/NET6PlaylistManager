@@ -101,7 +101,10 @@ namespace SkyPlaylistManager.Services
         public async Task<UserCollection?> GetUserById(string userId) =>
             await _usersCollection.Find(u => u.Id == userId).FirstOrDefaultAsync();
 
-
+        public async Task<UserCollection?> GetUserByUsername(string username) =>
+            await _usersCollection.Find(u => u.Username == username).FirstOrDefaultAsync();
+        
+        
         public async Task<UserCollection?> GetUserByEmail(string email) =>
             await _usersCollection.Find(u => u.Email == email).FirstOrDefaultAsync();
 
@@ -124,33 +127,41 @@ namespace SkyPlaylistManager.Services
             await _usersCollection.UpdateOneAsync(filter, update);
         }
         
-        public async Task UpdatePassword(string userID, string newPassword)
+        public async Task UpdatePassword(string userId, string newPassword)
         {
-            var filter = Builders<UserCollection>.Filter.Eq(p => p.Id, userID);
+            var filter = Builders<UserCollection>.Filter.Eq(p => p.Id, userId);
             var update = Builders<UserCollection>.Update.Set("password", newPassword);
 
             await _usersCollection.UpdateOneAsync(filter, update);
         }
         
-        public async Task UpdateEmail(string userID, string newEmail)
+        public async Task UpdateEmail(string userId, string newEmail)
         {
-            var filter = Builders<UserCollection>.Filter.Eq(p => p.Id, userID);
+            var filter = Builders<UserCollection>.Filter.Eq(p => p.Id, userId);
             var update = Builders<UserCollection>.Update.Set("email", newEmail);
 
             await _usersCollection.UpdateOneAsync(filter, update);
         }
         
-        public async Task UpdateName(string userID, string newName)
+        public async Task UpdateName(string userId, string newName)
         {
-            var filter = Builders<UserCollection>.Filter.Eq(p =>p.Id, userID);
+            var filter = Builders<UserCollection>.Filter.Eq(p =>p.Id, userId);
             var updated = Builders<UserCollection>.Update.Set("name", newName);
 
             await _usersCollection.UpdateOneAsync(filter, updated);
         }
         
-        public async Task DeleteUserPlaylist(string userID, ObjectId playlist)
+        public async Task UpdateUsername(string userId, string newUsername)
         {
-            var filter = Builders<UserCollection>.Filter.Eq(u=>u.Id, userID);
+            var filter = Builders<UserCollection>.Filter.Eq(p =>p.Id, userId);
+            var updated = Builders<UserCollection>.Update.Set("username", newUsername);
+
+            await _usersCollection.UpdateOneAsync(filter, updated);
+        }
+        
+        public async Task DeleteUserPlaylist(string userId, ObjectId playlist)
+        {
+            var filter = Builders<UserCollection>.Filter.Eq(u=>u.Id, userId);
             var update = Builders<UserCollection>.Update.Pull("userPlaylists", playlist);
 
             await _usersCollection.UpdateOneAsync(filter, update);
