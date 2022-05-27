@@ -2,7 +2,7 @@
 
     public class UserSignupDto {
         
-        public IFormFile UserPhoto { get; set; }
+        public IFormFile? UserPhoto { get; set; }
         public string Email { get; set; }
         public string Password { get; set; } 
         public string Name { get; set; }

@@ -32,9 +32,6 @@ public class UserController : ControllerBase
     }
 
 
-
-
-
     [HttpGet("Playlists/{userId:length(24)}")]
     public async Task<List<PlaylistInformationDto>?> UserPlaylists(string userId)
     {
@@ -104,11 +101,13 @@ public class UserController : ControllerBase
     [HttpGet("{sessionToken:length(24)}")]
     public async Task<UserCompleteProfileDto?> UserCompleteProfile(string sessionToken)
     {
-        var userCompleteProfile = await _usersService.GetUserDetailsAndPlaylists(_sessionTokensService.GetUserId(sessionToken));
+        var userCompleteProfile =
+            await _usersService.GetUserDetailsAndPlaylists(_sessionTokensService.GetUserId(sessionToken));
 
         try
         {
-            var deserializedUserCompleteProfile = BsonSerializer.Deserialize<UserCompleteProfileDto>(userCompleteProfile);
+            var deserializedUserCompleteProfile =
+                BsonSerializer.Deserialize<UserCompleteProfileDto>(userCompleteProfile);
             return deserializedUserCompleteProfile;
         }
         catch (Exception ex)
@@ -127,11 +126,11 @@ public class UserController : ControllerBase
         {
             var userId = _sessionTokensService.GetUserId(request.SessionToken!);
             var generatedFileName = _filesManager.InsertInDirectory(request.UserPhoto!, "UsersProfilePhotos");
-            
+
             var oldPhoto = await _usersService.GetUserProfilePhoto(userId);
-         
+
             await _usersService.UpdateUserProfilePhoto(userId, "GetImage/UsersProfilePhotos/" + generatedFileName);
-            _filesManager.DeleteFromDirectory((string)oldPhoto["profilePhotoUrl"], "UsersProfilePhotos");
+            _filesManager.DeleteFromDirectory((string) oldPhoto["profilePhotoUrl"], "UsersProfilePhotos");
             return Ok("Profile photo updated successfully");
         }
         catch (Exception ex)
@@ -165,17 +164,28 @@ public class UserController : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromForm] UserSignupDto request)
     {
-        var foundUser = await _usersService.GetUserByEmail(request.Email);
-
-        if (foundUser != null) return BadRequest("Email already taken");
-
-        if (!_filesManager.IsValidImage(request.UserPhoto)) return BadRequest("Invalid image used on user register");
-
         try
         {
-            var generatedFileName = _filesManager.InsertInDirectory(request.UserPhoto, "UsersProfilePhotos");
-            var user = new UserCollection(request, "GetImage/UsersProfilePhotos/" + generatedFileName);
+            var foundUserByEmail = await _usersService.GetUserByEmail(request.Email);
 
+            if (foundUserByEmail != null) return BadRequest("Email already taken");
+            
+            var foundUserByUsername = await _usersService.GetUserByUsername(request.Username);
+
+            if (foundUserByUsername != null) return BadRequest("Username already taken");
+
+            UserCollection user;
+            if (request.UserPhoto == null)
+            {
+                user = new UserCollection(request, "https://uploads-ssl.webflow.com/5ff35d7f43faaaadc00d1741/61291e65ed6d7332e7e709dc_depositphotos_137014128-stock-illustration-user-profile-icon.jpeg");
+            }
+            else
+            {
+                var generatedFileName = _filesManager.InsertInDirectory(request.UserPhoto, "UsersProfilePhotos");
+                user = new UserCollection(request, "GetImage/UsersProfilePhotos/" + generatedFileName);
+                if (!_filesManager.IsValidImage(request.UserPhoto)) return BadRequest("Invalid image used on user register");
+            }
+            
             await _usersService.CreateUser(user);
             return Ok("User successfully registered");
         }
@@ -190,13 +200,12 @@ public class UserController : ControllerBase
     [HttpPost("editPassword")]
     public async Task<IActionResult> EditPassword(EditPasswordDto request)
     {
-        
         var userId = _sessionTokensService.GetUserId(request.SessionToken!);
 
         try
         {
-            
-            if (request.CurrentPassword == request.NewPassword) return BadRequest("New password must be different from current password");
+            if (request.CurrentPassword == request.NewPassword)
+                return BadRequest("New password must be different from current password");
 
             var foundUser = await _usersService.GetUserById(userId);
 
@@ -221,36 +230,35 @@ public class UserController : ControllerBase
     [HttpPost("editUserInfo")]
     public async Task<IActionResult> EditUserInfo(EditUserInfoDto request)
     {
-
         var userId = _sessionTokensService.GetUserId(request.SessionToken!);
 
         var userCurrentInformation = await _usersService.GetUserById(userId);
-        
-        if (request.NewEmail == userCurrentInformation?.Email && 
-            request.NewUsername == userCurrentInformation?.Username && 
+
+        if (request.NewEmail == userCurrentInformation?.Email &&
+            request.NewUsername == userCurrentInformation?.Username &&
             request.NewName == userCurrentInformation?.Name)
         {
             return BadRequest("No edits were made");
         }
-        
+
         if (request.NewUsername != userCurrentInformation?.Username)
         {
             var foundUserByUsername = await _usersService.GetUserByUsername(request.NewUsername!);
             if (foundUserByUsername != null) return BadRequest("Username already exists");
         }
-        
+
         if (request.NewEmail != userCurrentInformation?.Email)
         {
             var foundUserByEmail = await _usersService.GetUserByEmail(request.NewEmail!);
             if (foundUserByEmail != null) return BadRequest("Email already exists");
         }
-        
+
         await _usersService.UpdateEmail(userId, request.NewEmail!);
         await _usersService.UpdateName(userId, request.NewName!);
         await _usersService.UpdateUsername(userId, request.NewUsername!);
         return Ok("User information successfully updated");
     }
-    
+
     [HttpPost("editEmail")]
     public async Task<IActionResult> EditEmail(EditEmailDto email)
     {
