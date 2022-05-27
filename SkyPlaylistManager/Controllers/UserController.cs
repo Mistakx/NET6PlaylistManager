@@ -188,23 +188,34 @@ public class UserController : ControllerBase
 
 
     [HttpPost("editPassword")]
-    public async Task<IActionResult> EditPassword(EditPasswordDto password)
+    public async Task<IActionResult> EditPassword(EditPasswordDto request)
     {
         
-        var userId = _sessionTokensService.GetUserId(password.SessionToken!);
-        
-        var foundUser = await _usersService.GetUserById(userId);
+        var userId = _sessionTokensService.GetUserId(request.SessionToken!);
 
-        if (foundUser == null) return BadRequest("ID doesn't exist");
-
-        if (!BCrypt.Net.BCrypt.Verify(password.OldPassword, foundUser.Password))
+        try
         {
-            return BadRequest("Invalid current password");
-        }
+            
+            if (request.CurrentPassword == request.NewPassword) return BadRequest("New password must be different from current password");
 
-        var encryptedPassword = BCrypt.Net.BCrypt.HashPassword(password.NewPassword);
-        await _usersService.UpdatePassword(userId, encryptedPassword);
-        return Ok("Password successfully updated.");
+            var foundUser = await _usersService.GetUserById(userId);
+
+            if (foundUser == null) return BadRequest("User ID doesn't exist");
+
+            if (!BCrypt.Net.BCrypt.Verify(request.CurrentPassword, foundUser.Password))
+            {
+                return BadRequest("Invalid current password");
+            }
+
+            var encryptedPassword = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+            await _usersService.UpdatePassword(userId, encryptedPassword);
+            return Ok("Password successfully updated.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            return BadRequest("Password  occurred on password update");
+        }
     }
 
     [HttpPost("editUserInfo")]
