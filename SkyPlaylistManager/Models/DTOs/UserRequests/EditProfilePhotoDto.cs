@@ -1,8 +1,7 @@
-﻿namespace SkyPlaylistManager.Models.DTOs.UserRequests
+﻿namespace SkyPlaylistManager.Models.DTOs.UserRequests;
+
+public class EditProfilePhotoDto
 {
-    public class EditProfilePhotoDto
-    {
-        public IFormFile? UserPhoto { get; set; }
-        public string? SessionToken { get; set; }
-    }
+    public IFormFile UserPhoto { get; set; }
+    public string SessionToken { get; set; }
 }

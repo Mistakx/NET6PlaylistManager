@@ -2,28 +2,28 @@ using SkyPlaylistManager.Models;
 using SkyPlaylistManager.Models.Database;
 using SkyPlaylistManager.Services;
 using SkyPlaylistManager;
-using SkyPlaylistManager.Models.Database.GenericResults;
+using SkyPlaylistManager.Models.GeneralizedResults;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.Configure<DatabaseSettings>(builder.Configuration.GetSection("SkyPlaylistManagerDataBase"));
+builder.Services.Configure<DatabaseSettings>(builder.Configuration.GetSection("SkyPlaylistManagerDatabase"));
 
 builder.Services.AddSingleton<UsersService>();
 builder.Services.AddSingleton<PlaylistsService>();
 builder.Services.AddSingleton<SessionTokensService>();
 builder.Services.AddSingleton<GeneralizedResultsService>();
-builder.Services.AddSingleton<MultimediaContentFactory>();
+builder.Services.AddSingleton<GeneralizedResultFactory>();
 builder.Services.AddSingleton<FilesManager>();
 
 
 builder.Services.AddScoped(_ =>
 {
-    var multimediaContentFactory = new MultimediaContentFactory();
-    multimediaContentFactory.RegisterType("GenericVideoResult", () => new GenericVideoResult(multimediaContentFactory._args));
-    multimediaContentFactory.RegisterType("GenericTrackResult", () => new GenericTrackResult(multimediaContentFactory._args));
-    multimediaContentFactory.RegisterType("GenericLivestreamResult", () => new GenericLivestreamResult(multimediaContentFactory._args));
-    return multimediaContentFactory;
+    var generalizedResultFactory = new GeneralizedResultFactory();
+    generalizedResultFactory.RegisterType("GenericVideoResult", () => new GeneralizedVideoResult(generalizedResultFactory.Request));
+    generalizedResultFactory.RegisterType("GenericTrackResult", () => new GeneralizedTrackResult(generalizedResultFactory.Request));
+    generalizedResultFactory.RegisterType("GenericLivestreamResult", () => new GeneralizedLivestreamResult(generalizedResultFactory.Request));
+    return generalizedResultFactory;
 });
 
 builder.Services.AddControllersWithViews();

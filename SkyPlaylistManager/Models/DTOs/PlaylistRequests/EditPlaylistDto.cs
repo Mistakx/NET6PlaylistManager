@@ -1,7 +1,6 @@
-﻿namespace SkyPlaylistManager.Models.DTOs.PlaylistRequests
+﻿namespace SkyPlaylistManager.Models.DTOs.PlaylistRequests;
+
+public class EditPlaylistDto : CreatePlaylistDto
 {
-    public class EditPlaylistDto : CreatePlaylistDto
-    {
-        public string PlaylistId { get; set; }
-    }
+    public string PlaylistId { get; set; }
 }

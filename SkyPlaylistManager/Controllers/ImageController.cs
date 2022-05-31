@@ -2,7 +2,7 @@
 
 namespace SkyPlaylistManager.Controllers
 {
-    public class CommonController : ControllerBase
+    public class ImageController : ControllerBase
     {
         [HttpGet("GetImage/{folder}/{imageName}")] // https://stackoverflow.com/questions/186062/can-an-asp-net-mvc-controller-return-an-image
         public Task<IActionResult> GetImage(string imageName, string folder)

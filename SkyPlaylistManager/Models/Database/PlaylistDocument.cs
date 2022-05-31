@@ -5,9 +5,9 @@ using SkyPlaylistManager.Services;
 
 namespace SkyPlaylistManager.Models.Database
 {
-    public class PlaylistCollection
+    public class PlaylistDocument
     {
-        public PlaylistCollection(CreatePlaylistDto request, SessionTokensService sessionTokensService)
+        public PlaylistDocument(CreatePlaylistDto request, SessionTokensService sessionTokensService)
         {
             Title = request.Title;
             CreationDate = DateTime.Now;
@@ -35,11 +35,7 @@ namespace SkyPlaylistManager.Models.Database
         public string Owner { get; set; }
 
         [BsonElement("sharedWith")] public List<ObjectId>? SharedWith { get; set; }
-
         [BsonElement("contents")] public List<ObjectId>? Contents { get; set; }
-
         [BsonElement("description")] public string Description { get; set; }
-        
-        [BsonElement("thumbnailUrl")] public string ThumbnailUrl { get; set; }
     }
 }

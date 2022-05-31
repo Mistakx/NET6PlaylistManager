@@ -1,36 +1,27 @@
 ﻿using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using SkyPlaylistManager.Models.Database;
-using SkyPlaylistManager.Models.Database.GenericResults;
+using SkyPlaylistManager.Models.GeneralizedResults;
 
 
 namespace SkyPlaylistManager.Services
 {
     public class GeneralizedResultsService
     {
-        private readonly IMongoCollection<GenericResult> _generalizedResultsCollection;
+        private readonly IMongoCollection<GeneralizedResult> _generalizedResultsCollection;
 
-
-        public GeneralizedResultsService(IOptions<DatabaseSettings> SkyPlaylistManagerDatabaseSettings)
+        public GeneralizedResultsService(IOptions<DatabaseSettings> databaseSettings)
         {
             var mongoClient = new MongoClient(
-                SkyPlaylistManagerDatabaseSettings.Value.ConnectionString);
+                databaseSettings.Value.ConnectionString);
 
             var mongoDatabase = mongoClient.GetDatabase(
-                SkyPlaylistManagerDatabaseSettings.Value.DatabaseName);
+                databaseSettings.Value.DatabaseName);
 
-            _generalizedResultsCollection = mongoDatabase.GetCollection<GenericResult>(("MultimediaContents"));
+            _generalizedResultsCollection = mongoDatabase.GetCollection<GeneralizedResult>(databaseSettings.Value.GeneralizedResultsCollectionName);
         }
 
-
-        public async Task CreateGeneralizedResult(GenericResult genericResult) =>
-            await _generalizedResultsCollection.InsertOneAsync(genericResult);
-
-        public async Task UpdateGeneralizedResultUsage(string multimediaContentId, int increment)
-        {
-            var filter = Builders<GenericResult>.Filter.Eq(m => m.Id, multimediaContentId);
-            // var update = Builders<GenericResult>.Update.Inc(m => m.Usages, increment);
-            // await _multimediaContentsCollection.FindOneAndUpdateAsync(filter, update);
-        }
+        public async Task CreateGeneralizedResult(GeneralizedResult generalizedResult) =>
+            await _generalizedResultsCollection.InsertOneAsync(generalizedResult);
     }
 }

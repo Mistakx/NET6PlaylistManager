@@ -3,7 +3,7 @@ using MongoDB.Bson.Serialization;
 using SkyPlaylistManager.Services;
 using SkyPlaylistManager.Models.Database;
 using SkyPlaylistManager.Models.DTOs.PlaylistRequests;
-using SkyPlaylistManager.Models.DTOs.User;
+using SkyPlaylistManager.Models.DTOs.PlaylistResponses;
 using SkyPlaylistManager.Models.DTOs.UserRequests;
 using LoginDto = SkyPlaylistManager.Models.DTOs.UserRequests.LoginDto;
 
@@ -169,23 +169,25 @@ public class UserController : ControllerBase
             var foundUserByEmail = await _usersService.GetUserByEmail(request.Email);
 
             if (foundUserByEmail != null) return BadRequest("Email already taken");
-            
+
             var foundUserByUsername = await _usersService.GetUserByUsername(request.Username);
 
             if (foundUserByUsername != null) return BadRequest("Username already taken");
 
-            UserCollection user;
+            UserDocument user;
             if (request.UserPhoto == null)
             {
-                user = new UserCollection(request, "https://uploads-ssl.webflow.com/5ff35d7f43faaaadc00d1741/61291e65ed6d7332e7e709dc_depositphotos_137014128-stock-illustration-user-profile-icon.jpeg");
+                user = new UserDocument(request,
+                    "https://uploads-ssl.webflow.com/5ff35d7f43faaaadc00d1741/61291e65ed6d7332e7e709dc_depositphotos_137014128-stock-illustration-user-profile-icon.jpeg");
             }
             else
             {
                 var generatedFileName = _filesManager.InsertInDirectory(request.UserPhoto, "UsersProfilePhotos");
-                user = new UserCollection(request, "GetImage/UsersProfilePhotos/" + generatedFileName);
-                if (!_filesManager.IsValidImage(request.UserPhoto)) return BadRequest("Invalid image used on user register");
+                user = new UserDocument(request, "GetImage/UsersProfilePhotos/" + generatedFileName);
+                if (!_filesManager.IsValidImage(request.UserPhoto))
+                    return BadRequest("Invalid image used on user register");
             }
-            
+
             await _usersService.CreateUser(user);
             return Ok("User successfully registered");
         }

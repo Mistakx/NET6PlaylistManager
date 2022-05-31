@@ -5,12 +5,9 @@ using MongoDB.Bson.Serialization;
 using SkyPlaylistManager.Services;
 using SkyPlaylistManager.Models;
 using SkyPlaylistManager.Models.Database;
-using SkyPlaylistManager.Models.DTOs;
 using SkyPlaylistManager.Models.DTOs.PlaylistRequests;
-using DeletePlaylistContentDto = SkyPlaylistManager.Models.DTOs.PlaylistRequests.DeletePlaylistContentDto;
-using DeletePlaylistDto = SkyPlaylistManager.Models.DTOs.PlaylistRequests.DeletePlaylistDto;
-using PlaylistBasicDetailsDto = SkyPlaylistManager.Models.DTOs.PlaylistRequests.PlaylistBasicDetailsDto;
-using PlaylistShareDto = SkyPlaylistManager.Models.DTOs.PlaylistRequests.PlaylistShareDto;
+using SkyPlaylistManager.Models.DTOs.PlaylistResponses;
+using PlaylistBasicDetailsDto = SkyPlaylistManager.Models.DTOs.PlaylistResponses.PlaylistBasicDetailsDto;
 
 namespace SkyPlaylistManager.Controllers
 {
@@ -18,20 +15,19 @@ namespace SkyPlaylistManager.Controllers
     [Route("[controller]")]
     public class PlaylistController : Controller
     {
-        private readonly PlaylistsService _playListsService;
-        private readonly UsersService _usersService;
-        private readonly GeneralizedResultsService _generalizedResultsService;
-        private readonly MultimediaContentFactory _multimediaContentFactory;
-        private readonly SessionTokensService _sessionTokensService;
-        private readonly FilesManager _filesManager;
-
         private const string PlaylistIdDoesntExistMessage = "Playlist ID doesn't exist";
+        private readonly FilesManager _filesManager;
+        private readonly GeneralizedResultFactory _generalizedResultFactory;
+        private readonly GeneralizedResultsService _generalizedResultsService;
+        private readonly PlaylistsService _playListsService;
+        private readonly SessionTokensService _sessionTokensService;
+        private readonly UsersService _usersService;
 
         public PlaylistController(
             PlaylistsService playlistsService,
             UsersService usersService,
             GeneralizedResultsService generalizedResultsService,
-            MultimediaContentFactory multimediaContentFactory,
+            GeneralizedResultFactory generalizedResultFactory,
             SessionTokensService sessionTokensService,
             FilesManager filesManager
         )
@@ -39,7 +35,7 @@ namespace SkyPlaylistManager.Controllers
             _playListsService = playlistsService;
             _usersService = usersService;
             _generalizedResultsService = generalizedResultsService;
-            _multimediaContentFactory = multimediaContentFactory;
+            _generalizedResultFactory = generalizedResultFactory;
             _sessionTokensService = sessionTokensService;
             _filesManager = filesManager;
         }
@@ -67,7 +63,7 @@ namespace SkyPlaylistManager.Controllers
             "getGeneralizedResults/{playlistId:length(24)}")] // TODO: Verificar se a playlist é privada. Só retornar a playlist caso seja pública ou partilhada com o user da sessão.
         public async Task<PlaylistContentsDto?> PlaylistContent(string playlistId)
         {
-            var playlistContents = await _playListsService.GetPlaylistContents(playlistId);
+            var playlistContents = await _playListsService.GetPlaylistGeneralizedResults(playlistId);
 
             try
             {
@@ -83,20 +79,21 @@ namespace SkyPlaylistManager.Controllers
 
 
         [HttpPost("addToPlaylist")]
-        public async Task<IActionResult> AddMultimediaContentToPlaylist(JsonObject request)
+        public async Task<IActionResult> AddGeneralizedResultToPlaylist(JsonObject request)
+            // TODO: Check if content is already in playlist 
         {
             try
             {
-                var type = (string?) request["interface"];
+                var resultType = (string?) request["resultType"];
 
-                _multimediaContentFactory._args = request;
-                var genericResult = _multimediaContentFactory[type!];
-                await _generalizedResultsService.CreateGeneralizedResult(genericResult);
+                _generalizedResultFactory.Request = request;
+                var generalizedResult = _generalizedResultFactory[resultType!];
+                await _generalizedResultsService.CreateGeneralizedResult(generalizedResult);
 
                 var playlistId = (string?) request["playlistId"];
-                var createdMultimediaContentId = ObjectId.Parse(genericResult.Id);
+                var generalizedResultId = ObjectId.Parse(generalizedResult.Id);
 
-                await _playListsService.InsertMultimediaContentInPlaylist(playlistId!, createdMultimediaContentId);
+                await _playListsService.InsertGeneralizedResultInPlaylist(playlistId!, generalizedResultId);
                 return Ok("Successfully added to playlist");
             }
 
@@ -130,7 +127,7 @@ namespace SkyPlaylistManager.Controllers
         {
             try
             {
-                var playlist = new PlaylistCollection(request, _sessionTokensService);
+                var playlist = new PlaylistDocument(request, _sessionTokensService);
                 await _playListsService.CreatePlaylist(playlist);
                 return Ok("Playlist successfully created");
             }
@@ -143,17 +140,17 @@ namespace SkyPlaylistManager.Controllers
 
 
         [HttpPost("deletePlaylist")]
-        public async Task<IActionResult> DeletePlaylist(DeletePlaylistDto playlist)
+        public async Task<IActionResult> DeletePlaylist(DeletePlaylistDto request)
         {
             try
             {
-                var foundPlaylist = await _playListsService.GetPlaylistById(playlist.Id!);
+                var foundPlaylist = await _playListsService.GetPlaylistById(request.Id);
 
 
                 if (foundPlaylist == null) return BadRequest(PlaylistIdDoesntExistMessage);
 
-                var id = ObjectId.Parse(playlist.Id);
-                await _playListsService.DeletePlaylist(playlist.Id!);
+                var id = ObjectId.Parse(request.Id);
+                await _playListsService.DeletePlaylist(request.Id);
 
                 var owner = foundPlaylist.Owner;
                 await _usersService.DeleteUserPlaylist(owner, id);
@@ -191,14 +188,14 @@ namespace SkyPlaylistManager.Controllers
         [HttpPost("deleteGeneralizedResult")]
         public async Task<IActionResult> DeleteGeneralizedResult(DeletePlaylistContentDto request)
         {
-            var foundPlaylist = await _playListsService.GetPlaylistById(request.PlaylistId!);
-
-            if (foundPlaylist == null) return BadRequest(PlaylistIdDoesntExistMessage);
-
             try
             {
+                var foundPlaylist = await _playListsService.GetPlaylistById(request.PlaylistId);
+
+                if (foundPlaylist == null) return BadRequest(PlaylistIdDoesntExistMessage);
+
                 var generalizedResultToDeleteId = new ObjectId(request.GeneralizedResultDatabaseId);
-                await _playListsService.DeleteMultimediaContentInPlaylist(request.PlaylistId!,
+                await _playListsService.DeleteMultimediaContentInPlaylist(request.PlaylistId,
                     generalizedResultToDeleteId);
                 return Ok("Successfully removed from playlist");
             }
@@ -212,11 +209,11 @@ namespace SkyPlaylistManager.Controllers
         [HttpPost("editPlaylistPhoto")]
         public async Task<IActionResult> EditProfilePhoto([FromForm] EditPlaylistThumbnail request)
         {
-            if (!_filesManager.IsValidImage(request.PlaylistPhoto!)) return BadRequest("Invalid image format");
+            if (!_filesManager.IsValidImage(request.PlaylistPhoto)) return BadRequest("Invalid image format");
             try
             {
                 var playlistId = request.PlaylistId;
-                var generatedFileName = _filesManager.InsertInDirectory(request.PlaylistPhoto!, "PlaylistsThumbnails");
+                var generatedFileName = _filesManager.InsertInDirectory(request.PlaylistPhoto, "PlaylistsThumbnails");
 
                 var oldPhoto = await _playListsService.GetPlaylistPhoto(playlistId);
 

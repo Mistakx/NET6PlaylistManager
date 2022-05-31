@@ -4,8 +4,18 @@ using SkyPlaylistManager.Models.DTOs.UserRequests;
 
 namespace SkyPlaylistManager.Models.Database
 {
-    public class UserCollection
+    public class UserDocument
     {
+        public UserDocument(UserSignupDto userSignup, string profilePhotoUrl)
+        {
+            Email = userSignup.Email;
+            Password = BCrypt.Net.BCrypt.HashPassword(userSignup.Password);
+            Name = userSignup.Name;
+            Username = userSignup.Username;
+            ProfilePhotoUrl = profilePhotoUrl;
+            UserPlaylists = new List<ObjectId>();
+        }
+
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
         public string? Id { get; set; }
@@ -16,18 +26,5 @@ namespace SkyPlaylistManager.Models.Database
         [BsonElement("name")] public string Name { get; set; }
         [BsonElement("profilePhotoUrl")] public string ProfilePhotoUrl { get; set; }
         [BsonElement("userPlaylists")] public List<ObjectId>? UserPlaylists { get; set; }
-        [BsonElement("favorites")] public List<ObjectId>? Favorites { get; set; }
-
-
-        public UserCollection(UserSignupDto userSignup, string profilePhotoUrl)
-        {
-            Email = userSignup.Email;
-            Password = BCrypt.Net.BCrypt.HashPassword(userSignup.Password);
-            Name = userSignup.Name;
-            Username = userSignup.Username;
-            ProfilePhotoUrl = profilePhotoUrl;
-            UserPlaylists = new List<ObjectId>();
-            Favorites = new List<ObjectId>();
-        }
     }
 }
