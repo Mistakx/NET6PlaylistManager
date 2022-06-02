@@ -5,6 +5,7 @@ using MongoDB.Bson.Serialization;
 using SkyPlaylistManager.Services;
 using SkyPlaylistManager.Models;
 using SkyPlaylistManager.Models.Database;
+using SkyPlaylistManager.Models.DTOs.GeneralizedResults;
 using SkyPlaylistManager.Models.DTOs.PlaylistRequests;
 using SkyPlaylistManager.Models.DTOs.PlaylistResponses;
 using PlaylistBasicDetailsDto = SkyPlaylistManager.Models.DTOs.PlaylistResponses.PlaylistBasicDetailsDto;
@@ -78,49 +79,6 @@ namespace SkyPlaylistManager.Controllers
         }
 
 
-        [HttpPost("addToPlaylist")]
-        public async Task<IActionResult> AddGeneralizedResultToPlaylist(JsonObject request)
-            // TODO: Check if content is already in playlist 
-        {
-            try
-            {
-                var resultType = (string?) request["resultType"];
-
-                _generalizedResultFactory.Request = request;
-                var generalizedResult = _generalizedResultFactory[resultType!];
-                await _generalizedResultsService.CreateGeneralizedResult(generalizedResult);
-
-                var playlistId = (string?) request["playlistId"];
-                var generalizedResultId = ObjectId.Parse(generalizedResult.Id);
-
-                await _playListsService.InsertGeneralizedResultInPlaylist(playlistId!, generalizedResultId);
-                return Ok("Successfully added to playlist");
-            }
-
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.StackTrace);
-                return NotFound();
-            }
-        }
-
-
-        [HttpPost("share")]
-        public async Task<IActionResult> SharePlaylist(PlaylistShareDto newPlaylistShareDto)
-        {
-            try
-            {
-                await _playListsService.InsertUserInSharedWithArray(newPlaylistShareDto.PlaylistId,
-                    new ObjectId(newPlaylistShareDto.UserId));
-                return Ok("Playlist successfully shared");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex);
-                return BadRequest("An error occurred while sharing the playlist");
-            }
-        }
-
 
         [HttpPost("create")]
         public async Task<IActionResult> CreatePlaylist(CreatePlaylistDto request)
@@ -137,7 +95,6 @@ namespace SkyPlaylistManager.Controllers
                 return BadRequest("Error while creating playlist");
             }
         }
-
 
         [HttpPost("deletePlaylist")]
         public async Task<IActionResult> DeletePlaylist(DeletePlaylistDto request)
@@ -163,28 +120,59 @@ namespace SkyPlaylistManager.Controllers
                 return BadRequest("Error while deleting playlist");
             }
         }
-
-        [HttpPost("removeShare")]
-        public async Task<IActionResult> RemoveShare(PlaylistShareDto request)
+        
+        [HttpPost("addToPlaylist")]
+        public async Task<IActionResult> AddGeneralizedResultToPlaylist(AddGeneralizedResultPlaylistDto request)
         {
-            var foundPlaylist = await _playListsService.GetPlaylistById(request.PlaylistId);
-            if (foundPlaylist == null) return BadRequest(new {message = "No playlist with that ID exists"});
-
-            var foundUser = await _usersService.GetUserById(request.UserId);
-            if (foundUser == null) return BadRequest(new {message = "No user with that ID exists"});
-
             try
             {
-                await _playListsService.DeleteShare(request.PlaylistId, new ObjectId(request.UserId));
-                return Ok("User successfully removed");
+                if (await _playListsService.GeneralizedResultAlreadyInPlaylist(
+                        request.PlaylistId,
+                        request.Title,
+                        request.PlayerFactoryName,
+                        request.PlatformPlayerUrl!
+                    ))
+                {
+                    return BadRequest("Result already in playlist");
+                }
+
+                _generalizedResultFactory.Request = request;
+                var generalizedResult = _generalizedResultFactory[request.ResultType];
+                await _generalizedResultsService.CreateGeneralizedResult(generalizedResult);
+
+                var generalizedResultId = ObjectId.Parse(generalizedResult.Id);
+
+                await _playListsService.InsertGeneralizedResultInPlaylist(request.PlaylistId, generalizedResultId);
+                return Ok("Successfully added to playlist");
             }
-            catch (Exception e)
+
+            catch (Exception ex)
             {
-                Console.WriteLine(e.StackTrace);
-                return NotFound();
+                Console.WriteLine(ex.StackTrace);
+                return BadRequest("Error occurred while adding to playlist");
             }
         }
 
+        [HttpPost("sortResult")]
+        public async Task<IActionResult> SortResult(SortContentsDto request)
+        {
+            try
+            {
+
+                var generalResultId = ObjectId.Parse(request.GeneralizedResultDatabaseId);
+                await _playListsService.DeleteMultimediaContentInPlaylist(request.PlaylistId, generalResultId);
+                await _playListsService.InsertGeneralizedResultInSpecificPosition(request);
+                return Ok("Successfully sorted result");
+            }
+
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.StackTrace);
+                return BadRequest("Error occurred while sorting result");
+            }
+        }
+
+        
         [HttpPost("deleteGeneralizedResult")]
         public async Task<IActionResult> DeleteGeneralizedResult(DeletePlaylistContentDto request)
         {
@@ -228,7 +216,6 @@ namespace SkyPlaylistManager.Controllers
                 return BadRequest("Error occured while changing profile picture");
             }
         }
-
 
         [HttpPost("setCoverItem")]
         public async Task<IActionResult> SetCoverItem(SetCoverItem request)

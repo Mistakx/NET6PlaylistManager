@@ -3,6 +3,7 @@
 public class SortContentsDto
 {
     public string PlaylistId { get; set; }
-    public string GeneralizedResultId { get; set; }
+    public string GeneralizedResultDatabaseId { get; set; }
     public int NewIndex { get; set; }
+    public string SessionToken { get; set; }
 }

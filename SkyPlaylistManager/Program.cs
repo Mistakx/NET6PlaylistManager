@@ -2,7 +2,7 @@ using SkyPlaylistManager.Models;
 using SkyPlaylistManager.Models.Database;
 using SkyPlaylistManager.Services;
 using SkyPlaylistManager;
-using SkyPlaylistManager.Models.GeneralizedResults;
+using SkyPlaylistManager.Models.DTOs.GeneralizedResults;
 
 var builder = WebApplication.CreateBuilder(args);
 

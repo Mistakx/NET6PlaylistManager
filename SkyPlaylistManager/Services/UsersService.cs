@@ -9,66 +9,34 @@ namespace SkyPlaylistManager.Services
     public class UsersService
     {
         private readonly IMongoCollection<UserDocument> _usersCollection;
+        private readonly string _playlistsCollectionName;
 
-
-        public UsersService(IOptions<DatabaseSettings> skyPlaylistManagerDatabaseSettings)
+        public UsersService(IOptions<DatabaseSettings> databaseSettings)
         {
             var mongoClient = new MongoClient(
-                skyPlaylistManagerDatabaseSettings.Value.ConnectionString);
+                databaseSettings.Value.ConnectionString);
 
             var mongoDatabase = mongoClient.GetDatabase(
-                skyPlaylistManagerDatabaseSettings.Value.DatabaseName);
+                databaseSettings.Value.DatabaseName);
 
-            _usersCollection = mongoDatabase.GetCollection<UserDocument>(("Users"));
+            _usersCollection = mongoDatabase.GetCollection<UserDocument>(databaseSettings.Value.UsersCollectionName);
+            _playlistsCollectionName = databaseSettings.Value.PlaylistsCollectionName;
         }
-
 
         public async Task<BsonDocument>
             GetUserDetailsAndPlaylists(string userId) // TODO: está a retornar apenas uma playlist
         {
             var filter = Builders<UserDocument>.Filter.Eq(u => u.Id, userId);
             var query = _usersCollection.Aggregate().Match(filter)
-                .Lookup("Playlists", "userPlaylists", "_id", "userPlaylists")
+                .Lookup(_playlistsCollectionName, "userPlaylists", "_id", "userPlaylists")
                 .Project(Builders<BsonDocument>.Projection.Exclude("password"))
                 .Project(Builders<BsonDocument>.Projection.Exclude("userPlaylists.owner")
-                    .Exclude("userPlaylists.sharedWith")
-                    .Exclude("userPlaylists.contents"));
+                .Exclude("userPlaylists.contents"));
 
             //var result = await query.FirstOrDefaultAsync();
             List<BsonDocument> result = await query.ToListAsync();
 
             return result[0];
-        }
-
-        public async Task<List<BsonDocument>> GetUserPlaylists(string userId)
-        {
-            var filter = Builders<UserDocument>.Filter.Eq(u => u.Id, userId);
-            var query = _usersCollection.Aggregate().Match(filter)
-                .Lookup("Playlists", "userPlaylists", "_id", "userPlaylists")
-                .Project(Builders<BsonDocument>.Projection.Exclude("password"))
-                .Project(Builders<BsonDocument>.Projection.Exclude("userPlaylists.owner")
-                    .Exclude("userPlaylists.sharedWith")
-                    .Exclude("userPlaylists.contents"));
-
-            List<BsonDocument> result = await query.ToListAsync();
-
-            return result;
-        }
-
-        public async Task<List<BsonDocument>> GetUserNamePlaylists(string username)
-        {
-            var filter = Builders<UserDocument>.Filter.Eq(u => u.Username, username);
-            var query = _usersCollection.Aggregate().Match(filter)
-                .Lookup("Playlists", "userPlaylists", "_id", "userPlaylists")
-                .Project(Builders<BsonDocument>.Projection.Exclude("password"))
-                .Project(Builders<BsonDocument>.Projection.Exclude("userPlaylists.owner")
-                    .Exclude("userPlaylists.sharedWith")
-                    .Exclude("userPlaylists.sharedWith")
-                    .Exclude("userPlaylists.contents"));
-
-            List<BsonDocument> result = await query.ToListAsync();
-
-            return result;
         }
 
         public async Task<BsonDocument> GetUserBasicDetails(string userId)
@@ -79,13 +47,7 @@ namespace SkyPlaylistManager.Services
             var result = await _usersCollection.Find(filter).Project(projection).FirstOrDefaultAsync();
             return result;
         }
-
-        public async Task<List<UserDocument>> GetAllUsers()
-        {
-            var result = await _usersCollection.Find(_ => true).ToListAsync();
-            return result;
-        }
-
+        
         public async Task CreateUser(UserDocument newUserDocument) =>
             await _usersCollection.InsertOneAsync(newUserDocument);
 

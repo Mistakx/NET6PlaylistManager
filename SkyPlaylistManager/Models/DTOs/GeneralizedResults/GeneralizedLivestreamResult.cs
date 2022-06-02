@@ -1,7 +1,7 @@
 ﻿using System.Text.Json.Nodes;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace SkyPlaylistManager.Models.GeneralizedResults;
+namespace SkyPlaylistManager.Models.DTOs.GeneralizedResults;
 
 public class GeneralizedLivestreamResult : GeneralizedResult
 {
@@ -10,10 +10,10 @@ public class GeneralizedLivestreamResult : GeneralizedResult
 
     [BsonElement("gameName")] private string GameName { get; set; }
 
-    public GeneralizedLivestreamResult(JsonObject request): base(request)
+    public GeneralizedLivestreamResult(UnknownGeneralizedResultDto request): base(request)
     {
         ResultType = "GenericLivestreamResult";
-        this.GameName = (string?) request["gameName"]!;
+        GameName = request.GameName!;
     }
 
 }

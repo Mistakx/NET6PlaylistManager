@@ -1,17 +1,17 @@
 ﻿using System.Text.Json.Nodes;
-using SkyPlaylistManager.Models.GeneralizedResults;
+using SkyPlaylistManager.Models.DTOs.GeneralizedResults;
 
 namespace SkyPlaylistManager.Models
 {
     public class GeneralizedResultFactory
     {
         private readonly Dictionary<string, Func<GeneralizedResult>> _multimediaTypes;
-        public JsonObject Request { get; set; }
+        public UnknownGeneralizedResultDto Request { get; set; }
 
         public GeneralizedResultFactory()
         {
             _multimediaTypes = new Dictionary<string, Func<GeneralizedResult>>();
-            Request = new JsonObject();
+            Request = new UnknownGeneralizedResultDto();
         }
 
 

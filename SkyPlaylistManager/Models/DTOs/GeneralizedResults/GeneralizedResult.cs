@@ -2,7 +2,7 @@
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace SkyPlaylistManager.Models.GeneralizedResults;
+namespace SkyPlaylistManager.Models.DTOs.GeneralizedResults;
 
 public abstract class GeneralizedResult
 {
@@ -11,20 +11,20 @@ public abstract class GeneralizedResult
     public string Id { get; set; }
 
     [BsonElement("resultType")] public abstract string ResultType { get; set; }
-    [BsonElement("id")] private string PlatformId { get; set; }
-    [BsonElement("title")] private string Title { get; set; }
-    [BsonElement("thumbnailUrl")] private string ThumbnailUrl { get; set; }
-    [BsonElement("creator")] private string Creator { get; set; }
-    [BsonElement("playerFactoryName")] private string PlayerFactoryName { get; set; }
-    [BsonElement("platformPlayerUrl")] private string? PlatformPlayerUrl { get; set; }
+    [BsonElement("platformId")] public string PlatformId { get; set; }
+    [BsonElement("title")] public string Title { get; set; }
+    [BsonElement("thumbnailUrl")] public string ThumbnailUrl { get; set; }
+    [BsonElement("creator")] public string Creator { get; set; }
+    [BsonElement("playerFactoryName")] public string PlayerFactoryName { get; set; }
+    [BsonElement("platformPlayerUrl")] public string? PlatformPlayerUrl { get; set; }
 
-    protected GeneralizedResult(JsonObject request)
+    protected GeneralizedResult(UnknownGeneralizedResultDto request)
     {
-        PlatformId = (string) request["id"]!;
-        Title = (string) request["title"]!;
-        ThumbnailUrl = (string) request["thumbnailUrl"]!;
-        Creator = (string) request["creator"]!;
-        PlayerFactoryName = (string) request["playerFactoryName"]!;
-        PlatformPlayerUrl = (string) request["platformPlayerUrl"]!;
+        PlatformId = request.PlatformId;
+        Title =request.Title;
+        ThumbnailUrl = request.ThumbnailUrl;
+        Creator = request.Creator;
+        PlayerFactoryName = request.PlayerFactoryName;
+        PlatformPlayerUrl = request.PlatformPlayerUrl;
     }
 }

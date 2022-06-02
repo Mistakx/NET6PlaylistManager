@@ -1,7 +1,7 @@
 ﻿using System.Text.Json.Nodes;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace SkyPlaylistManager.Models.GeneralizedResults;
+namespace SkyPlaylistManager.Models.DTOs.GeneralizedResults;
 
 public class GeneralizedTrackResult : GeneralizedResult
 {
@@ -10,10 +10,10 @@ public class GeneralizedTrackResult : GeneralizedResult
 
     [BsonElement("albumName")] private string AlbumName { get; set; }
 
-    public GeneralizedTrackResult(JsonObject request): base(request)
+    public GeneralizedTrackResult(UnknownGeneralizedResultDto request): base(request)
     {
         ResultType = "GenericTrackResult";
-        AlbumName = (string) request["albumName"]!;
+        AlbumName = request.AlbumName!;
     }
 
 }

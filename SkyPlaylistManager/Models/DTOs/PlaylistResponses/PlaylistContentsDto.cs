@@ -5,6 +5,5 @@ namespace SkyPlaylistManager.Models.DTOs.PlaylistResponses;
 
 public class PlaylistContentsDto
 {
-    [BsonElement("contents")] 
-    public List<UnknownGeneralizedResultDto>? Contents { get; set; }
+    [BsonElement("contents")] public List<UnknownGeneralizedResultDto> Contents { get; set; }
 }

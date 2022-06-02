@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using SkyPlaylistManager.Models.Database;
-using SkyPlaylistManager.Models.GeneralizedResults;
+using SkyPlaylistManager.Models.DTOs.GeneralizedResults;
 
 
 namespace SkyPlaylistManager.Services

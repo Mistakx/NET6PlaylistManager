@@ -2,9 +2,9 @@
 using MongoDB.Bson.Serialization;
 using SkyPlaylistManager.Services;
 using SkyPlaylistManager.Models.Database;
-using SkyPlaylistManager.Models.DTOs.PlaylistRequests;
 using SkyPlaylistManager.Models.DTOs.PlaylistResponses;
 using SkyPlaylistManager.Models.DTOs.UserRequests;
+using SkyPlaylistManager.Models.DTOs.UserResponses;
 using LoginDto = SkyPlaylistManager.Models.DTOs.UserRequests.LoginDto;
 
 namespace SkyPlaylistManager.Controllers;
@@ -31,7 +31,6 @@ public class UserController : ControllerBase
         _sessionTokensService = sessionTokensService;
     }
 
-
     [HttpGet("Playlists/{userId:length(24)}")]
     public async Task<List<PlaylistInformationDto>?> UserPlaylists(string userId)
     {
@@ -55,31 +54,6 @@ public class UserController : ControllerBase
         }
     }
 
-
-    [HttpGet("{username}")]
-    public async Task<List<UserCompleteProfileDto>?> UsernamePlaylists(string username)
-    {
-        var usernamePlaylists = await _usersService.GetUserNamePlaylists(username);
-        var deserializedUsernamePlaylists = new List<UserCompleteProfileDto>();
-
-        try
-        {
-            foreach (var user in usernamePlaylists)
-            {
-                var model = BsonSerializer.Deserialize<UserCompleteProfileDto>(user);
-                deserializedUsernamePlaylists.Add(model);
-            }
-
-            return deserializedUsernamePlaylists;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex);
-            return null;
-        }
-    }
-
-
     [HttpGet("Profile/{sessionToken:length(24)}")]
     public async Task<UserBasicProfileDto?> UserProfile(string sessionToken)
     {
@@ -97,9 +71,8 @@ public class UserController : ControllerBase
         }
     }
 
-
     [HttpGet("{sessionToken:length(24)}")]
-    public async Task<UserCompleteProfileDto?> UserCompleteProfile(string sessionToken)
+    public async Task<UserBasicProfileDto?> UserCompleteProfile(string sessionToken)
     {
         var userCompleteProfile =
             await _usersService.GetUserDetailsAndPlaylists(_sessionTokensService.GetUserId(sessionToken));
@@ -107,7 +80,7 @@ public class UserController : ControllerBase
         try
         {
             var deserializedUserCompleteProfile =
-                BsonSerializer.Deserialize<UserCompleteProfileDto>(userCompleteProfile);
+                BsonSerializer.Deserialize<UserBasicProfileDto>(userCompleteProfile);
             return deserializedUserCompleteProfile;
         }
         catch (Exception ex)
@@ -116,7 +89,6 @@ public class UserController : ControllerBase
             return null;
         }
     }
-
 
     [HttpPost("editProfilePhoto")]
     public async Task<IActionResult> EditProfilePhoto([FromForm] EditProfilePhotoDto request)
@@ -140,7 +112,6 @@ public class UserController : ControllerBase
         }
     }
 
-
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginDto login)
     {
@@ -159,7 +130,6 @@ public class UserController : ControllerBase
 
         return Ok(session);
     }
-
 
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromForm] UserSignupDto request)
@@ -197,7 +167,6 @@ public class UserController : ControllerBase
             return BadRequest("Error occurred on user register");
         }
     }
-
 
     [HttpPost("editPassword")]
     public async Task<IActionResult> EditPassword(EditPasswordDto request)
@@ -271,7 +240,6 @@ public class UserController : ControllerBase
         await _usersService.UpdateEmail(email.Id!, email.NewEmail);
         return Ok("Email successfully updated");
     }
-
 
     [HttpPost("editName")]
     public async Task<IActionResult> EditName(EditNameDto name)
