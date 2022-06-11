@@ -116,5 +116,29 @@ namespace SkyPlaylistManager.Services
 
             await _usersCollection.UpdateOneAsync(filter, update);
         }
+        
+        public async Task<BsonDocument> GetUserPlaylists(string userId)
+        {
+            var filter = Builders<UserDocument>.Filter.Eq(p => p.Id, userId);
+            var query = _usersCollection.Aggregate().Match(filter)
+                .Lookup(_playlistsCollectionName, "playlistIds", "_id", "playlists")
+                .Project(Builders<BsonDocument>.Projection.Include("playlists").Exclude("_id"));
+            
+            var result = await query.FirstOrDefaultAsync();
+            return result;
+        }
+
+        public async Task<BsonDocument> GetUserPlaylistOrderedIds(string userId)
+        {
+            var filter = Builders<UserDocument>.Filter.Eq(p => p.Id, userId);
+            var projection = Builders<UserDocument>.Projection
+                .Include("playlistIds")
+                .Exclude("_id");
+
+            var result = await _usersCollection.Find(filter).Project(projection).FirstOrDefaultAsync();
+
+            return result;
+        }
+        
     }
 }

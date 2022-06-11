@@ -15,6 +15,7 @@ namespace SkyPlaylistManager.Services
         private readonly IMongoCollection<UserDocument> _usersCollection;
         private readonly IMongoCollection<UnknownGeneralizedResultDto> _generalizedResultsCollection;
         private readonly string _generalizedResultsCollectionName;
+        private readonly string _playlistsCollectionName;
 
 
         public PlaylistsService(IOptions<DatabaseSettings> databaseSettings)
@@ -24,13 +25,18 @@ namespace SkyPlaylistManager.Services
             var mongoDatabase = mongoClient.GetDatabase(
                 databaseSettings.Value.DatabaseName);
 
+            _playlistsCollectionName = databaseSettings.Value.PlaylistsCollectionName;
             _playlistsCollection =
-                mongoDatabase.GetCollection<PlaylistDocument>(databaseSettings.Value.PlaylistsCollectionName);
+                mongoDatabase.GetCollection<PlaylistDocument>(_playlistsCollectionName);
+            
             _usersCollection =
                 mongoDatabase.GetCollection<UserDocument>(databaseSettings.Value.UsersCollectionName);
+            
             _generalizedResultsCollectionName = databaseSettings.Value.GeneralizedResultsCollectionName;
             _generalizedResultsCollection =
                 mongoDatabase.GetCollection<UnknownGeneralizedResultDto>(_generalizedResultsCollectionName);
+            
+
         }
         
         public async Task InsertGeneralizedResultInSpecificPosition(SortPlaylistResultsDto newSortPlaylistResults)
@@ -61,17 +67,6 @@ namespace SkyPlaylistManager.Services
             await _usersCollection.UpdateOneAsync(filter, update);
         }
 
-        public async Task<BsonDocument> GetPlaylistsByOwner(string userId)
-        {
-            var filter = Builders<UserDocument>.Filter.Eq(p => p.Id, userId);
-            var query = _usersCollection.Aggregate().Match(filter)
-                .Lookup(_generalizedResultsCollectionName, "playlistIds", "_id", "playlists")
-                .Project(Builders<BsonDocument>.Projection.Exclude("_id"));
-            
-            var result = await query.FirstOrDefaultAsync();
-            return result;
-        }
-
         public async Task<BsonDocument> GetPlaylistDetails(string playlistId)
         {
             var filter = Builders<PlaylistDocument>.Filter.Eq(p => p.Id, playlistId);
@@ -95,14 +90,13 @@ namespace SkyPlaylistManager.Services
 
             return result;
         }
-
         
         public async Task<BsonDocument> GetPlaylistGeneralizedResults(string playlistId)
         {
             var filter = Builders<PlaylistDocument>.Filter.Eq(p => p.Id, playlistId);
             var query = _playlistsCollection.Aggregate().Match(filter)
                 .Lookup(_generalizedResultsCollectionName, "resultIds", "_id", "results")
-                .Project(Builders<BsonDocument>.Projection.Exclude("_id"));
+                .Project(Builders<BsonDocument>.Projection.Include("results").Exclude("_id"));
 
             var result = await query.FirstOrDefaultAsync();
             return result;
@@ -133,8 +127,8 @@ namespace SkyPlaylistManager.Services
             await _playlistsCollection.InsertOneAsync(newPlaylist);
             
             var filter = Builders<UserDocument>.Filter.Eq(p => p.Id, userId);
-            var update = Builders<UserDocument>.Update.Push("playlistIds", newPlaylist.Id);
-            await _playlistsCollection.UpdateOneAsync(filter, update);
+            var update = Builders<UserDocument>.Update.Push("playlistIds", new ObjectId(newPlaylist.Id));
+            await _usersCollection.UpdateOneAsync(filter, update);
 
         }
 
@@ -172,6 +166,14 @@ namespace SkyPlaylistManager.Services
             var update = Builders<PlaylistDocument>.Update.Pull("resultIds", generalizedResultId);
 
             await _playlistsCollection.UpdateOneAsync(filter, update);
+        }
+
+        public async Task DeletePlaylistInUser(string userId, ObjectId playlistId)
+        {
+            var filter = Builders<UserDocument>.Filter.Eq(p => p.Id, userId);
+            var update = Builders<UserDocument>.Update.Pull("playlistIds", playlistId);
+
+            await _usersCollection.UpdateOneAsync(filter, update);
         }
 
         public async Task UpdatePlaylistPhoto(string playlistId, string photoPath)

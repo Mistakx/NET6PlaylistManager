@@ -100,8 +100,9 @@ namespace SkyPlaylistManager.Controllers
         {
             try
             {
+                var userId = _sessionTokensService.GetUserId(request.SessionToken);
                 var playlist = new PlaylistDocument(request, _sessionTokensService);
-                await _playListsService.CreatePlaylist(playlist);
+                await _playListsService.CreatePlaylist(playlist, userId);
                 return Ok("Playlist successfully created");
             }
             catch (Exception ex)
@@ -194,7 +195,7 @@ namespace SkyPlaylistManager.Controllers
             {
                 var userId = _sessionTokensService.GetUserId(request.SessionToken);
                 
-                await _playListsService.DeletePlaylist(request.PlaylistId);
+                await _playListsService.DeletePlaylistInUser(userId, new ObjectId(request.PlaylistId));
                 await _playListsService.InsertPlaylistInSpecificPosition(request.PlaylistId, request.NewIndex, userId);
                 return Ok("Successfully sorted playlist");
             }

@@ -1,7 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Collections;
+using Microsoft.AspNetCore.Mvc;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using SkyPlaylistManager.Services;
 using SkyPlaylistManager.Models.Database;
+using SkyPlaylistManager.Models.DTOs.PlaylistResponses;
 using SkyPlaylistManager.Models.DTOs.UserRequests;
 using SkyPlaylistManager.Models.DTOs.UserResponses;
 using LoginDto = SkyPlaylistManager.Models.DTOs.UserRequests.LoginDto;
@@ -31,19 +34,37 @@ public class UserController : ControllerBase
     }
 
     [HttpGet("Playlists/{userId:length(24)}")]
-    public async Task<List<PlaylistDocument>?> UserPlaylists(string userId)
+    public async Task<ArrayList?> UserPlaylists(string userId)
     {
         try
         {
-            var userPlaylists = await _playlistsService.GetPlaylistsByOwner(userId);
+
+            var userPlaylists = await _usersService.GetUserPlaylists(userId);
             var deserializedPlaylists = BsonSerializer.Deserialize<UserPlaylistsDto>(userPlaylists);
-            return deserializedPlaylists.Playlists;
+            
+            var playlistOrderedIds = await _usersService.GetUserPlaylistOrderedIds(userId);
+            var deserializedPlaylistOrderedIds = BsonSerializer.Deserialize<UserPlaylistContentsOrderedIdsDto>(playlistOrderedIds);
+            
+            var orderedPlaylists = new ArrayList();
+            foreach (var playlistContentId in deserializedPlaylistOrderedIds.PlaylistIds)
+            {
+                foreach (var playlistContent in deserializedPlaylists.Playlists)
+                {
+                    if (playlistContent.Id == playlistContentId.ToString())
+                    {
+                        orderedPlaylists.Add(playlistContent);
+                    }
+                }
+            }
+            return orderedPlaylists;
+            
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex.StackTrace);
             return null;
         }
+    
     }
 
     [HttpGet("Profile/{sessionToken:length(24)}")]
@@ -107,20 +128,28 @@ public class UserController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginDto login)
     {
-        var foundUser = await _usersService.GetUserByEmail(login.Email);
-
-        if (foundUser == null) return BadRequest("Email doesn't exist");
-
-        if (!BCrypt.Net.BCrypt.Verify(login.Password, foundUser.Password))
+        try
         {
-            return BadRequest("Invalid password");
+            var foundUser = await _usersService.GetUserByEmail(login.Email);
+
+            if (foundUser == null) return BadRequest("Email doesn't exist");
+
+            if (!BCrypt.Net.BCrypt.Verify(login.Password, foundUser.Password))
+            {
+                return BadRequest("Invalid password");
+            }
+
+            HttpContext.Session.SetString("Session_user", foundUser.Id!);
+            var session = HttpContext.Session.GetString("Session_user");
+            Console.WriteLine(session);
+
+            return Ok(session);
         }
-
-        HttpContext.Session.SetString("Session_user", foundUser.Id!);
-        var session = HttpContext.Session.GetString("Session_user");
-        Console.WriteLine(session);
-
-        return Ok(session);
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.StackTrace);
+            return BadRequest("Error occured while logging in");
+        }
     }
 
     [HttpPost("register")]
@@ -163,10 +192,10 @@ public class UserController : ControllerBase
     [HttpPost("editPassword")]
     public async Task<IActionResult> EditPassword(EditPasswordDto request)
     {
-        var userId = _sessionTokensService.GetUserId(request.SessionToken!);
-
         try
         {
+            var userId = _sessionTokensService.GetUserId(request.SessionToken!);
+
             if (request.CurrentPassword == request.NewPassword)
                 return BadRequest("New password must be different from current password");
 
@@ -193,54 +222,76 @@ public class UserController : ControllerBase
     [HttpPost("editUserInfo")]
     public async Task<IActionResult> EditUserInfo(EditUserInfoDto request)
     {
-        var userId = _sessionTokensService.GetUserId(request.SessionToken!);
-
-        var userCurrentInformation = await _usersService.GetUserById(userId);
-
-        if (request.NewEmail == userCurrentInformation?.Email &&
-            request.NewUsername == userCurrentInformation?.Username &&
-            request.NewName == userCurrentInformation?.Name)
+        try
         {
-            return BadRequest("No edits were made");
-        }
+            var userId = _sessionTokensService.GetUserId(request.SessionToken!);
 
-        if (request.NewUsername != userCurrentInformation?.Username)
+            var userCurrentInformation = await _usersService.GetUserById(userId);
+
+            if (request.NewEmail == userCurrentInformation?.Email &&
+                request.NewUsername == userCurrentInformation.Username &&
+                request.NewName == userCurrentInformation.Name)
+            {
+                return BadRequest("No edits were made");
+            }
+
+            if (request.NewUsername != userCurrentInformation?.Username)
+            {
+                var foundUserByUsername = await _usersService.GetUserByUsername(request.NewUsername);
+                if (foundUserByUsername != null) return BadRequest("Username already exists");
+            }
+
+            if (request.NewEmail != userCurrentInformation?.Email)
+            {
+                var foundUserByEmail = await _usersService.GetUserByEmail(request.NewEmail);
+                if (foundUserByEmail != null) return BadRequest("Email already exists");
+            }
+
+            await _usersService.UpdateEmail(userId, request.NewEmail);
+            await _usersService.UpdateName(userId, request.NewName);
+            await _usersService.UpdateUsername(userId, request.NewUsername);
+            return Ok("User information successfully updated");
+        }
+        catch (Exception ex)
         {
-            var foundUserByUsername = await _usersService.GetUserByUsername(request.NewUsername!);
-            if (foundUserByUsername != null) return BadRequest("Username already exists");
+            Console.WriteLine(ex);
+            return BadRequest("Error occurred on user information update");
         }
-
-        if (request.NewEmail != userCurrentInformation?.Email)
-        {
-            var foundUserByEmail = await _usersService.GetUserByEmail(request.NewEmail!);
-            if (foundUserByEmail != null) return BadRequest("Email already exists");
-        }
-
-        await _usersService.UpdateEmail(userId, request.NewEmail!);
-        await _usersService.UpdateName(userId, request.NewName!);
-        await _usersService.UpdateUsername(userId, request.NewUsername!);
-        return Ok("User information successfully updated");
     }
 
     [HttpPost("editEmail")]
     public async Task<IActionResult> EditEmail(EditEmailDto email)
     {
+        try {
         var foundUser = await _usersService.GetUserById(email.Id!);
 
         if (foundUser == null) return BadRequest("Email doesn't exist");
 
-        await _usersService.UpdateEmail(email.Id!, email.NewEmail);
+        await _usersService.UpdateEmail(email.Id, email.NewEmail);
         return Ok("Email successfully updated");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            return BadRequest("Error occurred on email update");
+        }
     }
 
     [HttpPost("editName")]
     public async Task<IActionResult> EditName(EditNameDto name)
     {
-        var foundUser = await _usersService.GetUserById(name.Id!);
+        try
+        {
+            var foundUser = await _usersService.GetUserById(name.Id);
 
-        if (foundUser == null) return BadRequest(new {message = "ID doesn't exist"});
+            if (foundUser == null) return BadRequest(new {message = "ID doesn't exist"});
 
-        await _usersService.UpdateName(name.Id!, name.NewName!);
-        return Ok("Name successfully updated");
+            await _usersService.UpdateName(name.Id, name.NewName!);
+            return Ok("Name successfully updated");
+        } catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            return BadRequest("Error occurred on name update");
+        }
     }
 }
