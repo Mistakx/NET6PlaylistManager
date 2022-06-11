@@ -28,10 +28,10 @@ namespace SkyPlaylistManager.Services
         {
             var filter = Builders<UserDocument>.Filter.Eq(u => u.Id, userId);
             var query = _usersCollection.Aggregate().Match(filter)
-                .Lookup(_playlistsCollectionName, "userPlaylists", "_id", "userPlaylists")
+                .Lookup(_playlistsCollectionName, "playlistIds", "_id", "userPlaylists")
                 .Project(Builders<BsonDocument>.Projection.Exclude("password"))
                 .Project(Builders<BsonDocument>.Projection.Exclude("userPlaylists.owner")
-                .Exclude("userPlaylists.contents"));
+                .Exclude("userPlaylists.resultIds"));
 
             //var result = await query.FirstOrDefaultAsync();
             List<BsonDocument> result = await query.ToListAsync();
@@ -42,7 +42,7 @@ namespace SkyPlaylistManager.Services
         public async Task<BsonDocument> GetUserBasicDetails(string userId)
         {
             var filter = Builders<UserDocument>.Filter.Eq(u => u.Id, userId);
-            var projection = Builders<UserDocument>.Projection.Exclude("password").Exclude("userPlaylists");
+            var projection = Builders<UserDocument>.Projection.Exclude("password").Exclude("playlistIds");
 
             var result = await _usersCollection.Find(filter).Project(projection).FirstOrDefaultAsync();
             return result;
@@ -112,7 +112,7 @@ namespace SkyPlaylistManager.Services
         public async Task DeleteUserPlaylist(string userId, ObjectId playlist)
         {
             var filter = Builders<UserDocument>.Filter.Eq(u => u.Id, userId);
-            var update = Builders<UserDocument>.Update.Pull("userPlaylists", playlist);
+            var update = Builders<UserDocument>.Update.Pull("playlistIds", playlist);
 
             await _usersCollection.UpdateOneAsync(filter, update);
         }

@@ -25,6 +25,6 @@ namespace SkyPlaylistManager.Models.Database
         [BsonElement("password")] public string Password { get; set; }
         [BsonElement("name")] public string Name { get; set; }
         [BsonElement("profilePhotoUrl")] public string ProfilePhotoUrl { get; set; }
-        [BsonElement("userPlaylists")] public List<ObjectId>? UserPlaylists { get; set; }
+        [BsonElement("playlistIds")] public List<ObjectId>? UserPlaylists { get; set; }
     }
 }

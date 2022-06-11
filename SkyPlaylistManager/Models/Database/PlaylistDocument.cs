@@ -23,7 +23,7 @@ namespace SkyPlaylistManager.Models.Database
         [BsonRepresentation(BsonType.ObjectId)]
         public string Owner { get; set; }
 
-        [BsonElement("contents")] public List<ObjectId>? Contents { get; set; }
+        [BsonElement("resultIds")] public List<ObjectId>? Contents { get; set; }
         [BsonElement("description")] public string Description { get; set; }
         [BsonElement("thumbnailUrl")] public string ThumbnailUrl { get; set; }
 

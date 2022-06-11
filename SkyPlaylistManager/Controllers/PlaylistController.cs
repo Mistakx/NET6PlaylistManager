@@ -1,11 +1,11 @@
-﻿using System.Text.Json.Nodes;
+﻿using System.Collections;
+using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using SkyPlaylistManager.Services;
 using SkyPlaylistManager.Models;
 using SkyPlaylistManager.Models.Database;
-using SkyPlaylistManager.Models.DTOs.GeneralizedResults;
 using SkyPlaylistManager.Models.DTOs.PlaylistRequests;
 using SkyPlaylistManager.Models.DTOs.PlaylistResponses;
 using PlaylistBasicDetailsDto = SkyPlaylistManager.Models.DTOs.PlaylistResponses.PlaylistBasicDetailsDto;
@@ -62,14 +62,29 @@ namespace SkyPlaylistManager.Controllers
 
         [HttpGet(
             "getGeneralizedResults/{playlistId:length(24)}")] // TODO: Verificar se a playlist é privada. Só retornar a playlist caso seja pública ou partilhada com o user da sessão.
-        public async Task<PlaylistContentsDto?> PlaylistContent(string playlistId)
+        public async Task<ArrayList?> PlaylistContent(string playlistId)
         {
-            var playlistContents = await _playListsService.GetPlaylistGeneralizedResults(playlistId);
 
             try
             {
-                var deserializedPlaylistContents = BsonSerializer.Deserialize<PlaylistContentsDto>(playlistContents);
-                return deserializedPlaylistContents;
+                var playlistResults = await _playListsService.GetPlaylistGeneralizedResults(playlistId);
+                var deserializedPlaylistResults = BsonSerializer.Deserialize<PlaylistResultsDto>(playlistResults);
+
+                var playlistResultsOrderedIds = await _playListsService.GetPlaylistContentOrderedIds(playlistId);
+                var deserializedPlaylistResultsOrderedIds = BsonSerializer.Deserialize<PlaylistContentsOrderedIdsDto>(playlistResultsOrderedIds);
+
+                var orderedPlaylistResults = new ArrayList();
+                foreach (var playlistContentId in deserializedPlaylistResultsOrderedIds.ResultIds)
+                {
+                    foreach (var playlistContent in deserializedPlaylistResults.Results)
+                    {
+                        if (playlistContent.DatabaseId == playlistContentId.ToString())
+                        {
+                            orderedPlaylistResults.Add(playlistContent);
+                        }
+                    }
+                }
+                return orderedPlaylistResults;
             }
             catch (Exception ex)
             {
@@ -154,7 +169,7 @@ namespace SkyPlaylistManager.Controllers
         }
 
         [HttpPost("sortResult")]
-        public async Task<IActionResult> SortResult(SortContentsDto request)
+        public async Task<IActionResult> SortResult(SortPlaylistResultsDto request)
         {
             try
             {
@@ -169,6 +184,25 @@ namespace SkyPlaylistManager.Controllers
             {
                 Console.WriteLine(ex.StackTrace);
                 return BadRequest("Error occurred while sorting result");
+            }
+        }
+
+        [HttpPost("sortPlaylist")]
+        public async Task<IActionResult> SortResult(SortPlaylistsDto request)
+        {
+            try
+            {
+                var userId = _sessionTokensService.GetUserId(request.SessionToken);
+                
+                await _playListsService.DeletePlaylist(request.PlaylistId);
+                await _playListsService.InsertPlaylistInSpecificPosition(request.PlaylistId, request.NewIndex, userId);
+                return Ok("Successfully sorted playlist");
+            }
+
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.StackTrace);
+                return BadRequest("Error occurred while sorting playlist");
             }
         }
 

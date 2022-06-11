@@ -3,7 +3,7 @@ using SkyPlaylistManager.Models.DTOs.GeneralizedResults;
 
 namespace SkyPlaylistManager.Models.DTOs.PlaylistResponses;
 
-public class PlaylistContentsDto
+public class PlaylistResultsDto
 {
-    [BsonElement("contents")] public List<UnknownGeneralizedResultDto> Contents { get; set; }
+    [BsonElement("results")] public List<UnknownGeneralizedResultDto> Results { get; set; }
 }
