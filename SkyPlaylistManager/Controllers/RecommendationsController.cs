@@ -59,10 +59,14 @@ namespace SkyPlaylistManager.Controllers
                 {
                     await _recommendationsService.SaveView(request);
                 }
+                else
+                {
+                    await _recommendationsService.AddViewToResultInRecommended(request.GeneralizedResult.Title,
+                        request.GeneralizedResult.PlayerFactoryName, request.GeneralizedResult.PlatformPlayerUrl!,
+                        recommendation.ViewsAmount);
+                }
 
-                await _recommendationsService.AddViewToResultInRecommended(request.GeneralizedResult.Title,
-                    request.GeneralizedResult.PlayerFactoryName, request.GeneralizedResult.PlatformPlayerUrl!);
-                
+
                 return Ok("View saved");
             }
             catch (Exception e)
@@ -71,6 +75,22 @@ namespace SkyPlaylistManager.Controllers
                 return BadRequest("Error: View not saved");
             }
         }
-       
+
+        
+        
+        [HttpGet("getTrending")]
+        public async Task<IActionResult> GetTrending()
+        {
+            try
+            {
+                await _recommendationsService.GetTrending();
+                return Ok();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.StackTrace);
+                return BadRequest("Error: View not saved");
+            }
+        }
     }
 }

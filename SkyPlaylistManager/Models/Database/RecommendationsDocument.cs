@@ -14,13 +14,15 @@ namespace SkyPlaylistManager.Models.Database
         public string Id { get; set; }
         
         [BsonDateTimeOptions(Kind = DateTimeKind.Local)]
-        [BsonElement("views")] public List<DateTime> Views { get; set; }
+        [BsonElement("viewDates")] public List<DateTime> ViewDates { get; set; }
+        [BsonElement("viewsAmount")] public int ViewsAmount { get; set; }
         
         [BsonElement("generalizedResult")] public UnknownGeneralizedResultDto GeneralizedResult { get; set; }
 
         public RecommendationsDocument(SaveViewDto request)
         {
-            Views = new List<DateTime>();
+            ViewDates = new List<DateTime> {DateTime.Now};
+            ViewsAmount = 1;
             GeneralizedResult = request.GeneralizedResult;
         }
     }
