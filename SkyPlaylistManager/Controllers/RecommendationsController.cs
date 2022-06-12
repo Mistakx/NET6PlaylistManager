@@ -6,9 +6,11 @@ using MongoDB.Bson.Serialization;
 using SkyPlaylistManager.Services;
 using SkyPlaylistManager.Models;
 using SkyPlaylistManager.Models.Database;
+using SkyPlaylistManager.Models.DTOs.GeneralizedResults;
 using SkyPlaylistManager.Models.DTOs.PlaylistRequests;
 using SkyPlaylistManager.Models.DTOs.PlaylistResponses;
 using SkyPlaylistManager.Models.DTOs.RecommendationRequests;
+using SkyPlaylistManager.Models.DTOs.RecommendationResponses;
 using PlaylistBasicDetailsDto = SkyPlaylistManager.Models.DTOs.PlaylistResponses.PlaylistBasicDetailsDto;
 
 namespace SkyPlaylistManager.Controllers
@@ -61,11 +63,10 @@ namespace SkyPlaylistManager.Controllers
                 }
                 else
                 {
-                    await _recommendationsService.AddViewToResultInRecommended(request.GeneralizedResult.Title,
+                    await _recommendationsService.AddViewToResult(request.GeneralizedResult.Title,
                         request.GeneralizedResult.PlayerFactoryName, request.GeneralizedResult.PlatformPlayerUrl!,
-                        recommendation.ViewsAmount);
+                        recommendation.WeeklyViewsAmount, recommendation.TotalViewsAmount);
                 }
-
 
                 return Ok("View saved");
             }
@@ -76,15 +77,59 @@ namespace SkyPlaylistManager.Controllers
             }
         }
 
-        
-        
+
         [HttpGet("getTrending")]
-        public async  Task<List<RecommendationsDocument>?> GetTrending()
+        public async Task<List<UnknownGeneralizedResultDto>?> GetTrending()
         {
             try
             {
-                _recommendationsService.UpdateRecommendationsViews();
-                return await _recommendationsService.GetTrending();
+                _recommendationsService.UpdateRecommendationsWeeklyViews();
+                var trendingResults = await _recommendationsService.GetTrending();
+                
+                var deserializedList = new List<UnknownGeneralizedResultDto>();
+                foreach (var trendingResult in trendingResults)
+                {
+                    var deserializedResponse = BsonSerializer.Deserialize<GetTrendingDto>(trendingResult);
+                    deserializedList.Add(deserializedResponse.generalizedResult);
+
+                }
+                return deserializedList;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.StackTrace);
+                return null;
+            }
+        }
+
+        [HttpPost("getViews")]
+        public async Task<ReturnViewsDto?> GetViews(GetViewsDto request)
+        {
+            try
+            {
+                var views = await _recommendationsService.GetViews(
+                    request.PlayerFactoryName,
+                    request.PlatformId,
+                    request.PlatformPlayerUrl!
+                );
+
+                var deserializedViews = BsonSerializer.Deserialize<ReturnViewsDto>(views);
+
+                var weeklyViews = 0;
+                if (deserializedViews.WeeklyViewsAmount != null)
+                {
+                    weeklyViews = deserializedViews.WeeklyViewsAmount.Value;
+                }
+
+                var totalViews = 0;
+                if (deserializedViews.TotalViewsAmount != null)
+                {
+                    totalViews = deserializedViews.TotalViewsAmount.Value;
+                }
+
+                var response = new ReturnViewsDto(totalViews, weeklyViews);
+
+                return response;
             }
             catch (Exception e)
             {
