@@ -85,14 +85,14 @@ namespace SkyPlaylistManager.Controllers
             {
                 _recommendationsService.UpdateRecommendationsWeeklyViews();
                 var trendingResults = await _recommendationsService.GetTrending();
-                
+
                 var deserializedList = new List<UnknownGeneralizedResultDto>();
                 foreach (var trendingResult in trendingResults)
                 {
                     var deserializedResponse = BsonSerializer.Deserialize<GetTrendingDto>(trendingResult);
                     deserializedList.Add(deserializedResponse.generalizedResult);
-
                 }
+
                 return deserializedList;
             }
             catch (Exception e)
@@ -113,23 +113,10 @@ namespace SkyPlaylistManager.Controllers
                     request.PlatformPlayerUrl!
                 );
 
-                var deserializedViews = BsonSerializer.Deserialize<ReturnViewsDto>(views);
+                if (views == null) return new ReturnViewsDto(0, 0);
 
-                var weeklyViews = 0;
-                if (deserializedViews.WeeklyViewsAmount != null)
-                {
-                    weeklyViews = deserializedViews.WeeklyViewsAmount.Value;
-                }
-
-                var totalViews = 0;
-                if (deserializedViews.TotalViewsAmount != null)
-                {
-                    totalViews = deserializedViews.TotalViewsAmount.Value;
-                }
-
-                var response = new ReturnViewsDto(totalViews, weeklyViews);
-
-                return response;
+                var deserializedViews = BsonSerializer.Deserialize<ReturnViewsDto?>(views);
+                return deserializedViews;
             }
             catch (Exception e)
             {
