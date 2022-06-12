@@ -7,5 +7,6 @@
         public string GeneralizedResultsCollectionName { get; set; }
         public string PlaylistsCollectionName { get; set; }
         public string UsersCollectionName { get; set; }
+        public string RecommendationsCollectionName { get; set; }
     }
 }

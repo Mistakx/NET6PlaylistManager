@@ -174,7 +174,6 @@ namespace SkyPlaylistManager.Controllers
         {
             try
             {
-
                 var generalResultId = ObjectId.Parse(request.GeneralizedResultDatabaseId);
                 await _playListsService.DeleteMultimediaContentInPlaylist(request.PlaylistId, generalResultId);
                 await _playListsService.InsertGeneralizedResultInSpecificPosition(request);
