@@ -24,25 +24,8 @@ namespace SkyPlaylistManager.Services
                     .RecommendationsCollectionName);
         }
 
-        public async Task GetTrending()
+        private async void DeleteOldRecommendations()
         {
-            // var aggregation = _recommendationsCollection.Aggregate().Project(new BsonDocument(
-            //     "count", new BsonDocument("$sum", "$viewDates")));
-            // // .Sort(new BsonDocument("count", -1));
-            //
-            // var numberOfDates = await aggregation.FirstOrDefaultAsync();
-            //
-            //
-            // var update = Builders<RecommendationsDocument>.Update.PullFilter("followerList",
-            //     Builders<List<DateTime>>.Filter.Eq("follower", "fethiye"));
-            //
-            // var deleteFilter2 = Builders<RecommendationsDocument>.Filter.ElemMatch<BsonValue>("viewDates",
-            //     new BsonDocument("$lt", DateTime.Now.AddDays(-7)));
-            //
-            // var update2 = Builders<RecommendationsDocument>.Update.PullFilter("viewDates",
-            //     new BsonDocument("$lt", DateTime.Now.AddDays(-7)));
-
-
             var recommendationsWithOldDatesFilter = Builders<RecommendationsDocument>.Filter.ElemMatch<BsonValue>(
                 "viewDates",
                 new BsonDocument("$lt", DateTime.Now.AddDays(-7)));
@@ -52,8 +35,40 @@ namespace SkyPlaylistManager.Services
                     new BsonDocument("$lt", DateTime.Now.AddDays(-7)));
 
             await _recommendationsCollection.UpdateOneAsync(recommendationsWithOldDatesFilter, pullOldDates);
-
         }
+
+        public async void UpdateRecommendationsViews()
+        {
+            var recommendationsWithOldDatesFilter = Builders<RecommendationsDocument>.Filter.ElemMatch<BsonValue>(
+                "viewDates",
+                new BsonDocument("$lt", DateTime.Now.AddDays(-7)));
+
+            var recommendationWithOldDates =
+                await _recommendationsCollection.Find(recommendationsWithOldDatesFilter).ToListAsync();
+
+            DeleteOldRecommendations();
+
+            foreach (var recommendation in recommendationWithOldDates)
+            {
+                var recommendationWithNewDates =
+                    await _recommendationsCollection.Find(
+                        Builders<RecommendationsDocument>.Filter.Eq("_id", new ObjectId(recommendation.Id))).FirstOrDefaultAsync();
+                
+                await _recommendationsCollection.UpdateOneAsync(p => p.Id == recommendation.Id,
+                    Builders<RecommendationsDocument>.Update.Set("viewsAmount",
+                        recommendationWithNewDates.ViewDates.Count));
+            }
+        }
+
+        public async Task<List<RecommendationsDocument>?> GetTrending()
+        {
+            var trendingPlaylists = await _recommendationsCollection.Find(p => true)
+                .SortByDescending(p => p.ViewsAmount)
+                .Limit(10).ToListAsync();
+
+            return trendingPlaylists;
+        }
+
 
         public async Task SaveView(SaveViewDto request)
         {

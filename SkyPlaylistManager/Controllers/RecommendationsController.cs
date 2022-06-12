@@ -79,17 +79,17 @@ namespace SkyPlaylistManager.Controllers
         
         
         [HttpGet("getTrending")]
-        public async Task<IActionResult> GetTrending()
+        public async  Task<List<RecommendationsDocument>?> GetTrending()
         {
             try
             {
-                await _recommendationsService.GetTrending();
-                return Ok();
+                _recommendationsService.UpdateRecommendationsViews();
+                return await _recommendationsService.GetTrending();
             }
             catch (Exception e)
             {
                 Console.WriteLine(e.StackTrace);
-                return BadRequest("Error: View not saved");
+                return null;
             }
         }
     }
