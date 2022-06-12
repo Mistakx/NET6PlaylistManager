@@ -20,4 +20,5 @@ public class PlaylistBasicDetailsDto
     [BsonElement("description")] public string Description { get; set; }
 
     [BsonElement("thumbnailUrl")] public string ThumbnailUrl { get; set; }
+    [BsonElement("resultsAmount")] public int ResultsAmount { get; set; }
 }

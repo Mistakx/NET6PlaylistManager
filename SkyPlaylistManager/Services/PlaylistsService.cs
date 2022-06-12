@@ -3,7 +3,6 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using SkyPlaylistManager.Models.Database;
-using SkyPlaylistManager.Models.DTOs.GeneralizedResults;
 using SkyPlaylistManager.Models.DTOs.PlaylistRequests;
 using SkyPlaylistManager.Models.DTOs.PlaylistResponses;
 
@@ -13,9 +12,7 @@ namespace SkyPlaylistManager.Services
     {
         private readonly IMongoCollection<PlaylistDocument> _playlistsCollection;
         private readonly IMongoCollection<UserDocument> _usersCollection;
-        private readonly IMongoCollection<UnknownGeneralizedResultDto> _generalizedResultsCollection;
         private readonly string _generalizedResultsCollectionName;
-        private readonly string _playlistsCollectionName;
 
 
         public PlaylistsService(IOptions<DatabaseSettings> databaseSettings)
@@ -25,21 +22,18 @@ namespace SkyPlaylistManager.Services
             var mongoDatabase = mongoClient.GetDatabase(
                 databaseSettings.Value.DatabaseName);
 
-            _playlistsCollectionName = databaseSettings.Value.PlaylistsCollectionName;
+            var playlistsCollectionName = databaseSettings.Value.PlaylistsCollectionName;
             _playlistsCollection =
-                mongoDatabase.GetCollection<PlaylistDocument>(_playlistsCollectionName);
-            
+                mongoDatabase.GetCollection<PlaylistDocument>(playlistsCollectionName);
+
             _usersCollection =
                 mongoDatabase.GetCollection<UserDocument>(databaseSettings.Value.UsersCollectionName);
-            
-            _generalizedResultsCollectionName = databaseSettings.Value.GeneralizedResultsCollectionName;
-            _generalizedResultsCollection =
-                mongoDatabase.GetCollection<UnknownGeneralizedResultDto>(_generalizedResultsCollectionName);
-            
 
+            _generalizedResultsCollectionName = databaseSettings.Value.GeneralizedResultsCollectionName;
         }
-        
-        public async Task InsertGeneralizedResultInSpecificPosition(SortPlaylistResultsDto newSortPlaylistResults)
+
+        public async Task InsertGeneralizedResultInSpecificPosition(SortPlaylistResultsDto newSortPlaylistResults,
+            int currentAmountOfResults)
         {
             var resultIds = new List<ObjectId>(); // The method "PushEach" only works with lists
             var generalizedResultId = ObjectId.Parse(newSortPlaylistResults.GeneralizedResultDatabaseId);
@@ -48,17 +42,17 @@ namespace SkyPlaylistManager.Services
             var filter = Builders<PlaylistDocument>.Filter.Eq(p => p.Id, newSortPlaylistResults.PlaylistId);
             var update =
                 Builders<PlaylistDocument>.Update.PushEach("resultIds", resultIds,
-                    position: newSortPlaylistResults.NewIndex);
+                    position: newSortPlaylistResults.NewIndex).Set("resultsAmount", currentAmountOfResults + 1);
 
             await _playlistsCollection.UpdateOneAsync(filter, update);
         }
-        
+
         public async Task InsertPlaylistInSpecificPosition(string playlistId, int newIndex, string userId)
         {
             var playlistIds = new List<ObjectId>(); // The method "PushEach" only works with lists
             var generalizedResultId = ObjectId.Parse(playlistId);
             playlistIds.Add(generalizedResultId);
-            
+
             var filter = Builders<UserDocument>.Filter.Eq(p => p.Id, userId);
             var update =
                 Builders<UserDocument>.Update.PushEach("playlistIds", playlistIds,
@@ -90,7 +84,7 @@ namespace SkyPlaylistManager.Services
 
             return result;
         }
-        
+
         public async Task<BsonDocument> GetPlaylistGeneralizedResults(string playlistId)
         {
             var filter = Builders<PlaylistDocument>.Filter.Eq(p => p.Id, playlistId);
@@ -125,17 +119,18 @@ namespace SkyPlaylistManager.Services
         public async Task CreatePlaylist(PlaylistDocument newPlaylist, string userId)
         {
             await _playlistsCollection.InsertOneAsync(newPlaylist);
-            
+
             var filter = Builders<UserDocument>.Filter.Eq(p => p.Id, userId);
             var update = Builders<UserDocument>.Update.Push("playlistIds", new ObjectId(newPlaylist.Id));
             await _usersCollection.UpdateOneAsync(filter, update);
-
         }
 
-        public async Task InsertGeneralizedResultInPlaylist(string playlistId, ObjectId generalizedResultId)
+        public async Task InsertGeneralizedResultInPlaylist(string playlistId, ObjectId generalizedResultId,
+            int currentResultsAmount)
         {
             var filter = Builders<PlaylistDocument>.Filter.Eq(p => p.Id, playlistId);
-            var update = Builders<PlaylistDocument>.Update.Push("resultIds", generalizedResultId);
+            var update = Builders<PlaylistDocument>.Update.Push("resultIds", generalizedResultId)
+                .Set("resultsAmount", currentResultsAmount + 1);
 
             await _playlistsCollection.UpdateOneAsync(filter, update);
         }
@@ -152,7 +147,7 @@ namespace SkyPlaylistManager.Services
 
             await _playlistsCollection.UpdateOneAsync(filter, updated);
         }
-        
+
         public async Task DeletePlaylist(string playlistId)
         {
             var deleteFilter = Builders<PlaylistDocument>.Filter.Eq(p => p.Id, playlistId);
@@ -160,10 +155,12 @@ namespace SkyPlaylistManager.Services
             await _playlistsCollection.DeleteOneAsync(deleteFilter);
         }
 
-        public async Task DeleteMultimediaContentInPlaylist(string playlistId, ObjectId generalizedResultId)
+        public async Task DeleteMultimediaContentInPlaylist(string playlistId, ObjectId generalizedResultId,
+            int currentResultsAmount)
         {
             var filter = Builders<PlaylistDocument>.Filter.Eq(p => p.Id, playlistId);
-            var update = Builders<PlaylistDocument>.Update.Pull("resultIds", generalizedResultId);
+            var update = Builders<PlaylistDocument>.Update.Pull("resultIds", generalizedResultId)
+                .Set("resultsAmount", currentResultsAmount - 1);
 
             await _playlistsCollection.UpdateOneAsync(filter, update);
         }
@@ -171,7 +168,7 @@ namespace SkyPlaylistManager.Services
         public async Task DeletePlaylistInUser(string userId, ObjectId playlistId)
         {
             var filter = Builders<UserDocument>.Filter.Eq(p => p.Id, userId);
-            var update = Builders<UserDocument>.Update.Pull("playlistIds", playlistId);
+            var update  = Builders<UserDocument>.Update.Pull("playlistIds", playlistId);
 
             await _usersCollection.UpdateOneAsync(filter, update);
         }

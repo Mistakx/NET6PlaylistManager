@@ -1,5 +1,4 @@
 ﻿using System.Collections;
-using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
@@ -64,14 +63,14 @@ namespace SkyPlaylistManager.Controllers
             "getGeneralizedResults/{playlistId:length(24)}")] // TODO: Verificar se a playlist é privada. Só retornar a playlist caso seja pública ou partilhada com o user da sessão.
         public async Task<ArrayList?> PlaylistContent(string playlistId)
         {
-
             try
             {
                 var playlistResults = await _playListsService.GetPlaylistGeneralizedResults(playlistId);
                 var deserializedPlaylistResults = BsonSerializer.Deserialize<PlaylistResultsDto>(playlistResults);
 
                 var playlistResultsOrderedIds = await _playListsService.GetPlaylistContentOrderedIds(playlistId);
-                var deserializedPlaylistResultsOrderedIds = BsonSerializer.Deserialize<PlaylistContentsOrderedIdsDto>(playlistResultsOrderedIds);
+                var deserializedPlaylistResultsOrderedIds =
+                    BsonSerializer.Deserialize<PlaylistContentsOrderedIdsDto>(playlistResultsOrderedIds);
 
                 var orderedPlaylistResults = new ArrayList();
                 foreach (var playlistContentId in deserializedPlaylistResultsOrderedIds.ResultIds)
@@ -84,6 +83,7 @@ namespace SkyPlaylistManager.Controllers
                         }
                     }
                 }
+
                 return orderedPlaylistResults;
             }
             catch (Exception ex)
@@ -92,7 +92,6 @@ namespace SkyPlaylistManager.Controllers
                 return null;
             }
         }
-
 
 
         [HttpPost("create")]
@@ -136,12 +135,15 @@ namespace SkyPlaylistManager.Controllers
                 return BadRequest("Error while deleting playlist");
             }
         }
-        
+
         [HttpPost("addToPlaylist")]
         public async Task<IActionResult> AddGeneralizedResultToPlaylist(AddGeneralizedResultPlaylistDto request)
         {
             try
             {
+                var foundPlaylist = await _playListsService.GetPlaylistById(request.PlaylistId);
+                if (foundPlaylist == null) return BadRequest(PlaylistIdDoesntExistMessage);
+
                 if (await _playListsService.GeneralizedResultAlreadyInPlaylist(
                         request.PlaylistId,
                         request.Title,
@@ -158,7 +160,9 @@ namespace SkyPlaylistManager.Controllers
 
                 var generalizedResultId = ObjectId.Parse(generalizedResult.Id);
 
-                await _playListsService.InsertGeneralizedResultInPlaylist(request.PlaylistId, generalizedResultId);
+
+                await _playListsService.InsertGeneralizedResultInPlaylist(request.PlaylistId, generalizedResultId,
+                    foundPlaylist.ResultsAmount);
                 return Ok("Successfully added to playlist");
             }
 
@@ -175,8 +179,18 @@ namespace SkyPlaylistManager.Controllers
             try
             {
                 var generalResultId = ObjectId.Parse(request.GeneralizedResultDatabaseId);
-                await _playListsService.DeleteMultimediaContentInPlaylist(request.PlaylistId, generalResultId);
-                await _playListsService.InsertGeneralizedResultInSpecificPosition(request);
+
+
+                var foundPlaylist = await _playListsService.GetPlaylistById(request.PlaylistId);
+                if (foundPlaylist == null) return BadRequest(PlaylistIdDoesntExistMessage);
+                await _playListsService.DeleteMultimediaContentInPlaylist(request.PlaylistId, generalResultId,
+                    foundPlaylist.ResultsAmount);
+
+                foundPlaylist = await _playListsService.GetPlaylistById(request.PlaylistId);
+                if (foundPlaylist == null) return BadRequest(PlaylistIdDoesntExistMessage);
+                await _playListsService.DeleteMultimediaContentInPlaylist(request.PlaylistId, generalResultId,
+                    foundPlaylist.ResultsAmount);
+                await _playListsService.InsertGeneralizedResultInSpecificPosition(request, foundPlaylist.ResultsAmount);
                 return Ok("Successfully sorted result");
             }
 
@@ -193,7 +207,6 @@ namespace SkyPlaylistManager.Controllers
             try
             {
                 var userId = _sessionTokensService.GetUserId(request.SessionToken);
-                
                 await _playListsService.DeletePlaylistInUser(userId, new ObjectId(request.PlaylistId));
                 await _playListsService.InsertPlaylistInSpecificPosition(request.PlaylistId, request.NewIndex, userId);
                 return Ok("Successfully sorted playlist");
@@ -206,7 +219,7 @@ namespace SkyPlaylistManager.Controllers
             }
         }
 
-        
+
         [HttpPost("deleteGeneralizedResult")]
         public async Task<IActionResult> DeleteGeneralizedResult(DeletePlaylistContentDto request)
         {
@@ -218,7 +231,7 @@ namespace SkyPlaylistManager.Controllers
 
                 var generalizedResultToDeleteId = new ObjectId(request.GeneralizedResultDatabaseId);
                 await _playListsService.DeleteMultimediaContentInPlaylist(request.PlaylistId,
-                    generalizedResultToDeleteId);
+                    generalizedResultToDeleteId, foundPlaylist.ResultsAmount);
                 return Ok("Successfully removed from playlist");
             }
             catch (Exception e)
