@@ -21,7 +21,7 @@ namespace SkyPlaylistManager.Services
 
             _recommendationsCollection =
                 mongoDatabase.GetCollection<ContentRecommendationsDocument>(databaseSettings.Value
-                    .RecommendationsCollectionName);
+                    .ContentRecommendationsCollectionName);
         }
 
         private async void DeleteOldRecommendations()

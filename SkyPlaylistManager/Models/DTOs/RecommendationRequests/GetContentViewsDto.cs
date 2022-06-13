@@ -1,6 +1,4 @@
-﻿using SkyPlaylistManager.Models.DTOs.GeneralizedResults;
-
-namespace SkyPlaylistManager.Models.DTOs.RecommendationRequests;
+﻿namespace SkyPlaylistManager.Models.DTOs.RecommendationRequests;
 
 public class GetContentViewsDto
 {

@@ -21,8 +21,6 @@ namespace SkyPlaylistManager.Models.Database
         [BsonElement("weeklyViewsAmount")] public int WeeklyViewsAmount { get; set; }
         [BsonElement("totalViewsAmount")] public int TotalViewsAmount { get; set; }
 
-        [BsonElement("Username")] public string Username { get; set; }
-
         [BsonElement("UserId")] public string UserId { get; set; }
 
         public UserRecommendationsDocument(SaveUserViewDto request)
@@ -31,7 +29,6 @@ namespace SkyPlaylistManager.Models.Database
             WeeklyViewsAmount = 1;
             TotalViewsAmount = 1;
             UserId = request.UserId;
-            Username = request.Username;
         }
     }
 }

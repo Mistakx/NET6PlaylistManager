@@ -21,7 +21,7 @@ namespace SkyPlaylistManager.Services
 
             _recommendationsCollection =
                 mongoDatabase.GetCollection<UserRecommendationsDocument>(databaseSettings.Value
-                    .RecommendationsCollectionName);
+                    .UserRecommendationsCollectionName);
         }
 
         private async void DeleteOldRecommendations()
@@ -61,20 +61,20 @@ namespace SkyPlaylistManager.Services
             }
         }
 
-        public async Task<List<BsonDocument>> GetTrendingUserIds(string usernameBeginningLetters)
-        {
-            var projection = Builders<UserRecommendationsDocument>.Projection
-                .Include("userId")
-                .Exclude("_id");
-
-
-            var trendingPlaylists = await _recommendationsCollection.Find(p => p.Username.ToLower().StartsWith(usernameBeginningLetters.ToLower()))
-                .Project(projection)
-                .SortByDescending(p => p.WeeklyViewsAmount)
-                .Limit(10).ToListAsync();
-
-            return trendingPlaylists;
-        }
+        // public async Task<List<BsonDocument>> GetTrendingUserIds(string usernameBeginningLetters)
+        // {
+        //     var projection = Builders<UserRecommendationsDocument>.Projection
+        //         .Include("userId")
+        //         .Exclude("_id");
+        //
+        //
+        //     var trendingPlaylists = await _recommendationsCollection.Find(p => p.Username.ToLower().StartsWith(usernameBeginningLetters.ToLower()))
+        //         .Project(projection)
+        //         .SortByDescending(p => p.WeeklyViewsAmount)
+        //         .Limit(10).ToListAsync();
+        //
+        //     return trendingPlaylists;
+        // }
 
 
         public async Task SaveView(SaveUserViewDto request)

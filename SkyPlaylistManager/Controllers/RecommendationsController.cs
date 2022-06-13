@@ -4,7 +4,6 @@ using SkyPlaylistManager.Services;
 using SkyPlaylistManager.Models.DTOs.GeneralizedResults;
 using SkyPlaylistManager.Models.DTOs.RecommendationRequests;
 using SkyPlaylistManager.Models.DTOs.RecommendationResponses;
-using SkyPlaylistManager.Models.DTOs.UserResponses;
 using PlaylistBasicDetailsDto = SkyPlaylistManager.Models.DTOs.PlaylistResponses.PlaylistBasicDetailsDto;
 
 namespace SkyPlaylistManager.Controllers
@@ -140,37 +139,37 @@ namespace SkyPlaylistManager.Controllers
             }
         }
 
-        [HttpGet("getTrendingUsers/{beginningOfUsername}")]
-        public async Task<List<UserBasicProfileDto>?> GetTrendingUser(string beginningOfUsername)
-        {
-            try
-            {
-                _userRecommendationsService.UpdateRecommendationsWeeklyViews();
-                var trendingUserIds = await _userRecommendationsService.GetTrendingUserIds(beginningOfUsername);
-
-                var deserializedUserIds = new List<string>();
-                foreach (var trendingUserId in trendingUserIds)
-                {
-                    var deserializedResponse = BsonSerializer.Deserialize<string>(trendingUserId);
-                    deserializedUserIds.Add(deserializedResponse);
-                }
-
-                var deserializedUsersInformation = new List<UserBasicProfileDto>();
-                foreach (var deserializedUserId in deserializedUserIds)
-                {
-                    var userBasicDetails = await _userService.GetUserBasicDetails(deserializedUserId);
-                    var deserializedResponse = BsonSerializer.Deserialize<UserBasicProfileDto>(userBasicDetails);
-                    deserializedUsersInformation.Add(deserializedResponse);
-                }
-
-                return deserializedUsersInformation;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.StackTrace);
-                return null;
-            }
-        }
+        // [HttpGet("getTrendingUsers/{beginningOfUsername}")]
+        // public async Task<List<UserBasicProfileDto>?> GetTrendingUser(string beginningOfUsername)
+        // {
+        //     try
+        //     {
+        //         _userRecommendationsService.UpdateRecommendationsWeeklyViews();
+        //         var trendingUserIds = await _userRecommendationsService.GetTrendingUserIds(beginningOfUsername);
+        //
+        //         var deserializedUserIds = new List<string>();
+        //         foreach (var trendingUserId in trendingUserIds)
+        //         {
+        //             var deserializedResponse = BsonSerializer.Deserialize<string>(trendingUserId);
+        //             deserializedUserIds.Add(deserializedResponse);
+        //         }
+        //
+        //         var deserializedUsersInformation = new List<UserBasicProfileDto>();
+        //         foreach (var deserializedUserId in deserializedUserIds)
+        //         {
+        //             var userBasicDetails = await _userService.GetUserBasicDetails(deserializedUserId);
+        //             var deserializedResponse = BsonSerializer.Deserialize<UserBasicProfileDto>(userBasicDetails);
+        //             deserializedUsersInformation.Add(deserializedResponse);
+        //         }
+        //
+        //         return deserializedUsersInformation;
+        //     }
+        //     catch (Exception e)
+        //     {
+        //         Console.WriteLine(e.StackTrace);
+        //         return null;
+        //     }
+        // }
 
         [HttpGet("getUserViews/{username}")]
         public async Task<ReturnViewsDto?> GetUserViews(string username)

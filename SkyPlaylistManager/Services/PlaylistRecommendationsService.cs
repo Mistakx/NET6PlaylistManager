@@ -10,6 +10,7 @@ namespace SkyPlaylistManager.Services
     public class PlaylistRecommendationsService
     {
         private readonly IMongoCollection<PlaylistRecommendationsDocument> _recommendationsCollection;
+        private readonly string _playlistCollectionName;
 
         public PlaylistRecommendationsService(IOptions<DatabaseSettings> databaseSettings)
         {
@@ -21,7 +22,9 @@ namespace SkyPlaylistManager.Services
 
             _recommendationsCollection =
                 mongoDatabase.GetCollection<PlaylistRecommendationsDocument>(databaseSettings.Value
-                    .RecommendationsCollectionName);
+                    .PlaylistRecommendationsCollectionName);
+
+            _playlistCollectionName = databaseSettings.Value.PlaylistsCollectionName;
         }
 
         private async void DeleteOldRecommendations()
@@ -65,17 +68,15 @@ namespace SkyPlaylistManager.Services
 
         public async Task<List<BsonDocument>> GetTrendingPlaylistIds(string playlistNameBeginningLetters)
         {
-            var projection = Builders<PlaylistRecommendationsDocument>.Projection
-                .Include("playlistId")
-                .Exclude("_id");
-
-            var trendingPlaylists = await _recommendationsCollection.Find(p =>
-                    p.PlaylistName.ToLower().StartsWith(playlistNameBeginningLetters.ToLower()))
-                .Project(projection)
-                .SortByDescending(p => p.WeeklyViewsAmount)
+            var query = _recommendationsCollection.Aggregate()
+                .Lookup(_playlistCollectionName, "resultIds", "_id", "playlists")
+                .Match(Builders<BsonDocument>.Filter
+                    .Regex("title", new BsonRegularExpression("^(" + playlistNameBeginningLetters + ")")))
+                .Project(Builders<BsonDocument>.Projection.Include("playlists").Exclude("_id"))
+                .SortByDescending(p => "weeklyViewsAmount")
                 .Limit(10).ToListAsync();
 
-            return trendingPlaylists;
+            return await query;
         }
 
 
