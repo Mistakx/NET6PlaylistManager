@@ -14,7 +14,9 @@ builder.Services.AddSingleton<PlaylistsService>();
 builder.Services.AddSingleton<SessionTokensService>();
 builder.Services.AddSingleton<GeneralizedResultsService>();
 builder.Services.AddSingleton<GeneralizedResultFactory>();
-builder.Services.AddSingleton<RecommendationsService>();
+builder.Services.AddSingleton<UserRecommendationsService>();
+builder.Services.AddSingleton<PlaylistRecommendationsService>();
+builder.Services.AddSingleton<ContentRecommendationsService>();
 builder.Services.AddSingleton<FilesManager>();
 
 

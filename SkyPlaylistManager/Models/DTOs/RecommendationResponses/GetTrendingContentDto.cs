@@ -3,7 +3,7 @@ using SkyPlaylistManager.Models.DTOs.GeneralizedResults;
 
 namespace SkyPlaylistManager.Models.DTOs.RecommendationResponses;
 
-public class GetTrendingDto
+public class GetTrendingContentDto
 {
     [BsonElement("generalizedResult")] public UnknownGeneralizedResultDto generalizedResult { get; set; }
 }

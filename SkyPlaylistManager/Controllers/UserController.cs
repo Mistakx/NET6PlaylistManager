@@ -84,24 +84,24 @@ public class UserController : ControllerBase
         }
     }
 
-    [HttpGet("{sessionToken:length(24)}")]
-    public async Task<UserBasicProfileDto?> UserCompleteProfile(string sessionToken)
-    {
-        var userCompleteProfile =
-            await _usersService.GetUserDetailsAndPlaylists(_sessionTokensService.GetUserId(sessionToken));
-
-        try
-        {
-            var deserializedUserCompleteProfile =
-                BsonSerializer.Deserialize<UserBasicProfileDto>(userCompleteProfile);
-            return deserializedUserCompleteProfile;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex);
-            return null;
-        }
-    }
+    // [HttpGet("{sessionToken:length(24)}")]
+    // public async Task<UserBasicProfileDto?> UserCompleteProfile(string sessionToken)
+    // {
+    //     var userCompleteProfile =
+    //         await _usersService.GetUserDetailsAndPlaylists(_sessionTokensService.GetUserId(sessionToken));
+    //
+    //     try
+    //     {
+    //         var deserializedUserCompleteProfile =
+    //             BsonSerializer.Deserialize<UserBasicProfileDto>(userCompleteProfile);
+    //         return deserializedUserCompleteProfile;
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         Console.WriteLine(ex);
+    //         return null;
+    //     }
+    // }
 
     [HttpPost("editProfilePhoto")]
     public async Task<IActionResult> EditProfilePhoto([FromForm] EditProfilePhotoDto request)

@@ -2,7 +2,7 @@
 
 namespace SkyPlaylistManager.Models.DTOs.RecommendationRequests;
 
-public class SaveViewDto
+public class SaveContentViewDto
 {
     public UnknownGeneralizedResultDto GeneralizedResult { get; set; }
     public string SessionToken { get; set; }

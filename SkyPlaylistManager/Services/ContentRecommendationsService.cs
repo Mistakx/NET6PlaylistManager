@@ -7,11 +7,11 @@ using SkyPlaylistManager.Models.DTOs.RecommendationRequests;
 
 namespace SkyPlaylistManager.Services
 {
-    public class RecommendationsService
+    public class ContentRecommendationsService
     {
-        private readonly IMongoCollection<RecommendationsDocument> _recommendationsCollection;
+        private readonly IMongoCollection<ContentRecommendationsDocument> _recommendationsCollection;
 
-        public RecommendationsService(IOptions<DatabaseSettings> databaseSettings)
+        public ContentRecommendationsService(IOptions<DatabaseSettings> databaseSettings)
         {
             var mongoClient = new MongoClient(
                 databaseSettings.Value.ConnectionString);
@@ -20,18 +20,18 @@ namespace SkyPlaylistManager.Services
                 databaseSettings.Value.DatabaseName);
 
             _recommendationsCollection =
-                mongoDatabase.GetCollection<RecommendationsDocument>(databaseSettings.Value
+                mongoDatabase.GetCollection<ContentRecommendationsDocument>(databaseSettings.Value
                     .RecommendationsCollectionName);
         }
 
         private async void DeleteOldRecommendations()
         {
-            var recommendationsWithOldDatesFilter = Builders<RecommendationsDocument>.Filter.ElemMatch<BsonValue>(
+            var recommendationsWithOldDatesFilter = Builders<ContentRecommendationsDocument>.Filter.ElemMatch<BsonValue>(
                 "viewDates",
                 new BsonDocument("$lt", DateTime.Now.AddDays(-7)));
 
             var pullOldDates =
-                Builders<RecommendationsDocument>.Update.Pull("viewDates",
+                Builders<ContentRecommendationsDocument>.Update.Pull("viewDates",
                     new BsonDocument("$lt", DateTime.Now.AddDays(-7)));
 
             await _recommendationsCollection.UpdateOneAsync(recommendationsWithOldDatesFilter, pullOldDates);
@@ -39,7 +39,7 @@ namespace SkyPlaylistManager.Services
 
         public async void UpdateRecommendationsWeeklyViews()
         {
-            var recommendationsWithOldDatesFilter = Builders<RecommendationsDocument>.Filter.ElemMatch<BsonValue>(
+            var recommendationsWithOldDatesFilter = Builders<ContentRecommendationsDocument>.Filter.ElemMatch<BsonValue>(
                 "viewDates",
                 new BsonDocument("$lt", DateTime.Now.AddDays(-7)));
 
@@ -52,11 +52,11 @@ namespace SkyPlaylistManager.Services
             {
                 var recommendationWithNewDates =
                     await _recommendationsCollection.Find(
-                            Builders<RecommendationsDocument>.Filter.Eq("_id", new ObjectId(recommendation.Id)))
+                            Builders<ContentRecommendationsDocument>.Filter.Eq("_id", new ObjectId(recommendation.Id)))
                         .FirstOrDefaultAsync();
 
                 await _recommendationsCollection.UpdateOneAsync(p => p.Id == recommendation.Id,
-                    Builders<RecommendationsDocument>.Update.Set("viewsAmount",
+                    Builders<ContentRecommendationsDocument>.Update.Set("viewsAmount",
                         recommendationWithNewDates.WeeklyViewDates.Count));
             }
         }
@@ -64,7 +64,7 @@ namespace SkyPlaylistManager.Services
         public async Task<List<BsonDocument>> GetTrending()
         {
             
-            var projection = Builders<RecommendationsDocument>.Projection
+            var projection = Builders<ContentRecommendationsDocument>.Projection
                 .Include("generalizedResult")
                 .Exclude("_id");
 
@@ -78,18 +78,18 @@ namespace SkyPlaylistManager.Services
         }
 
 
-        public async Task SaveView(SaveViewDto request)
+        public async Task SaveView(SaveContentViewDto request)
         {
-            var recommendationsDocument = new RecommendationsDocument(request);
+            var recommendationsDocument = new ContentRecommendationsDocument(request);
             await _recommendationsCollection.InsertOneAsync(recommendationsDocument);
         }
 
-        public async Task<RecommendationsDocument?> GetResultInRecommended(
+        public async Task<ContentRecommendationsDocument?> GetResultInRecommended(
             string title,
             string playerFactoryName,
             string platformPlayerUrl)
         {
-            var builder = Builders<RecommendationsDocument>.Filter;
+            var builder = Builders<ContentRecommendationsDocument>.Filter;
             var filter = builder.Eq(p => p.GeneralizedResult.Title, title) &
                          builder.Eq(p => p.GeneralizedResult.PlayerFactoryName, playerFactoryName) &
                          builder.Eq(p => p.GeneralizedResult.PlatformPlayerUrl, platformPlayerUrl);
@@ -107,12 +107,12 @@ namespace SkyPlaylistManager.Services
             int totalViewAmount
         )
         {
-            var builder = Builders<RecommendationsDocument>.Filter;
+            var builder = Builders<ContentRecommendationsDocument>.Filter;
             var filter = builder.Eq(p => p.GeneralizedResult.Title, title) &
                          builder.Eq(p => p.GeneralizedResult.PlayerFactoryName, playerFactoryName) &
                          builder.Eq(p => p.GeneralizedResult.PlatformPlayerUrl, platformPlayerUrl);
 
-            var weeklyViewsUpdate = Builders<RecommendationsDocument>.Update.Push(p => p.WeeklyViewDates, DateTime.Now)
+            var weeklyViewsUpdate = Builders<ContentRecommendationsDocument>.Update.Push(p => p.WeeklyViewDates, DateTime.Now)
                 .Set(p => p.WeeklyViewsAmount, currentWeeklyViewAmount + 1)
                 .Set(p => p.TotalViewsAmount, totalViewAmount + 1);
             await _recommendationsCollection.UpdateOneAsync(filter, weeklyViewsUpdate);
@@ -122,13 +122,13 @@ namespace SkyPlaylistManager.Services
             string platformId,
             string? platformPlayerUrl)
         {
-            var filter = Builders<RecommendationsDocument>.Filter.Eq(p => p.GeneralizedResult.PlatformId, platformId) &
-                         Builders<RecommendationsDocument>.Filter.Eq(p => p.GeneralizedResult.PlayerFactoryName,
+            var filter = Builders<ContentRecommendationsDocument>.Filter.Eq(p => p.GeneralizedResult.PlatformId, platformId) &
+                         Builders<ContentRecommendationsDocument>.Filter.Eq(p => p.GeneralizedResult.PlayerFactoryName,
                              playerFactoryName) &
-                         Builders<RecommendationsDocument>.Filter.Eq(p => p.GeneralizedResult.PlatformPlayerUrl,
+                         Builders<ContentRecommendationsDocument>.Filter.Eq(p => p.GeneralizedResult.PlatformPlayerUrl,
                              platformPlayerUrl);
 
-            var projection = Builders<RecommendationsDocument>.Projection
+            var projection = Builders<ContentRecommendationsDocument>.Projection
                 .Include("weeklyViewsAmount")
                 .Include("totalViewsAmount")
                 .Exclude("_id");
@@ -138,4 +138,6 @@ namespace SkyPlaylistManager.Services
             return result;
         }
     }
+    
+    
 }

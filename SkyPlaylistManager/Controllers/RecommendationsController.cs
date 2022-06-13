@@ -1,16 +1,10 @@
-﻿using System.Collections;
-using System.Text.Json.Nodes;
-using Microsoft.AspNetCore.Mvc;
-using MongoDB.Bson;
+﻿using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson.Serialization;
 using SkyPlaylistManager.Services;
-using SkyPlaylistManager.Models;
-using SkyPlaylistManager.Models.Database;
 using SkyPlaylistManager.Models.DTOs.GeneralizedResults;
-using SkyPlaylistManager.Models.DTOs.PlaylistRequests;
-using SkyPlaylistManager.Models.DTOs.PlaylistResponses;
 using SkyPlaylistManager.Models.DTOs.RecommendationRequests;
 using SkyPlaylistManager.Models.DTOs.RecommendationResponses;
+using SkyPlaylistManager.Models.DTOs.UserResponses;
 using PlaylistBasicDetailsDto = SkyPlaylistManager.Models.DTOs.PlaylistResponses.PlaylistBasicDetailsDto;
 
 namespace SkyPlaylistManager.Controllers
@@ -19,51 +13,45 @@ namespace SkyPlaylistManager.Controllers
     [Route("[controller]")]
     public class RecommendationsController : Controller
     {
-        private readonly FilesManager _filesManager;
-        private readonly GeneralizedResultFactory _generalizedResultFactory;
-        private readonly GeneralizedResultsService _generalizedResultsService;
-        private readonly PlaylistsService _playListsService;
-        private readonly SessionTokensService _sessionTokensService;
-        private readonly UsersService _usersService;
-        private readonly RecommendationsService _recommendationsService;
-
+        private readonly ContentRecommendationsService _contentRecommendationsService;
+        private readonly PlaylistRecommendationsService _playlistRecommendationsService;
+        private readonly UserRecommendationsService _userRecommendationsService;
+        private readonly UsersService _userService;
+        private readonly PlaylistsService _playlistsService;
 
         public RecommendationsController(
-            PlaylistsService playlistsService,
+            ContentRecommendationsService contentRecommendationsService,
+            PlaylistRecommendationsService playlistRecommendationsService,
+            UserRecommendationsService userRecommendationsService,
             UsersService usersService,
-            GeneralizedResultsService generalizedResultsService,
-            GeneralizedResultFactory generalizedResultFactory,
-            SessionTokensService sessionTokensService,
-            FilesManager filesManager,
-            RecommendationsService recommendationsService
-        )
+            PlaylistsService playlistsService)
         {
-            _playListsService = playlistsService;
-            _usersService = usersService;
-            _generalizedResultsService = generalizedResultsService;
-            _generalizedResultFactory = generalizedResultFactory;
-            _sessionTokensService = sessionTokensService;
-            _filesManager = filesManager;
-            _recommendationsService = recommendationsService;
+            _contentRecommendationsService = contentRecommendationsService;
+            _playlistRecommendationsService = playlistRecommendationsService;
+            _userRecommendationsService = userRecommendationsService;
+            _userService = usersService;
+            _playlistsService = playlistsService;
         }
 
 
-        [HttpPost("saveView")]
-        public async Task<IActionResult> SaveView(SaveViewDto request)
+        //! Content
+
+        [HttpPost("saveContentView")]
+        public async Task<IActionResult> SaveContentView(SaveContentViewDto request)
         {
             try
             {
-                var recommendation = await _recommendationsService.GetResultInRecommended(
+                var recommendation = await _contentRecommendationsService.GetResultInRecommended(
                     request.GeneralizedResult.Title,
                     request.GeneralizedResult.PlayerFactoryName, request.GeneralizedResult.PlatformPlayerUrl!);
 
                 if (recommendation == null)
                 {
-                    await _recommendationsService.SaveView(request);
+                    await _contentRecommendationsService.SaveView(request);
                 }
                 else
                 {
-                    await _recommendationsService.AddViewToResult(request.GeneralizedResult.Title,
+                    await _contentRecommendationsService.AddViewToResult(request.GeneralizedResult.Title,
                         request.GeneralizedResult.PlayerFactoryName, request.GeneralizedResult.PlatformPlayerUrl!,
                         recommendation.WeeklyViewsAmount, recommendation.TotalViewsAmount);
                 }
@@ -77,19 +65,18 @@ namespace SkyPlaylistManager.Controllers
             }
         }
 
-
-        [HttpGet("getTrending")]
-        public async Task<List<UnknownGeneralizedResultDto>?> GetTrending()
+        [HttpGet("getTrendingContent")]
+        public async Task<List<UnknownGeneralizedResultDto>?> GetTrendingContent()
         {
             try
             {
-                _recommendationsService.UpdateRecommendationsWeeklyViews();
-                var trendingResults = await _recommendationsService.GetTrending();
+                _contentRecommendationsService.UpdateRecommendationsWeeklyViews();
+                var trendingResults = await _contentRecommendationsService.GetTrending();
 
                 var deserializedList = new List<UnknownGeneralizedResultDto>();
                 foreach (var trendingResult in trendingResults)
                 {
-                    var deserializedResponse = BsonSerializer.Deserialize<GetTrendingDto>(trendingResult);
+                    var deserializedResponse = BsonSerializer.Deserialize<GetTrendingContentDto>(trendingResult);
                     deserializedList.Add(deserializedResponse.generalizedResult);
                 }
 
@@ -102,16 +89,177 @@ namespace SkyPlaylistManager.Controllers
             }
         }
 
-        [HttpPost("getViews")]
-        public async Task<ReturnViewsDto?> GetViews(GetViewsDto request)
+        [HttpPost("getContentViews")]
+        public async Task<ReturnViewsDto?> GetContentViews(GetContentViewsDto request)
         {
             try
             {
-                var views = await _recommendationsService.GetViews(
+                var views = await _contentRecommendationsService.GetViews(
                     request.PlayerFactoryName,
                     request.PlatformId,
                     request.PlatformPlayerUrl!
                 );
+
+                if (views == null) return new ReturnViewsDto(0, 0);
+
+                var deserializedViews = BsonSerializer.Deserialize<ReturnViewsDto?>(views);
+                return deserializedViews;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.StackTrace);
+                return null;
+            }
+        }
+
+
+        //! Users
+        [HttpPost("saveUserView")]
+        public async Task<IActionResult> SaveUserView(SaveUserViewDto request)
+        {
+            try
+            {
+                var recommendation = await _userRecommendationsService.GetResultInRecommended(request.UserId);
+
+                if (recommendation == null)
+                {
+                    await _userRecommendationsService.SaveView(request);
+                }
+                else
+                {
+                    await _userRecommendationsService.AddViewToResult(request.UserId,
+                        recommendation.WeeklyViewsAmount, recommendation.TotalViewsAmount);
+                }
+
+                return Ok("View saved");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.StackTrace);
+                return BadRequest("Error: View not saved");
+            }
+        }
+
+        [HttpGet("getTrendingUsers/{beginningOfUsername}")]
+        public async Task<List<UserBasicProfileDto>?> GetTrendingUser(string beginningOfUsername)
+        {
+            try
+            {
+                _userRecommendationsService.UpdateRecommendationsWeeklyViews();
+                var trendingUserIds = await _userRecommendationsService.GetTrendingUserIds(beginningOfUsername);
+
+                var deserializedUserIds = new List<string>();
+                foreach (var trendingUserId in trendingUserIds)
+                {
+                    var deserializedResponse = BsonSerializer.Deserialize<string>(trendingUserId);
+                    deserializedUserIds.Add(deserializedResponse);
+                }
+
+                var deserializedUsersInformation = new List<UserBasicProfileDto>();
+                foreach (var deserializedUserId in deserializedUserIds)
+                {
+                    var userBasicDetails = await _userService.GetUserBasicDetails(deserializedUserId);
+                    var deserializedResponse = BsonSerializer.Deserialize<UserBasicProfileDto>(userBasicDetails);
+                    deserializedUsersInformation.Add(deserializedResponse);
+                }
+
+                return deserializedUsersInformation;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.StackTrace);
+                return null;
+            }
+        }
+
+        [HttpGet("getUserViews/{username}")]
+        public async Task<ReturnViewsDto?> GetUserViews(string username)
+        {
+            try
+            {
+                var views = await _userRecommendationsService.GetViews(username);
+
+                if (views == null) return new ReturnViewsDto(0, 0);
+
+                var deserializedViews = BsonSerializer.Deserialize<ReturnViewsDto?>(views);
+                return deserializedViews;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.StackTrace);
+                return null;
+            }
+        }
+
+
+        //! Playlists
+        [HttpPost("savePlaylistView")]
+        public async Task<IActionResult> SavePlaylistView(SavePlaylistViewDto request)
+        {
+            try
+            {
+                var recommendation = await _playlistRecommendationsService.GetResultInRecommended(request.PlaylistId);
+
+                if (recommendation == null)
+                {
+                    await _playlistRecommendationsService.SaveView(request);
+                }
+                else
+                {
+                    await _playlistRecommendationsService.AddViewToResult(request.PlaylistId,
+                        recommendation.WeeklyViewsAmount, recommendation.TotalViewsAmount);
+                }
+
+                return Ok("View saved");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.StackTrace);
+                return BadRequest("Error: View not saved");
+            }
+        }
+
+        [HttpPost("getTrendingPlaylists")]
+        public async Task<List<PlaylistBasicDetailsDto>?> GetTrendingPlaylist(
+            GetTrendingPlaylistsDto request)
+        {
+            try
+            {
+                _playlistRecommendationsService.UpdateRecommendationsWeeklyViews();
+                var trendingPlaylistIds =
+                    await _playlistRecommendationsService.GetTrendingPlaylistIds(request.PlaylistName);
+
+                var deserializedPlaylistIds = new List<string>();
+                foreach (var trendingUserId in trendingPlaylistIds)
+                {
+                    var deserializedResponse = BsonSerializer.Deserialize<string>(trendingUserId);
+                    deserializedPlaylistIds.Add(deserializedResponse);
+                }
+
+                var deserializedPlaylistsInformation = new List<PlaylistBasicDetailsDto>();
+                foreach (var deserializedPlaylistId in deserializedPlaylistIds)
+                {
+                    var playlistBasicDetails = await _playlistsService.GetPlaylistDetails(deserializedPlaylistId);
+                    var deserializedResponse =
+                        BsonSerializer.Deserialize<PlaylistBasicDetailsDto>(playlistBasicDetails);
+                    deserializedPlaylistsInformation.Add(deserializedResponse);
+                }
+
+                return deserializedPlaylistsInformation;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.StackTrace);
+                return null;
+            }
+        }
+
+        [HttpPost("getPlaylistViews")]
+        public async Task<ReturnViewsDto?> GetPlaylistViews(GetPlaylistViewsDto request)
+        {
+            try
+            {
+                var views = await _playlistRecommendationsService.GetViews(request.PlaylistId);
 
                 if (views == null) return new ReturnViewsDto(0, 0);
 

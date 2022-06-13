@@ -2,7 +2,7 @@
 
 namespace SkyPlaylistManager.Models.DTOs.RecommendationRequests;
 
-public class GetViewsDto
+public class GetContentViewsDto
 {
     public string PlayerFactoryName { get; set; }
     public string PlatformId { get; set; }
