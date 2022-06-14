@@ -13,4 +13,19 @@ public class UserBasicProfileDto
     [BsonElement("name")] public string Name { get; set; }
     [BsonElement("username")] public string Username { get; set; }
     [BsonElement("profilePhotoUrl")] public string ProfilePhotoUrl { get; set; }
+
+    public UserBasicProfileDto(string email, string name, string username, string profilePhotoUrl)
+    {
+        Email = email;
+        Name = name;
+        Username = username;
+        ProfilePhotoUrl = profilePhotoUrl;
+    }
+    
+    public UserBasicProfileDto(string name, string username, string profilePhotoUrl)
+    {
+        Name = name;
+        Username = username;
+        ProfilePhotoUrl = profilePhotoUrl;
+    }
 }

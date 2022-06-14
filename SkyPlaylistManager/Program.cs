@@ -18,6 +18,7 @@ builder.Services.AddSingleton<UserRecommendationsService>();
 builder.Services.AddSingleton<PlaylistRecommendationsService>();
 builder.Services.AddSingleton<ContentRecommendationsService>();
 builder.Services.AddSingleton<FilesManager>();
+builder.Services.AddSingleton<CommunityService>();
 
 
 builder.Services.AddScoped(_ =>

@@ -33,19 +33,24 @@ public class UserController : ControllerBase
         _sessionTokensService = sessionTokensService;
     }
 
-    [HttpGet("Playlists/{userId:length(24)}")]
-    public async Task<ArrayList?> UserPlaylists(string userId)
+    [HttpPost("Playlists/")]
+    public async Task<List<PlaylistDocument>?> GetUserPlaylists(GetUserPlaylistsDto request)
     {
         try
         {
+            var requestingUser =
+                await _usersService.GetUserById(_sessionTokensService.GetUserId(request.SessionToken));
 
-            var userPlaylists = await _usersService.GetUserPlaylists(userId);
+            var requestedUser = await _usersService.GetUserByUsername(request.Username);
+
+            var userPlaylists = await _usersService.GetUserPlaylists(requestedUser?.Id!);
             var deserializedPlaylists = BsonSerializer.Deserialize<UserPlaylistsDto>(userPlaylists);
-            
-            var playlistOrderedIds = await _usersService.GetUserPlaylistOrderedIds(userId);
-            var deserializedPlaylistOrderedIds = BsonSerializer.Deserialize<UserPlaylistContentsOrderedIdsDto>(playlistOrderedIds);
-            
-            var orderedPlaylists = new ArrayList();
+
+            var playlistOrderedIds = await _usersService.GetUserPlaylistOrderedIds(requestedUser?.Id!);
+            var deserializedPlaylistOrderedIds =
+                BsonSerializer.Deserialize<UserPlaylistContentsOrderedIdsDto>(playlistOrderedIds);
+
+            var orderedPlaylists = new List<PlaylistDocument>();
             foreach (var playlistContentId in deserializedPlaylistOrderedIds.PlaylistIds)
             {
                 foreach (var playlistContent in deserializedPlaylists.Playlists)
@@ -56,26 +61,62 @@ public class UserController : ControllerBase
                     }
                 }
             }
-            return orderedPlaylists;
-            
+
+            if (requestingUser?.Username == requestedUser?.Username)
+            {
+                return orderedPlaylists;
+            }
+
+            if (requestingUser?.Username != requestedUser?.Username)
+            {
+                var publicPlaylists = new List<PlaylistDocument>();
+                foreach (var playlist in orderedPlaylists)
+                {
+                    if (playlist.Visibility == "Public")
+                    {
+                        publicPlaylists.Add(playlist);
+                    }
+                }
+
+                return publicPlaylists;
+            }
+
+            return null;
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex.StackTrace);
             return null;
         }
-    
     }
 
-    [HttpGet("Profile/{sessionToken:length(24)}")]
-    public async Task<UserBasicProfileDto?> UserProfile(string sessionToken)
+    [HttpPost("Profile/")]
+    public async Task<UserBasicProfileDto?> GetUserProfile(GetUserProfileDto request)
     {
-        var userProfile = await _usersService.GetUserBasicDetails(_sessionTokensService.GetUserId(sessionToken));
-
         try
         {
+            var userProfile =
+                await _usersService.GetUserBasicDetails(_sessionTokensService.GetUserId(request.SessionToken));
             var deserializedUserProfile = BsonSerializer.Deserialize<UserBasicProfileDto>(userProfile);
-            return deserializedUserProfile;
+
+            var requestedUser = await _usersService.GetUserByUsername(request.Username);
+
+            if (requestedUser?.Username == deserializedUserProfile.Username)
+            {
+                var response = new UserBasicProfileDto(requestedUser.Email,
+                    requestedUser.Name, requestedUser.Username,
+                    deserializedUserProfile.ProfilePhotoUrl);
+                return response;
+            }
+
+            if (requestedUser != null)
+            {
+                var response = new UserBasicProfileDto(
+                    requestedUser.Name, requestedUser.Username, requestedUser.ProfilePhotoUrl);
+                return response;
+            }
+
+            return null;
         }
         catch (Exception ex)
         {
@@ -126,7 +167,7 @@ public class UserController : ControllerBase
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login(LoginDto login)
+    public async Task<dynamic> Login(LoginDto login)
     {
         try
         {
@@ -143,7 +184,7 @@ public class UserController : ControllerBase
             var session = HttpContext.Session.GetString("Session_user");
             Console.WriteLine(session);
 
-            return Ok(session);
+            return new LoginResponseDto(session!, foundUser.Username);
         }
         catch (Exception ex)
         {
@@ -168,8 +209,7 @@ public class UserController : ControllerBase
             UserDocument user;
             if (request.UserPhoto == null)
             {
-                user = new UserDocument(request,
-                    "https://uploads-ssl.webflow.com/5ff35d7f43faaaadc00d1741/61291e65ed6d7332e7e709dc_depositphotos_137014128-stock-illustration-user-profile-icon.jpeg");
+                user = new UserDocument(request,"GetImage/UsersProfilePhotos/DefaultUserPhoto.jpeg");
             }
             else
             {
@@ -262,13 +302,14 @@ public class UserController : ControllerBase
     [HttpPost("editEmail")]
     public async Task<IActionResult> EditEmail(EditEmailDto email)
     {
-        try {
-        var foundUser = await _usersService.GetUserById(email.Id!);
+        try
+        {
+            var foundUser = await _usersService.GetUserById(email.Id!);
 
-        if (foundUser == null) return BadRequest("Email doesn't exist");
+            if (foundUser == null) return BadRequest("Email doesn't exist");
 
-        await _usersService.UpdateEmail(email.Id, email.NewEmail);
-        return Ok("Email successfully updated");
+            await _usersService.UpdateEmail(email.Id, email.NewEmail);
+            return Ok("Email successfully updated");
         }
         catch (Exception ex)
         {
@@ -288,7 +329,8 @@ public class UserController : ControllerBase
 
             await _usersService.UpdateName(name.Id, name.NewName!);
             return Ok("Name successfully updated");
-        } catch (Exception ex)
+        }
+        catch (Exception ex)
         {
             Console.WriteLine(ex);
             return BadRequest("Error occurred on name update");

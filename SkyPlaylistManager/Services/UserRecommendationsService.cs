@@ -10,6 +10,7 @@ namespace SkyPlaylistManager.Services
     public class UserRecommendationsService
     {
         private readonly IMongoCollection<UserRecommendationsDocument> _recommendationsCollection;
+        private readonly string _userCollectionName;
 
         public UserRecommendationsService(IOptions<DatabaseSettings> databaseSettings)
         {
@@ -22,6 +23,8 @@ namespace SkyPlaylistManager.Services
             _recommendationsCollection =
                 mongoDatabase.GetCollection<UserRecommendationsDocument>(databaseSettings.Value
                     .UserRecommendationsCollectionName);
+            
+            _userCollectionName = databaseSettings.Value.UsersCollectionName;
         }
 
         private async void DeleteOldRecommendations()
@@ -61,20 +64,19 @@ namespace SkyPlaylistManager.Services
             }
         }
 
-        // public async Task<List<BsonDocument>> GetTrendingUserIds(string usernameBeginningLetters)
-        // {
-        //     var projection = Builders<UserRecommendationsDocument>.Projection
-        //         .Include("userId")
-        //         .Exclude("_id");
-        //
-        //
-        //     var trendingPlaylists = await _recommendationsCollection.Find(p => p.Username.ToLower().StartsWith(usernameBeginningLetters.ToLower()))
-        //         .Project(projection)
-        //         .SortByDescending(p => p.WeeklyViewsAmount)
-        //         .Limit(10).ToListAsync();
-        //
-        //     return trendingPlaylists;
-        // }
+        public async Task<List<BsonDocument>> GetTrendingUserIds(string usernameBeginningLetters)
+        {
+            var query = _recommendationsCollection.Aggregate()
+                .Lookup(_userCollectionName, "userId", "_id", "users")
+                .Match(Builders<BsonDocument>.Filter
+                    .Regex("title", new BsonRegularExpression("^(" + usernameBeginningLetters + ")")))
+                .Project(Builders<BsonDocument>.Projection.Include("users").Exclude("_id"))
+                .SortByDescending(p => "weeklyViewsAmount")
+                .Limit(10).ToListAsync();
+
+            return await query;
+            
+        }
 
 
         public async Task SaveView(SaveUserViewDto request)
