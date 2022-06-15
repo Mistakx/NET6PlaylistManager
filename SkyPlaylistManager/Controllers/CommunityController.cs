@@ -16,46 +16,21 @@ namespace SkyPlaylistManager.Controllers
         private readonly CommunityService _communityService;
         private readonly SessionTokensService _sessionTokensService;
         private readonly UsersService _usersService;
+        private readonly UserRecommendationsService _userRecommendationsService;
 
 
         public CommunityController(
             CommunityService communityService,
             SessionTokensService sessionTokensService,
-            UsersService usersService
+            UsersService usersService,
+            UserRecommendationsService userRecommendationsService
         )
         {
             _communityService = communityService;
             _sessionTokensService = sessionTokensService;
             _usersService = usersService;
+            _userRecommendationsService = userRecommendationsService;
         }
-
-        [HttpPost("getUsers")]
-        public async Task<List<UserBasicProfileDto>?> GetUsers(GetUsersDto request)
-        {
-            try
-            {
-                var userId = _sessionTokensService.GetUserId(request.SessionToken);
-                var requestingUser = await _usersService.GetUserById(userId);
-
-                var users = await _communityService.GetUsers(request.Username);
-
-                var deserializedUsers = new List<UserBasicProfileDto>();
-                foreach (var user in users)
-                {
-                    if (user.Username != requestingUser?.Username)
-                    {
-                        var deserializedUser = new UserBasicProfileDto(user.Name, user.Username, user.ProfilePhotoUrl);
-                        deserializedUsers.Add(deserializedUser);
-                    }
-                }
-
-                return deserializedUsers;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.StackTrace);
-                return null;
-            }
-        }
+        
     }
 }

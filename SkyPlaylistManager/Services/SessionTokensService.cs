@@ -2,7 +2,7 @@
 {
     public class SessionTokensService
     {
-        public string GetUserId(string sessionToken)
+        public string GetUserIdFromToken(string sessionToken)
         {
             return sessionToken;
         }

@@ -7,7 +7,6 @@ using SkyPlaylistManager.Models;
 using SkyPlaylistManager.Models.Database;
 using SkyPlaylistManager.Models.DTOs.PlaylistRequests;
 using SkyPlaylistManager.Models.DTOs.PlaylistResponses;
-using PlaylistBasicDetailsDto = SkyPlaylistManager.Models.DTOs.PlaylistResponses.PlaylistBasicDetailsDto;
 
 namespace SkyPlaylistManager.Controllers
 {
@@ -43,13 +42,13 @@ namespace SkyPlaylistManager.Controllers
 
         [HttpGet(
             "getBasicDetails/{playlistId:length(24)}")] // TODO: Verificar se a playlist é privada. Só retornar a playlist caso seja pública ou partilhada com o user da sessão.
-        public async Task<PlaylistBasicDetailsDto?> PlaylistBasicDetails(string playlistId)
+        public async Task<PlaylistDto?> PlaylistBasicDetails(string playlistId)
         {
             var basicDetails = await _playListsService.GetPlaylistDetails(playlistId);
 
             try
             {
-                var deserializedBasicDetails = BsonSerializer.Deserialize<PlaylistBasicDetailsDto>(basicDetails);
+                var deserializedBasicDetails = BsonSerializer.Deserialize<PlaylistDto>(basicDetails);
                 return deserializedBasicDetails;
             }
             catch (Exception ex)
@@ -99,7 +98,7 @@ namespace SkyPlaylistManager.Controllers
         {
             try
             {
-                var userId = _sessionTokensService.GetUserId(request.SessionToken);
+                var userId = _sessionTokensService.GetUserIdFromToken(request.SessionToken);
                 var playlist = new PlaylistDocument(request, _sessionTokensService);
                 await _playListsService.CreatePlaylist(playlist, userId);
                 return Ok("Playlist successfully created");
@@ -206,7 +205,7 @@ namespace SkyPlaylistManager.Controllers
         {
             try
             {
-                var userId = _sessionTokensService.GetUserId(request.SessionToken);
+                var userId = _sessionTokensService.GetUserIdFromToken(request.SessionToken);
                 await _playListsService.DeletePlaylistInUser(userId, new ObjectId(request.PlaylistId));
                 await _playListsService.InsertPlaylistInSpecificPosition(request.PlaylistId, request.NewIndex, userId);
                 return Ok("Successfully sorted playlist");

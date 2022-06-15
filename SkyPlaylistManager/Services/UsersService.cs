@@ -60,7 +60,7 @@ namespace SkyPlaylistManager.Services
         public async Task<UserDocument?> GetUserByEmail(string email) =>
             await _usersCollection.Find(u => u.Email == email).FirstOrDefaultAsync();
 
-        public async Task<BsonDocument> GetUserProfilePhoto(string userId)
+        public async Task<BsonDocument?> GetUserProfilePhoto(string userId)
         {
             var filter = Builders<UserDocument>.Filter.Eq(u => u.Id, userId);
             var projection = Builders<UserDocument>.Projection.Include("profilePhotoUrl");

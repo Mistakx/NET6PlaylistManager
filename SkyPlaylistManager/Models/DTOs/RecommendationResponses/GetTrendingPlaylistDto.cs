@@ -7,5 +7,5 @@ namespace SkyPlaylistManager.Models.DTOs.RecommendationResponses;
 
 public class GetTrendingPlaylistDto
 {
-    [BsonElement("playlist")] public PlaylistBasicDetailsDto Playlist { get; set; }
+    [BsonElement("playlist")] public PlaylistDto Playlist { get; set; }
 }

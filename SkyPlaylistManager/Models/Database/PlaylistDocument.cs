@@ -25,7 +25,7 @@ namespace SkyPlaylistManager.Models.Database
 
         [BsonElement("resultIds")] public List<ObjectId>? ResultIds { get; set; }
         [BsonElement("resultsAmount")] public int ResultsAmount { get; set; }
-        
+
         [BsonElement("description")] public string Description { get; set; }
         [BsonElement("thumbnailUrl")] public string ThumbnailUrl { get; set; }
 
@@ -36,7 +36,7 @@ namespace SkyPlaylistManager.Models.Database
             Description = request.Description;
             Visibility = request.Visibility;
             ResultsAmount = 0;
-            Owner = sessionTokensService.GetUserId(request.SessionToken!);
+            Owner = sessionTokensService.GetUserIdFromToken(request.SessionToken);
             ResultIds = new List<ObjectId>();
         }
     }

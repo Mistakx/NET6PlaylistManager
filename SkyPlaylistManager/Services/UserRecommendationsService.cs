@@ -23,7 +23,7 @@ namespace SkyPlaylistManager.Services
             _recommendationsCollection =
                 mongoDatabase.GetCollection<UserRecommendationsDocument>(databaseSettings.Value
                     .UserRecommendationsCollectionName);
-            
+
             _userCollectionName = databaseSettings.Value.UsersCollectionName;
         }
 
@@ -64,37 +64,28 @@ namespace SkyPlaylistManager.Services
             }
         }
 
-        public async Task<List<BsonDocument>> GetTrendingUserIds(string usernameBeginningLetters)
+        public async Task<List<BsonDocument>?> GetTrendingUsers(string usernameBeginningLetters, int resultsLimit)
         {
-            var query = _recommendationsCollection.Aggregate()
-                .Lookup(_userCollectionName, "userId", "_id", "users")
+            var query = await _recommendationsCollection.Aggregate()
+                .SortByDescending(p => p.WeeklyViewsAmount)
+                .Lookup(_userCollectionName, "userId", "_id", "user")
+                .Unwind("user")
                 .Match(Builders<BsonDocument>.Filter
-                    .Regex("title", new BsonRegularExpression("^(" + usernameBeginningLetters + ")")))
-                .Project(Builders<BsonDocument>.Projection.Include("users").Exclude("_id"))
-                .SortByDescending(p => "weeklyViewsAmount")
-                .Limit(10).ToListAsync();
+                    .Regex("user.username", new BsonRegularExpression("(?i)^" + usernameBeginningLetters)))
+                .Limit(resultsLimit)
+                .ToListAsync();
 
-            return await query;
-            
+            return query;
         }
 
 
-        public async Task SaveView(SaveUserViewDto request)
+        public async Task SaveUserView(string userId)
         {
-            var recommendationsDocument = new UserRecommendationsDocument(request);
+            var recommendationsDocument = new UserRecommendationsDocument(userId);
             await _recommendationsCollection.InsertOneAsync(recommendationsDocument);
         }
-
-        public async Task<UserRecommendationsDocument?> GetResultInRecommended(string userId)
-        {
-            var filter = Builders<UserRecommendationsDocument>.Filter.Eq(p => p.UserId, userId);
-
-            var recommendation = await _recommendationsCollection.Find(filter).FirstOrDefaultAsync();
-
-            return recommendation;
-        }
-
-        public async Task AddViewToResult(
+        
+        public async Task AddViewToUser(
             string userId,
             int currentWeeklyViewAmount,
             int totalViewAmount
@@ -110,16 +101,11 @@ namespace SkyPlaylistManager.Services
             await _recommendationsCollection.UpdateOneAsync(filter, weeklyViewsUpdate);
         }
 
-        public async Task<BsonDocument?> GetViews(string userId)
+        public async Task<UserRecommendationsDocument?> GetUserRecommendationsDocumentById(string userId)
         {
             var filter = Builders<UserRecommendationsDocument>.Filter.Eq(p => p.UserId, userId);
-            
-            var projection = Builders<UserRecommendationsDocument>.Projection
-                .Include("weeklyViewsAmount")
-                .Include("totalViewsAmount")
-                .Exclude("_id");
 
-            var result = await _recommendationsCollection.Find(filter).Project(projection).FirstOrDefaultAsync();
+            var result = await _recommendationsCollection.Find(filter).FirstOrDefaultAsync();
 
             return result;
         }

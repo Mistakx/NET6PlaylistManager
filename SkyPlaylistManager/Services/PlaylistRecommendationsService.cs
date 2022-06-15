@@ -66,36 +66,29 @@ namespace SkyPlaylistManager.Services
             }
         }
 
-        public async Task<List<BsonDocument>> GetTrendingPlaylistIds(string playlistNameBeginningLetters)
+        public async Task<List<BsonDocument>?> GetTrendingPlaylists(string playlistNameBeginningLetters, int resultsLimit)
         {
-            var query = _recommendationsCollection.Aggregate()
-                .Lookup(_playlistCollectionName, "resultIds", "_id", "playlists")
+            var query = await _recommendationsCollection.Aggregate()
+                .SortByDescending(p => p.WeeklyViewsAmount)
+                .Lookup(_playlistCollectionName, "playlistId", "_id", "playlist")
+                .Unwind("playlist")
                 .Match(Builders<BsonDocument>.Filter
-                    .Regex("title", new BsonRegularExpression("^(" + playlistNameBeginningLetters + ")")))
-                .Project(Builders<BsonDocument>.Projection.Include("playlists").Exclude("_id"))
-                .SortByDescending(p => "weeklyViewsAmount")
-                .Limit(10).ToListAsync();
+                    .Regex("title", new BsonRegularExpression("(?i)^" + playlistNameBeginningLetters)))
+                .Limit(resultsLimit).
+                ToListAsync();
+            
+            return query;
 
-            return await query;
         }
 
 
-        public async Task SaveView(SavePlaylistViewDto request)
+        public async Task SaveNewPlaylistView(SavePlaylistViewDto request)
         {
             var recommendationsDocument = new PlaylistRecommendationsDocument(request);
             await _recommendationsCollection.InsertOneAsync(recommendationsDocument);
         }
 
-        public async Task<PlaylistRecommendationsDocument?> GetResultInRecommended(string playlistId)
-        {
-            var filter = Builders<PlaylistRecommendationsDocument>.Filter.Eq(p => p.PlaylistId, playlistId);
-
-            var recommendation = await _recommendationsCollection.Find(filter).FirstOrDefaultAsync();
-
-            return recommendation;
-        }
-
-        public async Task AddViewToResult(string playlistId,
+        public async Task AddViewToPlaylist(string playlistId,
             int currentWeeklyViewAmount,
             int totalViewAmount
         )
@@ -109,17 +102,11 @@ namespace SkyPlaylistManager.Services
             await _recommendationsCollection.UpdateOneAsync(filter, weeklyViewsUpdate);
         }
 
-        public async Task<BsonDocument?> GetViews(string playlistId)
+        public async Task<PlaylistRecommendationsDocument?> GetPlaylistRecommendationsDocumentById(string playlistId)
         {
             var filter = Builders<PlaylistRecommendationsDocument>.Filter.Eq(p => p.PlaylistId, playlistId);
 
-
-            var projection = Builders<PlaylistRecommendationsDocument>.Projection
-                .Include("weeklyViewsAmount")
-                .Include("totalViewsAmount")
-                .Exclude("_id");
-
-            var result = await _recommendationsCollection.Find(filter).Project(projection).FirstOrDefaultAsync();
+            var result = await _recommendationsCollection.Find(filter).FirstOrDefaultAsync();
 
             return result;
         }

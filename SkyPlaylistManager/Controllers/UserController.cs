@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using Microsoft.AspNetCore.Mvc;
-using MongoDB.Bson;
+﻿using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson.Serialization;
 using SkyPlaylistManager.Services;
 using SkyPlaylistManager.Models.Database;
@@ -19,27 +17,33 @@ public class UserController : ControllerBase
     private readonly PlaylistsService _playlistsService;
     private readonly FilesManager _filesManager;
     private readonly SessionTokensService _sessionTokensService;
+    private readonly UserRecommendationsService _userRecommendationsService;
+    private readonly PlaylistRecommendationsService _playlistRecommendationsService;
+
 
     public UserController(
         UsersService usersService,
         PlaylistsService playlistsService,
         FilesManager filesManager,
-        SessionTokensService sessionTokensService
-    )
+        SessionTokensService sessionTokensService,
+        UserRecommendationsService userRecommendationsService,
+        PlaylistRecommendationsService playlistRecommendationsService)
     {
         _usersService = usersService;
         _filesManager = filesManager;
         _playlistsService = playlistsService;
         _sessionTokensService = sessionTokensService;
+        _userRecommendationsService = userRecommendationsService;
+        _playlistRecommendationsService = playlistRecommendationsService;
     }
 
     [HttpPost("Playlists/")]
-    public async Task<List<PlaylistDocument>?> GetUserPlaylists(GetUserPlaylistsDto request)
+    public async Task<List<PlaylistDto>?> GetUserPlaylists(GetUserPlaylistsDto request)
     {
         try
         {
             var requestingUser =
-                await _usersService.GetUserById(_sessionTokensService.GetUserId(request.SessionToken));
+                await _usersService.GetUserById(_sessionTokensService.GetUserIdFromToken(request.SessionToken));
 
             var requestedUser = await _usersService.GetUserByUsername(request.Username);
 
@@ -50,14 +54,33 @@ public class UserController : ControllerBase
             var deserializedPlaylistOrderedIds =
                 BsonSerializer.Deserialize<UserPlaylistContentsOrderedIdsDto>(playlistOrderedIds);
 
-            var orderedPlaylists = new List<PlaylistDocument>();
+            var orderedPlaylists = new List<PlaylistDto>();
             foreach (var playlistContentId in deserializedPlaylistOrderedIds.PlaylistIds)
             {
                 foreach (var playlistContent in deserializedPlaylists.Playlists)
                 {
                     if (playlistContent.Id == playlistContentId.ToString())
                     {
-                        orderedPlaylists.Add(playlistContent);
+                        var currentPlaylistViews =
+                            await _playlistRecommendationsService.GetPlaylistRecommendationsDocumentById(playlistContent
+                                .Id);
+
+                        int weeklyViews;
+                        int totalViews;
+                        if (currentPlaylistViews != null)
+                        {
+                            weeklyViews = currentPlaylistViews.WeeklyViewsAmount;
+                            totalViews = currentPlaylistViews.TotalViewsAmount;
+                        }
+                        else
+                        {
+                            weeklyViews = 0;
+                            totalViews = 0;
+                        }
+
+                        orderedPlaylists.Add(new PlaylistDto(playlistContent.Id, playlistContent.Title,
+                            playlistContent.Visibility, playlistContent.Description, playlistContent.ThumbnailUrl,
+                            playlistContent.ResultsAmount, weeklyViews, totalViews));
                     }
                 }
             }
@@ -69,7 +92,7 @@ public class UserController : ControllerBase
 
             if (requestingUser?.Username != requestedUser?.Username)
             {
-                var publicPlaylists = new List<PlaylistDocument>();
+                var publicPlaylists = new List<PlaylistDto>();
                 foreach (var playlist in orderedPlaylists)
                 {
                     if (playlist.Visibility == "Public")
@@ -91,32 +114,46 @@ public class UserController : ControllerBase
     }
 
     [HttpPost("Profile/")]
-    public async Task<UserBasicProfileDto?> GetUserProfile(GetUserProfileDto request)
+    public async Task<UserProfileDto?> GetUserProfile(GetUserProfileDto request)
     {
         try
         {
-            var userProfile =
-                await _usersService.GetUserBasicDetails(_sessionTokensService.GetUserId(request.SessionToken));
-            var deserializedUserProfile = BsonSerializer.Deserialize<UserBasicProfileDto>(userProfile);
-
+            var requestingUserId = _sessionTokensService.GetUserIdFromToken(request.SessionToken);
+            var requestingUser = await _usersService.GetUserById(requestingUserId);
             var requestedUser = await _usersService.GetUserByUsername(request.Username);
+            var requestedUserRecommendations =
+                await _userRecommendationsService.GetUserRecommendationsDocumentById(requestedUser?.Id!);
 
-            if (requestedUser?.Username == deserializedUserProfile.Username)
+            if (requestingUser == null || requestedUser == null) return null;
+
+            int requestedUserWeeklyViews;
+            int requestedUserTotalViews;
+            if (requestedUserRecommendations != null)
             {
-                var response = new UserBasicProfileDto(requestedUser.Email,
+                requestedUserWeeklyViews = requestedUserRecommendations.WeeklyViewsAmount;
+                requestedUserTotalViews = requestedUserRecommendations.TotalViewsAmount;
+            }
+            else
+            {
+                requestedUserWeeklyViews = 0;
+                requestedUserTotalViews = 0;
+            }
+
+            UserProfileDto response;
+            if (requestedUser.Username == requestingUser.Username)
+            {
+                response = new UserProfileDto(requestedUser.Email,
                     requestedUser.Name, requestedUser.Username,
-                    deserializedUserProfile.ProfilePhotoUrl);
+                    requestedUser.ProfilePhotoUrl, requestedUserWeeklyViews,
+                    requestedUserTotalViews);
                 return response;
             }
 
-            if (requestedUser != null)
-            {
-                var response = new UserBasicProfileDto(
-                    requestedUser.Name, requestedUser.Username, requestedUser.ProfilePhotoUrl);
-                return response;
-            }
+            response = new UserProfileDto(
+                requestedUser.Name, requestedUser.Username, requestedUser.ProfilePhotoUrl,
+                requestedUserWeeklyViews, requestedUserTotalViews);
 
-            return null;
+            return response;
         }
         catch (Exception ex)
         {
@@ -125,38 +162,24 @@ public class UserController : ControllerBase
         }
     }
 
-    // [HttpGet("{sessionToken:length(24)}")]
-    // public async Task<UserBasicProfileDto?> UserCompleteProfile(string sessionToken)
-    // {
-    //     var userCompleteProfile =
-    //         await _usersService.GetUserDetailsAndPlaylists(_sessionTokensService.GetUserId(sessionToken));
-    //
-    //     try
-    //     {
-    //         var deserializedUserCompleteProfile =
-    //             BsonSerializer.Deserialize<UserBasicProfileDto>(userCompleteProfile);
-    //         return deserializedUserCompleteProfile;
-    //     }
-    //     catch (Exception ex)
-    //     {
-    //         Console.WriteLine(ex);
-    //         return null;
-    //     }
-    // }
-
     [HttpPost("editProfilePhoto")]
     public async Task<IActionResult> EditProfilePhoto([FromForm] EditProfilePhotoDto request)
     {
         if (!_filesManager.IsValidImage(request.UserPhoto!)) return BadRequest("Invalid image format");
         try
         {
-            var userId = _sessionTokensService.GetUserId(request.SessionToken!);
+            var userId = _sessionTokensService.GetUserIdFromToken(request.SessionToken!);
             var generatedFileName = _filesManager.InsertInDirectory(request.UserPhoto!, "UsersProfilePhotos");
 
-            var oldPhoto = await _usersService.GetUserProfilePhoto(userId);
+            var currentPhotoUrl = (await _usersService.GetUserById(userId))?.ProfilePhotoUrl;
 
             await _usersService.UpdateUserProfilePhoto(userId, "GetImage/UsersProfilePhotos/" + generatedFileName);
-            _filesManager.DeleteFromDirectory((string) oldPhoto["profilePhotoUrl"], "UsersProfilePhotos");
+
+            if (currentPhotoUrl != null && !currentPhotoUrl.Contains("/GetImage/UserProfilePhotos/DefaultUserPhoto"))
+            {
+                _filesManager.DeleteFromDirectory(currentPhotoUrl!, "UsersProfilePhotos");
+            }
+
             return Ok("Profile photo updated successfully");
         }
         catch (Exception ex)
@@ -209,7 +232,7 @@ public class UserController : ControllerBase
             UserDocument user;
             if (request.UserPhoto == null)
             {
-                user = new UserDocument(request,"GetImage/UsersProfilePhotos/DefaultUserPhoto.jpeg");
+                user = new UserDocument(request, "GetImage/UsersProfilePhotos/DefaultUserPhoto.jpeg");
             }
             else
             {
@@ -234,7 +257,7 @@ public class UserController : ControllerBase
     {
         try
         {
-            var userId = _sessionTokensService.GetUserId(request.SessionToken!);
+            var userId = _sessionTokensService.GetUserIdFromToken(request.SessionToken!);
 
             if (request.CurrentPassword == request.NewPassword)
                 return BadRequest("New password must be different from current password");
@@ -264,7 +287,7 @@ public class UserController : ControllerBase
     {
         try
         {
-            var userId = _sessionTokensService.GetUserId(request.SessionToken!);
+            var userId = _sessionTokensService.GetUserIdFromToken(request.SessionToken!);
 
             var userCurrentInformation = await _usersService.GetUserById(userId);
 

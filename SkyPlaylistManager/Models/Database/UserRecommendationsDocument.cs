@@ -21,14 +21,16 @@ namespace SkyPlaylistManager.Models.Database
         [BsonElement("weeklyViewsAmount")] public int WeeklyViewsAmount { get; set; }
         [BsonElement("totalViewsAmount")] public int TotalViewsAmount { get; set; }
 
-        [BsonElement("UserId")] public string UserId { get; set; }
+        [BsonElement("userId")]
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string UserId { get; set; }
 
-        public UserRecommendationsDocument(SaveUserViewDto request)
+        public UserRecommendationsDocument(string userId)
         {
             WeeklyViewDates = new List<DateTime> {DateTime.Now};
             WeeklyViewsAmount = 1;
             TotalViewsAmount = 1;
-            UserId = request.UserId;
+            UserId = userId;
         }
     }
 }

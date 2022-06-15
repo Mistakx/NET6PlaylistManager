@@ -23,5 +23,5 @@ public class PlaylistInformationDto
 
     [BsonElement("thumbnailUrl")] public string ThumbnailUrl { get; set; }
 
-    [BsonElement("owner")] public UserBasicProfileDto Owner { get; set; }
+    [BsonElement("owner")] public UserProfileDto Owner { get; set; }
 }
