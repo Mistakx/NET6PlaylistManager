@@ -1,7 +1,7 @@
 namespace SkyPlaylistManager.Models.DTOs.CommunityRequests;
 
-public class GetUsersDto
+public class TogglePlaylistFollowDto
 {
-    public string Username { get; set; }
+    public string PlaylistId { get; set; }
     public string SessionToken { get; set; }
 }

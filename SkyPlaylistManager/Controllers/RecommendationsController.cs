@@ -259,7 +259,7 @@ namespace SkyPlaylistManager.Controllers
         }
 
         [HttpPost("getTrendingPlaylists")]
-        public async Task<List<PlaylistDto>?> GetTrendingPlaylists(GetTrendingPlaylistsDto request)
+        public async Task<List<PlaylistInformationDto>?> GetTrendingPlaylists(GetTrendingPlaylistsDto request)
         {
             bool PlaylistBelongsToRequestingUser(PlaylistDocument playlist, UserDocument user)
             {
@@ -279,6 +279,7 @@ namespace SkyPlaylistManager.Controllers
                 var requestingUserId = _sessionTokensService.GetUserIdFromToken(request.SessionToken);
                 var requestingUser = await _userService.GetUserById(requestingUserId);
                 if (requestingUser == null) return null;
+                var playlistInformationDtoBuilder = new PlaylistInformationDtoBuilder();
 
                 _playlistRecommendationsService.UpdateRecommendationsWeeklyViews();
                 var trendingPlaylists =
@@ -293,18 +294,20 @@ namespace SkyPlaylistManager.Controllers
                     deserializedTrendingPlaylists.Add(deserializedTrendingPlaylist);
                 }
 
-                var deserializedTrendingPlaylistsInformation = new List<PlaylistDto>();
+                var deserializedTrendingPlaylistsInformation = new List<PlaylistInformationDto>();
                 foreach (var deserializedTrendingPlaylist in deserializedTrendingPlaylists)
                 {
                     if (!PlaylistBelongsToRequestingUser(deserializedTrendingPlaylist.Playlist, requestingUser) &&
                         deserializedTrendingPlaylist.Playlist.Visibility == "Public")
-                        deserializedTrendingPlaylistsInformation.Add(new PlaylistDto(
-                            deserializedTrendingPlaylist.Playlist.Id, deserializedTrendingPlaylist.Playlist.Title,
-                            deserializedTrendingPlaylist.Playlist.Description,
-                            deserializedTrendingPlaylist.Playlist.ThumbnailUrl,
-                            deserializedTrendingPlaylist.Playlist.ResultsAmount,
-                            deserializedTrendingPlaylist.WeeklyViewsAmount,
-                            deserializedTrendingPlaylist.TotalViewsAmount));
+
+                        deserializedTrendingPlaylistsInformation.Add(playlistInformationDtoBuilder.BeginBuilding(
+                                deserializedTrendingPlaylist.Playlist.Id,
+                                deserializedTrendingPlaylist.Playlist.Title,
+                                deserializedTrendingPlaylist.Playlist.Description,
+                                deserializedTrendingPlaylist.Playlist.ThumbnailUrl,
+                                deserializedTrendingPlaylist.Playlist.ResultsAmount)
+                            .AddViews(deserializedTrendingPlaylist)
+                            .Build());
                 }
 
                 // Need to find other playlists that are not in the trending list
@@ -327,29 +330,17 @@ namespace SkyPlaylistManager.Controllers
                         _playlistRecommendationsService.GetPlaylistRecommendationsDocumentById(allPlaylists.ElementAt(i)
                             .Id);
 
-                    int weeklyViews;
-                    int totalViews;
-                    if (currentPlaylistViews != null)
-                    {
-                        weeklyViews = currentPlaylistViews.WeeklyViewsAmount;
-                        totalViews = currentPlaylistViews.TotalViewsAmount;
-                    }
-                    else
-                    {
-                        weeklyViews = 0;
-                        totalViews = 0;
-                    }
-
-                    var currentPlaylist = new PlaylistDto(allPlaylists.ElementAt(i).Id,
-                        allPlaylists.ElementAt(i).Title,
-                        allPlaylists.ElementAt(i).Description,
-                        allPlaylists.ElementAt(i).ThumbnailUrl, allPlaylists.ElementAt(i).ResultsAmount,
-                        weeklyViews, totalViews);
+                    var currentPlaylistInformation = playlistInformationDtoBuilder.BeginBuilding(
+                            allPlaylists.ElementAt(i).Id,
+                            allPlaylists.ElementAt(i).Title,
+                            allPlaylists.ElementAt(i).Description,
+                            allPlaylists.ElementAt(i).ThumbnailUrl, allPlaylists.ElementAt(i).ResultsAmount)
+                        .AddViews(currentPlaylistViews!).Build();
 
                     if (!PlaylistBelongsToRequestingUser(allPlaylists.ElementAt(i), requestingUser) &&
                         allPlaylists.ElementAt(i).Visibility == "Public")
                     {
-                        deserializedTrendingPlaylistsInformation.Add(currentPlaylist);
+                        deserializedTrendingPlaylistsInformation.Add(currentPlaylistInformation);
                     }
                 }
 

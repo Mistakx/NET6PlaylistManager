@@ -1,7 +1,9 @@
 ﻿using Microsoft.Extensions.Options;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using SkyPlaylistManager.Models.Database;
+using SkyPlaylistManager.Models.DTOs.UserResponses;
 
 
 namespace SkyPlaylistManager.Services
@@ -22,9 +24,14 @@ namespace SkyPlaylistManager.Services
             _usersCollection = mongoDatabase.GetCollection<UserDocument>(databaseSettings.Value.UsersCollectionName);
             _playlistsCollectionName = databaseSettings.Value.PlaylistsCollectionName;
         }
-        
+
+        // CREATE
+
         public async Task CreateUser(UserDocument newUserDocument) =>
             await _usersCollection.InsertOneAsync(newUserDocument);
+
+
+        // READ
 
         public async Task<UserDocument?> GetUserById(string userId) =>
             await _usersCollection.Find(u => u.Id == userId).FirstOrDefaultAsync();
@@ -34,7 +41,36 @@ namespace SkyPlaylistManager.Services
 
         public async Task<UserDocument?> GetUserByEmail(string email) =>
             await _usersCollection.Find(u => u.Email == email).FirstOrDefaultAsync();
-        
+
+        public async Task<BsonDocument> GetUserPlaylists(string userId)
+        {
+            var filter = Builders<UserDocument>.Filter.Eq(p => p.Id, userId);
+            var query = _usersCollection.Aggregate().Match(filter)
+                .Lookup(_playlistsCollectionName, "playlistIds", "_id", "playlists");
+
+            var result = await query.FirstOrDefaultAsync();
+            return result;
+        }
+
+        public async Task<bool> PlaylistBelongsToUser(string playlistId, string userId)
+        {
+            var userPlaylists = await GetUserPlaylists(userId);
+            var requestedUserDeserializedPlaylists =
+                BsonSerializer.Deserialize<GetUserPlaylistsLookupDto>(userPlaylists);
+
+            foreach (var userPlaylist in requestedUserDeserializedPlaylists.Playlists)
+            {
+                if (playlistId == userPlaylist.Id)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        // UPDATE
+
         public async Task UpdateUserProfilePhoto(string userId, string photoPath)
         {
             var filter = Builders<UserDocument>.Filter.Eq(u => u.Id, userId);
@@ -43,7 +79,7 @@ namespace SkyPlaylistManager.Services
             await _usersCollection.UpdateOneAsync(filter, update);
         }
 
-        public async Task UpdatePassword(string userId, string newPassword)
+        public async Task UpdateUserPassword(string userId, string newPassword)
         {
             var filter = Builders<UserDocument>.Filter.Eq(p => p.Id, userId);
             var update = Builders<UserDocument>.Update.Set("password", newPassword);
@@ -51,7 +87,7 @@ namespace SkyPlaylistManager.Services
             await _usersCollection.UpdateOneAsync(filter, update);
         }
 
-        public async Task UpdateEmail(string userId, string newEmail)
+        public async Task UpdateUserEmail(string userId, string newEmail)
         {
             var filter = Builders<UserDocument>.Filter.Eq(p => p.Id, userId);
             var update = Builders<UserDocument>.Update.Set("email", newEmail);
@@ -75,23 +111,29 @@ namespace SkyPlaylistManager.Services
             await _usersCollection.UpdateOneAsync(filter, updated);
         }
 
-        public async Task DeleteUserPlaylist(string userId, ObjectId playlist)
+        public async Task InsertPlaylistIdInSpecificPosition(string playlistId, int newIndex, string userId)
         {
-            var filter = Builders<UserDocument>.Filter.Eq(u => u.Id, userId);
-            var update = Builders<UserDocument>.Update.Pull("playlistIds", playlist);
+            var playlistIds = new List<ObjectId>(); // The method "PushEach" only works with lists
+            var generalizedResultId = ObjectId.Parse(playlistId);
+            playlistIds.Add(generalizedResultId);
+
+            var filter = Builders<UserDocument>.Filter.Eq(p => p.Id, userId);
+            var update =
+                Builders<UserDocument>.Update.PushEach("playlistIds", playlistIds,
+                    position: newIndex);
 
             await _usersCollection.UpdateOneAsync(filter, update);
         }
-        
-        public async Task<BsonDocument> GetUserPlaylists(string userId)
-        {
-            var filter = Builders<UserDocument>.Filter.Eq(p => p.Id, userId);
-            var query = _usersCollection.Aggregate().Match(filter)
-                .Lookup(_playlistsCollectionName, "playlistIds", "_id", "playlists");
-            
-            var result = await query.FirstOrDefaultAsync();
-            return result;
-        }
 
+
+        // DELETE
+
+        public async Task DeletePlaylistIdFromUser(string userId, ObjectId playlistId)
+        {
+            var filter = Builders<UserDocument>.Filter.Eq(u => u.Id, userId);
+            var update = Builders<UserDocument>.Update.Pull("playlistIds", playlistId);
+
+            await _usersCollection.UpdateOneAsync(filter, update);
+        }
     }
 }

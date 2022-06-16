@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using SkyPlaylistManager.Services;
 using SkyPlaylistManager.Models.Database;
+using SkyPlaylistManager.Models.DTOs.PlaylistRequests;
 using SkyPlaylistManager.Models.DTOs.PlaylistResponses;
 using SkyPlaylistManager.Models.DTOs.UserRequests;
 using SkyPlaylistManager.Models.DTOs.UserResponses;
@@ -19,6 +21,7 @@ public class UserController : ControllerBase
     private readonly SessionTokensService _sessionTokensService;
     private readonly UserRecommendationsService _userRecommendationsService;
     private readonly PlaylistRecommendationsService _playlistRecommendationsService;
+    private readonly CommunityService _communityService;
 
 
     public UserController(
@@ -27,7 +30,8 @@ public class UserController : ControllerBase
         FilesManager filesManager,
         SessionTokensService sessionTokensService,
         UserRecommendationsService userRecommendationsService,
-        PlaylistRecommendationsService playlistRecommendationsService)
+        PlaylistRecommendationsService playlistRecommendationsService,
+        CommunityService communityService)
     {
         _usersService = usersService;
         _filesManager = filesManager;
@@ -35,94 +39,77 @@ public class UserController : ControllerBase
         _sessionTokensService = sessionTokensService;
         _userRecommendationsService = userRecommendationsService;
         _playlistRecommendationsService = playlistRecommendationsService;
+        _communityService = communityService;
     }
 
-    [HttpPost("Playlists/")]
-    public async Task<List<PlaylistDto>?> GetUserPlaylists(GetUserPlaylistsDto request)
+    // CREATE
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromForm] UserSignupDto request)
     {
         try
         {
-            var requestingUserId = _sessionTokensService.GetUserIdFromToken(request.SessionToken);
-            var requestingUser = await _usersService.GetUserById(requestingUserId);
-            var requestedUser = await _usersService.GetUserByUsername(request.Username);
-            if (requestingUser == null || requestedUser == null) return null;
-            
-            var requestedUserPlaylists = await _usersService.GetUserPlaylists(requestedUser.Id);
-            var requestedUserDeserializedPlaylists = BsonSerializer.Deserialize<GetUserPlaylistsLookupDto>(requestedUserPlaylists);
-            
-            // The playlists need to be returned in the order set by the user, which is not the order when you do a lookup.
-            // It is the order of the ids in the userDocument playlistIds field.
-            var orderedPlaylists = new List<PlaylistDto>();
-            foreach (var playlistContentId in requestedUser.UserPlaylistIds) // The playlists ids are in the order sorted by the user
+            var foundUserByEmail = await _usersService.GetUserByEmail(request.Email);
+
+            if (foundUserByEmail != null) return BadRequest("Email already taken");
+
+            var foundUserByUsername = await _usersService.GetUserByUsername(request.Username);
+
+            if (foundUserByUsername != null) return BadRequest("Username already taken");
+
+            UserDocument user;
+            if (request.UserPhoto == null)
             {
-                foreach (var playlistDocument in requestedUserDeserializedPlaylists.Playlists)
-                {
-                    if (playlistDocument.Id == playlistContentId.ToString())
-                    {
-                        if (playlistDocument.Visibility == "Public")
-                        {
-                            var currentPlaylistViews =
-                                await _playlistRecommendationsService.GetPlaylistRecommendationsDocumentById(playlistDocument
-                                    .Id);
-
-                            int weeklyViews;
-                            int totalViews;
-                            if (currentPlaylistViews != null)
-                            {
-                                weeklyViews = currentPlaylistViews.WeeklyViewsAmount;
-                                totalViews = currentPlaylistViews.TotalViewsAmount;
-                            }
-                            else
-                            {
-                                weeklyViews = 0;
-                                totalViews = 0;
-                            }
-
-                            orderedPlaylists.Add(new PlaylistDto(playlistDocument.Id, playlistDocument.Title, playlistDocument.Description, playlistDocument.ThumbnailUrl,
-                                playlistDocument.ResultsAmount, weeklyViews, totalViews));     
-                        }
-
-                        if (playlistDocument.Visibility == "Private")
-                        {
-                            orderedPlaylists.Add(new PlaylistDto(playlistDocument.Id, playlistDocument.Title, playlistDocument.Description, playlistDocument.ThumbnailUrl,
-                                playlistDocument.ResultsAmount));     
-                        }
- 
-                        
-
-                    }
-                }
+                user = new UserDocument(request, "GetImage/UsersProfilePhotos/DefaultUserPhoto.jpeg");
+            }
+            else
+            {
+                var generatedFileName = _filesManager.InsertInDirectory(request.UserPhoto, "UsersProfilePhotos");
+                user = new UserDocument(request, "GetImage/UsersProfilePhotos/" + generatedFileName);
+                if (!_filesManager.IsValidImage(request.UserPhoto))
+                    return BadRequest("Invalid image used on user register");
             }
 
-            if (requestingUser.Username == requestedUser.Username)
+            await _usersService.CreateUser(user);
+            return Ok("User successfully registered");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            return BadRequest("Error occurred on user register");
+        }
+    }
+
+
+    // READ
+
+    [HttpPost("login")]
+    public async Task<dynamic> Login(LoginDto login)
+    {
+        try
+        {
+            var foundUser = await _usersService.GetUserByEmail(login.Email);
+
+            if (foundUser == null) return BadRequest("Email doesn't exist");
+
+            if (!BCrypt.Net.BCrypt.Verify(login.Password, foundUser.Password))
             {
-                return orderedPlaylists;
+                return BadRequest("Invalid password");
             }
 
-            if (requestingUser.Username != requestedUser.Username)
-            {
-                var publicPlaylists = new List<PlaylistDto>();
-                foreach (var playlist in orderedPlaylists)
-                {
-                    if (playlist.Visibility == "Public")
-                    {
-                        publicPlaylists.Add(playlist);
-                    }
-                }
+            HttpContext.Session.SetString("Session_user", foundUser.Id!);
+            var session = HttpContext.Session.GetString("Session_user");
+            Console.WriteLine(session);
 
-                return publicPlaylists;
-            }
-
-            return null;
+            return new LoginResponseDto(session!, foundUser.Username);
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex.StackTrace);
-            return null;
+            return BadRequest("Error occured while logging in");
         }
     }
 
-    [HttpPost("Profile/")]
+    [HttpPost("getProfile/")]
     public async Task<UserProfileDto?> GetUserProfile(GetUserProfileDto request)
     {
         try
@@ -171,6 +158,107 @@ public class UserController : ControllerBase
         }
     }
 
+    [HttpPost("getPlaylists/")]
+    public async Task<List<PlaylistInformationDto>?> GetUserPlaylists(GetUserPlaylistsDto request)
+    {
+        try
+        {
+            var requestingUserId = _sessionTokensService.GetUserIdFromToken(request.SessionToken);
+            var requestingUser = await _usersService.GetUserById(requestingUserId);
+            var playlistInformationDtoBuilder = new PlaylistInformationDtoBuilder();
+            var requestedUser = await _usersService.GetUserByUsername(request.Username);
+            if (requestingUser == null || requestedUser == null) return null;
+
+            var requestedUserPlaylists = await _usersService.GetUserPlaylists(requestedUser.Id);
+            var requestedUserDeserializedPlaylists =
+                BsonSerializer.Deserialize<GetUserPlaylistsLookupDto>(requestedUserPlaylists);
+
+            // The playlists need to be returned in the order set by the user, which is not the order when you do a lookup.
+            // It is the order of the ids in the userDocument playlistIds field.
+            var orderedPlaylists = new List<PlaylistInformationDto>();
+            foreach (var playlistContentId in
+                     requestedUser.UserPlaylistIds) // The playlists ids are in the order sorted by the user
+            {
+                foreach (var playlistDocument in requestedUserDeserializedPlaylists.Playlists)
+                {
+                    if (playlistDocument.Id == playlistContentId.ToString())
+                    {
+                        var requestingUserFollowsPlaylist =
+                            await _communityService.PlaylistAlreadyBeingFollowedByUser(playlistDocument.Id,
+                                requestingUserId);
+
+                        if (requestingUser.Username == requestedUser.Username) // Playlist belongs to requesting user
+                        {
+                            if (playlistDocument.Visibility == "Private")
+                            {
+                                orderedPlaylists.Add(playlistInformationDtoBuilder.BeginBuilding(playlistDocument.Id,
+                                    playlistDocument.Title, playlistDocument.Description, playlistDocument.ThumbnailUrl,
+                                    playlistDocument.ResultsAmount).AddVisibility("Private").Build());
+                            }
+
+                            if (playlistDocument.Visibility == "Public")
+                            {
+                                var currentPlaylistViews =
+                                    await _playlistRecommendationsService.GetPlaylistRecommendationsDocumentById(
+                                        playlistDocument
+                                            .Id);
+
+                                orderedPlaylists.Add(playlistInformationDtoBuilder.BeginBuilding(playlistDocument.Id,
+                                        playlistDocument.Title, playlistDocument.Description,
+                                        playlistDocument.ThumbnailUrl,
+                                        playlistDocument.ResultsAmount).AddViews(currentPlaylistViews!)
+                                    .AddVisibility("Public").Build());
+                            }
+                        }
+                        else // Playlist doesn't belong to requesting user
+                        {
+                            if (playlistDocument.Visibility == "Public")
+                            {
+                                var currentPlaylistViews =
+                                    await _playlistRecommendationsService.GetPlaylistRecommendationsDocumentById(
+                                        playlistDocument
+                                            .Id);
+                                orderedPlaylists.Add(playlistInformationDtoBuilder.BeginBuilding(playlistDocument.Id,
+                                        playlistDocument.Title, playlistDocument.Description,
+                                        playlistDocument.ThumbnailUrl,
+                                        playlistDocument.ResultsAmount).AddViews(currentPlaylistViews!)
+                                    .AddFollowing(requestingUserFollowsPlaylist).Build());
+                            }
+                        }
+                    }
+                }
+            }
+
+            return orderedPlaylists;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.StackTrace);
+            return null;
+        }
+    }
+
+    
+    // UPDATE
+
+    [HttpPost("sortPlaylist")]
+    public async Task<IActionResult> SortResult(SortPlaylistsDto request)
+    {
+        try
+        {
+            var userId = _sessionTokensService.GetUserIdFromToken(request.SessionToken);
+            await _usersService.DeletePlaylistIdFromUser(userId, new ObjectId(request.PlaylistId));
+            await _usersService.InsertPlaylistIdInSpecificPosition(request.PlaylistId, request.NewIndex, userId);
+            return Ok("Successfully sorted playlist");
+        }
+
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.StackTrace);
+            return BadRequest("Error occurred while sorting playlist");
+        }
+    }
+
     [HttpPost("editProfilePhoto")]
     public async Task<IActionResult> EditProfilePhoto([FromForm] EditProfilePhotoDto request)
     {
@@ -195,99 +283,6 @@ public class UserController : ControllerBase
         {
             Console.WriteLine(ex.StackTrace);
             return BadRequest("Error occured while changing profile picture");
-        }
-    }
-
-    [HttpPost("login")]
-    public async Task<dynamic> Login(LoginDto login)
-    {
-        try
-        {
-            var foundUser = await _usersService.GetUserByEmail(login.Email);
-
-            if (foundUser == null) return BadRequest("Email doesn't exist");
-
-            if (!BCrypt.Net.BCrypt.Verify(login.Password, foundUser.Password))
-            {
-                return BadRequest("Invalid password");
-            }
-
-            HttpContext.Session.SetString("Session_user", foundUser.Id!);
-            var session = HttpContext.Session.GetString("Session_user");
-            Console.WriteLine(session);
-
-            return new LoginResponseDto(session!, foundUser.Username);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex.StackTrace);
-            return BadRequest("Error occured while logging in");
-        }
-    }
-
-    [HttpPost("register")]
-    public async Task<IActionResult> Register([FromForm] UserSignupDto request)
-    {
-        try
-        {
-            var foundUserByEmail = await _usersService.GetUserByEmail(request.Email);
-
-            if (foundUserByEmail != null) return BadRequest("Email already taken");
-
-            var foundUserByUsername = await _usersService.GetUserByUsername(request.Username);
-
-            if (foundUserByUsername != null) return BadRequest("Username already taken");
-
-            UserDocument user;
-            if (request.UserPhoto == null)
-            {
-                user = new UserDocument(request, "GetImage/UsersProfilePhotos/DefaultUserPhoto.jpeg");
-            }
-            else
-            {
-                var generatedFileName = _filesManager.InsertInDirectory(request.UserPhoto, "UsersProfilePhotos");
-                user = new UserDocument(request, "GetImage/UsersProfilePhotos/" + generatedFileName);
-                if (!_filesManager.IsValidImage(request.UserPhoto))
-                    return BadRequest("Invalid image used on user register");
-            }
-
-            await _usersService.CreateUser(user);
-            return Ok("User successfully registered");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex);
-            return BadRequest("Error occurred on user register");
-        }
-    }
-
-    [HttpPost("editPassword")]
-    public async Task<IActionResult> EditPassword(EditPasswordDto request)
-    {
-        try
-        {
-            var userId = _sessionTokensService.GetUserIdFromToken(request.SessionToken!);
-
-            if (request.CurrentPassword == request.NewPassword)
-                return BadRequest("New password must be different from current password");
-
-            var foundUser = await _usersService.GetUserById(userId);
-
-            if (foundUser == null) return BadRequest("User ID doesn't exist");
-
-            if (!BCrypt.Net.BCrypt.Verify(request.CurrentPassword, foundUser.Password))
-            {
-                return BadRequest("Invalid current password");
-            }
-
-            var encryptedPassword = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
-            await _usersService.UpdatePassword(userId, encryptedPassword);
-            return Ok("Password successfully updated.");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex);
-            return BadRequest("Password  occurred on password update");
         }
     }
 
@@ -319,7 +314,7 @@ public class UserController : ControllerBase
                 if (foundUserByEmail != null) return BadRequest("Email already exists");
             }
 
-            await _usersService.UpdateEmail(userId, request.NewEmail);
+            await _usersService.UpdateUserEmail(userId, request.NewEmail);
             await _usersService.UpdateName(userId, request.NewName);
             await _usersService.UpdateUsername(userId, request.NewUsername);
             return Ok("User information successfully updated");
@@ -330,42 +325,35 @@ public class UserController : ControllerBase
             return BadRequest("Error occurred on user information update");
         }
     }
-
-    [HttpPost("editEmail")]
-    public async Task<IActionResult> EditEmail(EditEmailDto email)
+    
+    [HttpPost("editPassword")]
+    public async Task<IActionResult> EditPassword(EditPasswordDto request)
     {
         try
         {
-            var foundUser = await _usersService.GetUserById(email.Id!);
+            var userId = _sessionTokensService.GetUserIdFromToken(request.SessionToken!);
 
-            if (foundUser == null) return BadRequest("Email doesn't exist");
+            if (request.CurrentPassword == request.NewPassword)
+                return BadRequest("New password must be different from current password");
 
-            await _usersService.UpdateEmail(email.Id, email.NewEmail);
-            return Ok("Email successfully updated");
+            var foundUser = await _usersService.GetUserById(userId);
+
+            if (foundUser == null) return BadRequest("User ID doesn't exist");
+
+            if (!BCrypt.Net.BCrypt.Verify(request.CurrentPassword, foundUser.Password))
+            {
+                return BadRequest("Invalid current password");
+            }
+
+            var encryptedPassword = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+            await _usersService.UpdateUserPassword(userId, encryptedPassword);
+            return Ok("Password successfully updated.");
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex);
-            return BadRequest("Error occurred on email update");
+            return BadRequest("Password  occurred on password update");
         }
     }
-
-    [HttpPost("editName")]
-    public async Task<IActionResult> EditName(EditNameDto name)
-    {
-        try
-        {
-            var foundUser = await _usersService.GetUserById(name.Id);
-
-            if (foundUser == null) return BadRequest(new {message = "ID doesn't exist"});
-
-            await _usersService.UpdateName(name.Id, name.NewName!);
-            return Ok("Name successfully updated");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex);
-            return BadRequest("Error occurred on name update");
-        }
-    }
+    
 }

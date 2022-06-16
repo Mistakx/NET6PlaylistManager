@@ -2,7 +2,7 @@
 
 namespace SkyPlaylistManager.Models.DTOs.PlaylistRequests;
 
-public class AddGeneralizedResultPlaylistDto: UnknownGeneralizedResultDto
+public class AddContentToPlaylistDto: UnknownGeneralizedResultDto
 {
     public string PlaylistId { get; set; }
 }

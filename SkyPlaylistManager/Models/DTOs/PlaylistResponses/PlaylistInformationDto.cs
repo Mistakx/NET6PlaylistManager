@@ -1,27 +1,24 @@
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
-using SkyPlaylistManager.Models.DTOs.UserRequests;
-using SkyPlaylistManager.Models.DTOs.UserResponses;
-
 namespace SkyPlaylistManager.Models.DTOs.PlaylistResponses;
 
 public class PlaylistInformationDto
 {
-    [BsonId]
-    [BsonRepresentation(BsonType.ObjectId)]
     public string Id { get; set; }
+    public string Title { get; set; }
+    public string Description { get; set; }
+    public string ThumbnailUrl { get; set; }
+    public int ResultsAmount { get; set; }
+    public string? Visibility { get; set; }
+    public int? WeeklyViewsAmount { get; set; }
+    public int? TotalViewsAmount { get; set; }
+    public bool? Followed { get; set; }
 
-    [BsonElement("title")] public string Title { get; set; }
-
-    [BsonElement("visibility")] public string Visibility { get; set; }
-
-    [BsonElement("creationDate")]
-    [BsonDateTimeOptions(Kind = DateTimeKind.Local)]
-    public DateTime CreationDate { get; set; }
-
-    [BsonElement("description")] public string Description { get; set; }
-
-    [BsonElement("thumbnailUrl")] public string ThumbnailUrl { get; set; }
-
-    [BsonElement("owner")] public UserProfileDto Owner { get; set; }
+    public PlaylistInformationDto(string playlistId, string title, string description, string thumbnailUrl, int resultsAmount)
+    {
+        Id = playlistId;
+        Title = title;
+        Description = description;
+        ThumbnailUrl = thumbnailUrl;
+        ResultsAmount = resultsAmount;
+    }
+    
 }

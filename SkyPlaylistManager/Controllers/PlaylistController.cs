@@ -44,62 +44,65 @@ namespace SkyPlaylistManager.Controllers
             _communityService = communityService;
         }
 
+        // CREATE
+
+        [HttpPost("createPlaylist")]
+        public async Task<IActionResult> CreatePlaylist(CreatePlaylistDto request)
+        {
+            try
+            {
+                var userId = _sessionTokensService.GetUserIdFromToken(request.SessionToken);
+                var playlist = new PlaylistDocument(request, _sessionTokensService);
+                await _playListsService.CreatePlaylist(playlist, userId);
+                return Ok("Playlist successfully created");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+                return BadRequest("Error while creating playlist");
+            }
+        }
+
+
+        // READ
 
         [HttpPost("getPlaylistInformation")]
-        public async Task<PlaylistDto?> GetPlaylistInformation(GetPlaylistInformationDto request)
+        public async Task<PlaylistInformationDto?> GetPlaylistInformation(GetPlaylistInformationDto request)
         {
-            bool PlaylistBelongsToUser(string playlistId, UserDocument user)
-            {
-                foreach (var userPlaylistId in user.UserPlaylistIds)
-                {
-                    if (new ObjectId(playlistId) == userPlaylistId)
-                    {
-                        return true;
-                    }
-                }
-
-                return false;
-            }
-
             try
             {
                 var requestingUserId = _sessionTokensService.GetUserIdFromToken(request.SessionToken);
                 var requestingUser = await _usersService.GetUserById(requestingUserId);
                 if (requestingUser == null) return null;
+                var playlistInformationDtoBuilder = new PlaylistInformationDtoBuilder();
 
-                int weeklyViews;
-                int totalViews;
-                if (PlaylistBelongsToUser(request.PlaylistId, requestingUser))
+                if (await _usersService.PlaylistBelongsToUser(request.PlaylistId, requestingUser.Id))
                 {
                     var requestedPlaylist = await _playListsService.GetPlaylistById(request.PlaylistId);
                     if (requestedPlaylist?.Visibility == "Private")
                     {
-                        return new PlaylistDto(requestedPlaylist.Id, requestedPlaylist.Title,
+                        return playlistInformationDtoBuilder.BeginBuilding(requestedPlaylist.Id,
+                            requestedPlaylist.Title,
                             requestedPlaylist.Description, requestedPlaylist.ThumbnailUrl,
-                            requestedPlaylist.ResultsAmount);
+                            requestedPlaylist.ResultsAmount).AddVisibility("Private").Build();
                     }
+
                     if (requestedPlaylist?.Visibility == "Public")
                     {
                         var requestedPlaylistViews = await
                             _playlistRecommendationsService.GetPlaylistRecommendationsDocumentById(request.PlaylistId);
 
-                        if (requestedPlaylistViews != null)
-                        {
-                            weeklyViews = requestedPlaylistViews.WeeklyViewsAmount;
-                            totalViews = requestedPlaylistViews.TotalViewsAmount;
-                        }
-                        else
-                        {
-                            weeklyViews = 0;
-                            totalViews = 0;
-                        }
-                        return new PlaylistDto(requestedPlaylist.Id, requestedPlaylist.Title,
-                            requestedPlaylist.Description, requestedPlaylist.ThumbnailUrl,
-                            requestedPlaylist.ResultsAmount, weeklyViews, totalViews);
+                        return playlistInformationDtoBuilder.BeginBuilding(requestedPlaylist.Id,
+                                requestedPlaylist.Title,
+                                requestedPlaylist.Description, requestedPlaylist.ThumbnailUrl,
+                                requestedPlaylist.ResultsAmount).AddVisibility("Public")
+                            .AddViews(requestedPlaylistViews!)
+                            .Build();
                     }
+
                     return null;
                 }
-                else 
+                else
                 {
                     var requestedPlaylist = await _playListsService.GetPlaylistById(request.PlaylistId);
                     if (requestedPlaylist?.Visibility == "Public")
@@ -107,20 +110,12 @@ namespace SkyPlaylistManager.Controllers
                         var requestedPlaylistViews = await
                             _playlistRecommendationsService.GetPlaylistRecommendationsDocumentById(request.PlaylistId);
 
-                        if (requestedPlaylistViews != null)
-                        {
-                            weeklyViews = requestedPlaylistViews.WeeklyViewsAmount;
-                            totalViews = requestedPlaylistViews.TotalViewsAmount;
-                        }
-                        else
-                        {
-                            weeklyViews = 0;
-                            totalViews = 0;
-                        }
-                        return new PlaylistDto(requestedPlaylist.Id, requestedPlaylist.Title,
+                        return playlistInformationDtoBuilder.BeginBuilding(requestedPlaylist.Id,
+                            requestedPlaylist.Title,
                             requestedPlaylist.Description, requestedPlaylist.ThumbnailUrl,
-                            requestedPlaylist.ResultsAmount, weeklyViews, totalViews);
+                            requestedPlaylist.ResultsAmount).AddViews(requestedPlaylistViews!).Build();
                     }
+
                     return null;
                 }
             }
@@ -131,14 +126,14 @@ namespace SkyPlaylistManager.Controllers
             }
         }
 
-        [HttpGet(
-            "getPlaylistContent")] // TODO: Add security
+        [HttpGet("getPlaylistContent/{playlistId}")] // TODO: Add security
         public async Task<ArrayList?> GetPlaylistContent(string playlistId)
         {
             try
             {
-                var playlistResults = await _playListsService.GetPlaylistGeneralizedResults(playlistId);
-                var deserializedPlaylistResults = BsonSerializer.Deserialize<PlaylistResultsDto>(playlistResults);
+                var playlistResults = await _playListsService.GetPlaylistContent(playlistId);
+                var deserializedPlaylistResults =
+                    BsonSerializer.Deserialize<GetPlaylistContentLookupDto>(playlistResults);
 
                 var playlistResultsOrderedIds = await _playListsService.GetPlaylistContentOrderedIds(playlistId);
                 var deserializedPlaylistResultsOrderedIds =
@@ -147,7 +142,7 @@ namespace SkyPlaylistManager.Controllers
                 var orderedPlaylistResults = new ArrayList();
                 foreach (var playlistContentId in deserializedPlaylistResultsOrderedIds.ResultIds)
                 {
-                    foreach (var playlistContent in deserializedPlaylistResults.Results)
+                    foreach (var playlistContent in deserializedPlaylistResults.Content)
                     {
                         if (playlistContent.DatabaseId == playlistContentId.ToString())
                         {
@@ -166,57 +161,45 @@ namespace SkyPlaylistManager.Controllers
         }
 
 
-        [HttpPost("create")]
-        public async Task<IActionResult> CreatePlaylist(CreatePlaylistDto request)
+        // UPDATE
+
+        [HttpPost("sortContent")]
+        public async Task<IActionResult> SortResult(SortPlaylistResultsDto request)
         {
             try
             {
-                var userId = _sessionTokensService.GetUserIdFromToken(request.SessionToken);
-                var playlist = new PlaylistDocument(request, _sessionTokensService);
-                await _playListsService.CreatePlaylist(playlist, userId);
-                return Ok("Playlist successfully created");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex);
-                return BadRequest("Error while creating playlist");
-            }
-        }
-
-        [HttpPost("deletePlaylist")] // TODO: Add security
-        public async Task<IActionResult> DeletePlaylist(DeletePlaylistDto request)
-        {
-            try
-            {
-                var foundPlaylist = await _playListsService.GetPlaylistById(request.Id);
+                var generalResultId = ObjectId.Parse(request.GeneralizedResultDatabaseId);
 
 
+                var foundPlaylist = await _playListsService.GetPlaylistById(request.PlaylistId);
                 if (foundPlaylist == null) return BadRequest(PlaylistIdDoesntExistMessage);
+                await _playListsService.DeleteContentIdFromPlaylist(request.PlaylistId, generalResultId,
+                    foundPlaylist.ResultsAmount);
 
-                var id = ObjectId.Parse(request.Id);
-                await _playListsService.DeletePlaylist(request.Id);
-
-                var owner = foundPlaylist.OwnerId;
-                await _usersService.DeleteUserPlaylist(owner, id);
-
-                return Ok("Playlist successfully deleted");
+                foundPlaylist = await _playListsService.GetPlaylistById(request.PlaylistId);
+                if (foundPlaylist == null) return BadRequest(PlaylistIdDoesntExistMessage);
+                await _playListsService.DeleteContentIdFromPlaylist(request.PlaylistId, generalResultId,
+                    foundPlaylist.ResultsAmount);
+                await _playListsService.InsertContentInSpecificPlaylistPosition(request, foundPlaylist.ResultsAmount);
+                return Ok("Successfully sorted result");
             }
+
             catch (Exception ex)
             {
-                Console.WriteLine(ex);
-                return BadRequest("Error while deleting playlist");
+                Console.WriteLine(ex.StackTrace);
+                return BadRequest("Error occurred while sorting result");
             }
         }
 
-        [HttpPost("addToPlaylist")]
-        public async Task<IActionResult> AddGeneralizedResultToPlaylist(AddGeneralizedResultPlaylistDto request)
+        [HttpPost("addContent")]
+        public async Task<IActionResult> AddContentToPlaylist(AddContentToPlaylistDto request)
         {
             try
             {
                 var foundPlaylist = await _playListsService.GetPlaylistById(request.PlaylistId);
                 if (foundPlaylist == null) return BadRequest(PlaylistIdDoesntExistMessage);
 
-                if (await _playListsService.GeneralizedResultAlreadyInPlaylist(
+                if (await _playListsService.ContentIsAlreadyInPlaylist(
                         request.PlaylistId,
                         request.Title,
                         request.PlayerFactoryName,
@@ -233,7 +216,7 @@ namespace SkyPlaylistManager.Controllers
                 var generalizedResultId = ObjectId.Parse(generalizedResult.Id);
 
 
-                await _playListsService.InsertGeneralizedResultInPlaylist(request.PlaylistId, generalizedResultId,
+                await _playListsService.InsertContentIdInPlaylist(request.PlaylistId, generalizedResultId,
                     foundPlaylist.ResultsAmount);
                 return Ok("Successfully added to playlist");
             }
@@ -245,88 +228,20 @@ namespace SkyPlaylistManager.Controllers
             }
         }
 
-        [HttpPost("sortResult")]
-        public async Task<IActionResult> SortResult(SortPlaylistResultsDto request)
-        {
-            try
-            {
-                var generalResultId = ObjectId.Parse(request.GeneralizedResultDatabaseId);
-
-
-                var foundPlaylist = await _playListsService.GetPlaylistById(request.PlaylistId);
-                if (foundPlaylist == null) return BadRequest(PlaylistIdDoesntExistMessage);
-                await _playListsService.DeleteMultimediaContentInPlaylist(request.PlaylistId, generalResultId,
-                    foundPlaylist.ResultsAmount);
-
-                foundPlaylist = await _playListsService.GetPlaylistById(request.PlaylistId);
-                if (foundPlaylist == null) return BadRequest(PlaylistIdDoesntExistMessage);
-                await _playListsService.DeleteMultimediaContentInPlaylist(request.PlaylistId, generalResultId,
-                    foundPlaylist.ResultsAmount);
-                await _playListsService.InsertGeneralizedResultInSpecificPosition(request, foundPlaylist.ResultsAmount);
-                return Ok("Successfully sorted result");
-            }
-
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.StackTrace);
-                return BadRequest("Error occurred while sorting result");
-            }
-        }
-
-        [HttpPost("sortPlaylist")]
-        public async Task<IActionResult> SortResult(SortPlaylistsDto request)
-        {
-            try
-            {
-                var userId = _sessionTokensService.GetUserIdFromToken(request.SessionToken);
-                await _playListsService.DeletePlaylistInUser(userId, new ObjectId(request.PlaylistId));
-                await _playListsService.InsertPlaylistInSpecificPosition(request.PlaylistId, request.NewIndex, userId);
-                return Ok("Successfully sorted playlist");
-            }
-
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.StackTrace);
-                return BadRequest("Error occurred while sorting playlist");
-            }
-        }
-
-
-        [HttpPost("deleteGeneralizedResult")] // TODO: Add security
-        public async Task<IActionResult> DeleteGeneralizedResult(DeletePlaylistContentDto request)
-        {
-            try
-            {
-                var foundPlaylist = await _playListsService.GetPlaylistById(request.PlaylistId);
-
-                if (foundPlaylist == null) return BadRequest(PlaylistIdDoesntExistMessage);
-
-                var generalizedResultToDeleteId = new ObjectId(request.GeneralizedResultDatabaseId);
-                await _playListsService.DeleteMultimediaContentInPlaylist(request.PlaylistId,
-                    generalizedResultToDeleteId, foundPlaylist.ResultsAmount);
-                return Ok("Successfully removed from playlist");
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-                return BadRequest("Error while removing from playlist");
-            }
-        }
-
         [HttpPost("editPlaylistPhoto")]
         public async Task<IActionResult> EditProfilePhoto([FromForm] EditPlaylistThumbnail request)
         {
             if (!_filesManager.IsValidImage(request.PlaylistPhoto)) return BadRequest("Invalid image format");
             try
             {
-                var playlistId = request.PlaylistId;
+                var requestedPlaylist = await _playListsService.GetPlaylistById(request.PlaylistId);
+                if (requestedPlaylist == null) return BadRequest(PlaylistIdDoesntExistMessage);
+
                 var generatedFileName = _filesManager.InsertInDirectory(request.PlaylistPhoto, "PlaylistsThumbnails");
 
-                var oldPhoto = await _playListsService.GetPlaylistPhoto(playlistId);
-
-                await _playListsService.UpdatePlaylistPhoto(playlistId,
+                await _playListsService.UpdatePlaylistPhoto(request.PlaylistId,
                     "GetImage/PlaylistsThumbnails/" + generatedFileName);
-                _filesManager.DeleteFromDirectory((string) oldPhoto["thumbnailUrl"], "PlaylistsThumbnails");
+                _filesManager.DeleteFromDirectory((string) requestedPlaylist.ThumbnailUrl, "PlaylistsThumbnails");
                 return Ok("GetImage/PlaylistsThumbnails/" + generatedFileName);
             }
             catch (Exception ex)
@@ -336,19 +251,18 @@ namespace SkyPlaylistManager.Controllers
             }
         }
 
-        [HttpPost("setCoverItem")]
-        public async Task<IActionResult> SetCoverItem(SetCoverItem request)
+        [HttpPost("setCover")]
+        public async Task<IActionResult> SetCoverItem(SetPlaylistCoverDto request)
         {
             try
             {
-                var playlistId = request.PlaylistId;
+                var requestedPlaylist = await _playListsService.GetPlaylistById(request.PlaylistId);
+                if (requestedPlaylist == null) return BadRequest(PlaylistIdDoesntExistMessage);
 
-                var oldPhoto = await _playListsService.GetPlaylistPhoto(playlistId);
-
-                await _playListsService.UpdatePlaylistPhoto(playlistId, request.CoverUrl);
+                await _playListsService.UpdatePlaylistPhoto(request.PlaylistId, request.CoverUrl);
                 try
                 {
-                    _filesManager.DeleteFromDirectory((string) oldPhoto["thumbnailUrl"], "PlaylistsThumbnails");
+                    _filesManager.DeleteFromDirectory(requestedPlaylist.ThumbnailUrl, "PlaylistsThumbnails");
                 }
                 catch (Exception e)
                 {
@@ -369,13 +283,61 @@ namespace SkyPlaylistManager.Controllers
         {
             try
             {
-                await _playListsService.UpdatePlaylist(request);
+                await _playListsService.UpdatePlaylistInformation(request);
                 return Ok("Playlist successfully edited");
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex);
                 return BadRequest("Error while editing playlist");
+            }
+        }
+
+        // DELETE 
+
+        [HttpPost("deletePlaylist")] // TODO: Add security
+        public async Task<IActionResult> DeletePlaylist(DeletePlaylistDto request)
+        {
+            try
+            {
+                var foundPlaylist = await _playListsService.GetPlaylistById(request.Id);
+
+
+                if (foundPlaylist == null) return BadRequest(PlaylistIdDoesntExistMessage);
+
+                var id = ObjectId.Parse(request.Id);
+                await _playListsService.DeletePlaylist(request.Id);
+
+                var owner = foundPlaylist.OwnerId;
+                await _usersService.DeletePlaylistIdFromUser(owner, id);
+
+                return Ok("Playlist successfully deleted");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+                return BadRequest("Error while deleting playlist");
+            }
+        }
+
+        [HttpPost("deleteContent")] // TODO: Add security
+        public async Task<IActionResult> DeleteGeneralizedResult(DeletePlaylistContentDto request)
+        {
+            try
+            {
+                var foundPlaylist = await _playListsService.GetPlaylistById(request.PlaylistId);
+
+                if (foundPlaylist == null) return BadRequest(PlaylistIdDoesntExistMessage);
+
+                var generalizedResultToDeleteId = new ObjectId(request.GeneralizedResultDatabaseId);
+                await _playListsService.DeleteContentIdFromPlaylist(request.PlaylistId,
+                    generalizedResultToDeleteId, foundPlaylist.ResultsAmount);
+                return Ok("Successfully removed from playlist");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                return BadRequest("Error while removing from playlist");
             }
         }
     }

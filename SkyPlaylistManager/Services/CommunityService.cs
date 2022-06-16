@@ -2,8 +2,6 @@
 using MongoDB.Bson;
 using MongoDB.Driver;
 using SkyPlaylistManager.Models.Database;
-using SkyPlaylistManager.Models.DTOs.RecommendationRequests;
-
 
 namespace SkyPlaylistManager.Services
 {
@@ -34,7 +32,6 @@ namespace SkyPlaylistManager.Services
 
             _playlistsCollection = mongoDatabase.GetCollection<PlaylistDocument>(databaseSettings.Value
                 .PlaylistsCollectionName);
-            
         }
 
         public async Task<List<UserDocument>> GetUsersByNameOrUsername(string username, int limitAmount)
@@ -59,6 +56,7 @@ namespace SkyPlaylistManager.Services
                 .Select(group => group.First()).ToList();
         }
 
+        // Playlists
         public async Task<List<PlaylistDocument>> GetPlaylistsByTitle(string title, int limitAmount)
         {
             var playlistDocuments = new List<PlaylistDocument>();
@@ -71,6 +69,34 @@ namespace SkyPlaylistManager.Services
             }
 
             return playlistDocuments;
+        }
+
+        public async Task<bool> PlaylistAlreadyBeingFollowedByUser(string playlistId, string userId)
+        {
+            var filter = Builders<PlaylistDocument>.Filter.Eq(p => p.Id, playlistId);
+            var playlist = await _playlistsCollection.Find(filter).FirstOrDefaultAsync();
+            var playlistIsAlreadyBeingFollowedByUser = playlist.UsersFollowingIds.Contains(new ObjectId(userId));
+            return playlistIsAlreadyBeingFollowedByUser;
+        }
+
+        public async Task FollowPlaylist(string playlistToUnfollowId, ObjectId userUnfollowingId,
+            int currentUsersFollowingAmount)
+        {
+            var filter = Builders<PlaylistDocument>.Filter.Eq(p => p.Id, playlistToUnfollowId);
+            var update = Builders<PlaylistDocument>.Update.Pull("usersFollowingIds", userUnfollowingId)
+                .Set("resultsAmount", currentUsersFollowingAmount + 1);
+
+            await _playlistsCollection.UpdateOneAsync(filter, update);
+        }
+
+        public async Task UnfollowPlaylist(string playlistToUnfollowId, ObjectId userUnfollowingId,
+            int currentUsersFollowingAmount)
+        {
+            var filter = Builders<PlaylistDocument>.Filter.Eq(p => p.Id, playlistToUnfollowId);
+            var update = Builders<PlaylistDocument>.Update.Pull("usersFollowingIds", userUnfollowingId)
+                .Set("resultsAmount", currentUsersFollowingAmount - 1);
+
+            await _playlistsCollection.UpdateOneAsync(filter, update);
         }
     }
 }

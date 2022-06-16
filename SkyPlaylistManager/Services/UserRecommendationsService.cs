@@ -2,8 +2,6 @@
 using MongoDB.Bson;
 using MongoDB.Driver;
 using SkyPlaylistManager.Models.Database;
-using SkyPlaylistManager.Models.DTOs.RecommendationRequests;
-
 
 namespace SkyPlaylistManager.Services
 {

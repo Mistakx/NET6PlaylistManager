@@ -32,7 +32,80 @@ namespace SkyPlaylistManager.Services
             _generalizedResultsCollectionName = databaseSettings.Value.GeneralizedResultsCollectionName;
         }
 
-        public async Task InsertGeneralizedResultInSpecificPosition(SortPlaylistResultsDto newSortPlaylistResults,
+        // CREATE
+        
+        public async Task CreatePlaylist(PlaylistDocument newPlaylist, string userId)
+        {
+            await _playlistsCollection.InsertOneAsync(newPlaylist);
+
+            var filter = Builders<UserDocument>.Filter.Eq(p => p.Id, userId);
+            var update = Builders<UserDocument>.Update.Push("playlistIds", new ObjectId(newPlaylist.Id));
+            await _usersCollection.UpdateOneAsync(filter, update);
+        }
+
+        
+        // READ
+        
+        public async Task<PlaylistDocument?> GetPlaylistById(string playlistId) =>
+            await _playlistsCollection.Find(p => p.Id == playlistId).FirstOrDefaultAsync();
+        
+        public async Task<BsonDocument> GetPlaylistContentOrderedIds(string playlistId)
+        {
+            var filter = Builders<PlaylistDocument>.Filter.Eq(p => p.Id, playlistId);
+            var projection = Builders<PlaylistDocument>.Projection
+                .Include("resultIds")
+                .Exclude("_id");
+
+            var result = await _playlistsCollection.Find(filter).Project(projection).FirstOrDefaultAsync();
+
+            return result;
+        }
+
+        public async Task<BsonDocument> GetPlaylistContent(string playlistId)
+        {
+            var filter = Builders<PlaylistDocument>.Filter.Eq(p => p.Id, playlistId);
+            var query = _playlistsCollection.Aggregate().Match(filter)
+                .Lookup(_generalizedResultsCollectionName, "resultIds", "_id", "content");
+
+            var result = await query.FirstOrDefaultAsync();
+            return result;
+        }
+
+        public async Task<bool> ContentIsAlreadyInPlaylist(string playlistId, string title,
+            string playerFactoryName, string platformPlayerUrl)
+        {
+            var playlistGeneralizedResults = await GetPlaylistContent(playlistId);
+            var deserializedPlaylistContents =
+                BsonSerializer.Deserialize<GetPlaylistContentLookupDto>(playlistGeneralizedResults);
+
+            foreach (var generalizedResult in deserializedPlaylistContents.Content)
+            {
+                if (generalizedResult.Title == title &&
+                    generalizedResult.PlayerFactoryName == playerFactoryName &&
+                    generalizedResult.PlatformPlayerUrl == platformPlayerUrl)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        
+
+        
+        // UPDATE
+        
+        public async Task UpdatePlaylistInformation(EditPlaylistDto updatedPlaylist)
+        {
+            var filter = Builders<PlaylistDocument>.Filter.Eq(p => p.Id, updatedPlaylist.PlaylistId);
+            var updated = Builders<PlaylistDocument>.Update.Set(p => p.Title, updatedPlaylist.Title)
+                .Set(p => p.Description, updatedPlaylist.Description)
+                .Set(p => p.Visibility, updatedPlaylist.Visibility);
+
+            await _playlistsCollection.UpdateOneAsync(filter, updated);
+        }
+
+        public async Task InsertContentInSpecificPlaylistPosition(SortPlaylistResultsDto newSortPlaylistResults,
             int currentAmountOfResults)
         {
             var resultIds = new List<ObjectId>(); // The method "PushEach" only works with lists
@@ -47,85 +120,7 @@ namespace SkyPlaylistManager.Services
             await _playlistsCollection.UpdateOneAsync(filter, update);
         }
 
-        public async Task InsertPlaylistInSpecificPosition(string playlistId, int newIndex, string userId)
-        {
-            var playlistIds = new List<ObjectId>(); // The method "PushEach" only works with lists
-            var generalizedResultId = ObjectId.Parse(playlistId);
-            playlistIds.Add(generalizedResultId);
-
-            var filter = Builders<UserDocument>.Filter.Eq(p => p.Id, userId);
-            var update =
-                Builders<UserDocument>.Update.PushEach("playlistIds", playlistIds,
-                    position: newIndex);
-
-            await _usersCollection.UpdateOneAsync(filter, update);
-        }
-
-        public async Task<BsonDocument> GetPlaylistDetails(string playlistId)
-        {
-            var filter = Builders<PlaylistDocument>.Filter.Eq(p => p.Id, playlistId);
-            var projection = Builders<PlaylistDocument>.Projection
-                .Exclude("resultIds")
-                .Exclude("owner");
-
-            var result = await _playlistsCollection.Find(filter).Project(projection).FirstOrDefaultAsync();
-
-            return result;
-        }
-
-        public async Task<BsonDocument> GetPlaylistContentOrderedIds(string playlistId)
-        {
-            var filter = Builders<PlaylistDocument>.Filter.Eq(p => p.Id, playlistId);
-            var projection = Builders<PlaylistDocument>.Projection
-                .Include("resultIds")
-                .Exclude("_id");
-
-            var result = await _playlistsCollection.Find(filter).Project(projection).FirstOrDefaultAsync();
-
-            return result;
-        }
-
-        public async Task<BsonDocument> GetPlaylistGeneralizedResults(string playlistId)
-        {
-            var filter = Builders<PlaylistDocument>.Filter.Eq(p => p.Id, playlistId);
-            var query = _playlistsCollection.Aggregate().Match(filter)
-                .Lookup(_generalizedResultsCollectionName, "resultIds", "_id", "results")
-                .Project(Builders<BsonDocument>.Projection.Include("results").Exclude("_id"));
-
-            var result = await query.FirstOrDefaultAsync();
-            return result;
-        }
-
-        public async Task<bool> GeneralizedResultAlreadyInPlaylist(string playlistId, string title,
-            string playerFactoryName, string platformPlayerUrl)
-        {
-            var playlistGeneralizedResults = await GetPlaylistGeneralizedResults(playlistId);
-            var deserializedPlaylistContents =
-                BsonSerializer.Deserialize<PlaylistResultsDto>(playlistGeneralizedResults);
-
-            foreach (var generalizedResult in deserializedPlaylistContents.Results)
-            {
-                if (generalizedResult.Title == title &&
-                    generalizedResult.PlayerFactoryName == playerFactoryName &&
-                    generalizedResult.PlatformPlayerUrl == platformPlayerUrl)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        public async Task CreatePlaylist(PlaylistDocument newPlaylist, string userId)
-        {
-            await _playlistsCollection.InsertOneAsync(newPlaylist);
-
-            var filter = Builders<UserDocument>.Filter.Eq(p => p.Id, userId);
-            var update = Builders<UserDocument>.Update.Push("playlistIds", new ObjectId(newPlaylist.Id));
-            await _usersCollection.UpdateOneAsync(filter, update);
-        }
-
-        public async Task InsertGeneralizedResultInPlaylist(string playlistId, ObjectId generalizedResultId,
+        public async Task InsertContentIdInPlaylist(string playlistId, ObjectId generalizedResultId,
             int currentResultsAmount)
         {
             var filter = Builders<PlaylistDocument>.Filter.Eq(p => p.Id, playlistId);
@@ -134,20 +129,17 @@ namespace SkyPlaylistManager.Services
 
             await _playlistsCollection.UpdateOneAsync(filter, update);
         }
-
-        public async Task<PlaylistDocument?> GetPlaylistById(string playlistId) =>
-            await _playlistsCollection.Find(p => p.Id == playlistId).FirstOrDefaultAsync();
-
-        public async Task UpdatePlaylist(EditPlaylistDto updatedPlaylist)
+        
+        public async Task UpdatePlaylistPhoto(string playlistId, string photoPath)
         {
-            var filter = Builders<PlaylistDocument>.Filter.Eq(p => p.Id, updatedPlaylist.PlaylistId);
-            var updated = Builders<PlaylistDocument>.Update.Set(p => p.Title, updatedPlaylist.Title)
-                .Set(p => p.Description, updatedPlaylist.Description)
-                .Set(p => p.Visibility, updatedPlaylist.Visibility);
+            var filter = Builders<PlaylistDocument>.Filter.Eq(u => u.Id, playlistId);
+            var update = Builders<PlaylistDocument>.Update.Set("thumbnailUrl", photoPath);
 
-            await _playlistsCollection.UpdateOneAsync(filter, updated);
+            await _playlistsCollection.UpdateOneAsync(filter, update);
         }
 
+        
+        // DELETE
         public async Task DeletePlaylist(string playlistId)
         {
             var deleteFilter = Builders<PlaylistDocument>.Filter.Eq(p => p.Id, playlistId);
@@ -155,7 +147,7 @@ namespace SkyPlaylistManager.Services
             await _playlistsCollection.DeleteOneAsync(deleteFilter);
         }
 
-        public async Task DeleteMultimediaContentInPlaylist(string playlistId, ObjectId generalizedResultId,
+        public async Task DeleteContentIdFromPlaylist(string playlistId, ObjectId generalizedResultId,
             int currentResultsAmount)
         {
             var filter = Builders<PlaylistDocument>.Filter.Eq(p => p.Id, playlistId);
@@ -165,29 +157,21 @@ namespace SkyPlaylistManager.Services
             await _playlistsCollection.UpdateOneAsync(filter, update);
         }
 
-        public async Task DeletePlaylistInUser(string userId, ObjectId playlistId)
-        {
-            var filter = Builders<UserDocument>.Filter.Eq(p => p.Id, userId);
-            var update  = Builders<UserDocument>.Update.Pull("playlistIds", playlistId);
 
-            await _usersCollection.UpdateOneAsync(filter, update);
-        }
+ 
 
-        public async Task UpdatePlaylistPhoto(string playlistId, string photoPath)
-        {
-            var filter = Builders<PlaylistDocument>.Filter.Eq(u => u.Id, playlistId);
-            var update = Builders<PlaylistDocument>.Update.Set("thumbnailUrl", photoPath);
 
-            await _playlistsCollection.UpdateOneAsync(filter, update);
-        }
 
-        public async Task<BsonDocument> GetPlaylistPhoto(string playlistId)
-        {
-            var filter = Builders<PlaylistDocument>.Filter.Eq(u => u.Id, playlistId);
-            var projection = Builders<PlaylistDocument>.Projection.Include("thumbnailUrl");
 
-            var result = await _playlistsCollection.Find(filter).Project(projection).FirstOrDefaultAsync();
-            return result;
-        }
+
+
+
+
+
+
+
+
+ 
+
     }
 }

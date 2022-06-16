@@ -1,6 +1,6 @@
 ﻿namespace SkyPlaylistManager.Models.DTOs.PlaylistRequests;
 
-public class SetCoverItem
+public class SetPlaylistCoverDto
 {
     public string CoverUrl { get; set; }
     public string PlaylistId { get; set; }
