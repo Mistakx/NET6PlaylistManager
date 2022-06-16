@@ -43,7 +43,6 @@ namespace SkyPlaylistManager.Controllers
 
 
         //! Content
-
         [HttpPost("saveContentView")]
         public async Task<IActionResult> SaveContentView(SaveContentViewDto request)
         {
@@ -111,7 +110,8 @@ namespace SkyPlaylistManager.Controllers
                     return BadRequest("Error: You cannot save a view your own profile");
 
                 var requestedUser = await _userService.GetUserByUsername(request.Username);
-                var recommendation = await _userRecommendationsService.GetUserRecommendationsDocumentById(requestedUser?.Id!);
+                var recommendation =
+                    await _userRecommendationsService.GetUserRecommendationsDocumentById(requestedUser?.Id!);
 
                 if (recommendation == null)
                 {
@@ -215,23 +215,38 @@ namespace SkyPlaylistManager.Controllers
             }
         }
 
+
         //! Playlists
         [HttpPost("savePlaylistView")]
         public async Task<IActionResult> SavePlaylistView(SavePlaylistViewDto request)
         {
             try
             {
-                var recommendation =
+                var requestingUserId = _sessionTokensService.GetUserIdFromToken(request.SessionToken);
+                var requestingUser = await _userService.GetUserById(requestingUserId);
+                if (requestingUser == null) return BadRequest("Error: User not found");
+
+                var playlistRecommendationDocument =
                     await _playlistRecommendationsService.GetPlaylistRecommendationsDocumentById(request.PlaylistId);
 
-                if (recommendation == null)
+
+                foreach (var userPlaylistId in requestingUser.UserPlaylistIds)
+                {
+                    if (userPlaylistId == new ObjectId(request.PlaylistId))
+                    {
+                        return BadRequest("Error: You cannot save a view to a playlist you own");
+                    }
+                }
+
+                if (playlistRecommendationDocument == null)
                 {
                     await _playlistRecommendationsService.SaveNewPlaylistView(request);
                 }
                 else
                 {
                     await _playlistRecommendationsService.AddViewToPlaylist(request.PlaylistId,
-                        recommendation.WeeklyViewsAmount, recommendation.TotalViewsAmount);
+                        playlistRecommendationDocument.WeeklyViewsAmount,
+                        playlistRecommendationDocument.TotalViewsAmount);
                 }
 
                 return Ok("View saved");
@@ -281,10 +296,10 @@ namespace SkyPlaylistManager.Controllers
                 var deserializedTrendingPlaylistsInformation = new List<PlaylistDto>();
                 foreach (var deserializedTrendingPlaylist in deserializedTrendingPlaylists)
                 {
-                    if (!PlaylistBelongsToRequestingUser(deserializedTrendingPlaylist.Playlist, requestingUser))
+                    if (!PlaylistBelongsToRequestingUser(deserializedTrendingPlaylist.Playlist, requestingUser) &&
+                        deserializedTrendingPlaylist.Playlist.Visibility == "Public")
                         deserializedTrendingPlaylistsInformation.Add(new PlaylistDto(
                             deserializedTrendingPlaylist.Playlist.Id, deserializedTrendingPlaylist.Playlist.Title,
-                            deserializedTrendingPlaylist.Playlist.Visibility,
                             deserializedTrendingPlaylist.Playlist.Description,
                             deserializedTrendingPlaylist.Playlist.ThumbnailUrl,
                             deserializedTrendingPlaylist.Playlist.ResultsAmount,
@@ -326,12 +341,13 @@ namespace SkyPlaylistManager.Controllers
                     }
 
                     var currentPlaylist = new PlaylistDto(allPlaylists.ElementAt(i).Id,
-                        allPlaylists.ElementAt(i).Title, allPlaylists.ElementAt(i).Visibility,
+                        allPlaylists.ElementAt(i).Title,
                         allPlaylists.ElementAt(i).Description,
                         allPlaylists.ElementAt(i).ThumbnailUrl, allPlaylists.ElementAt(i).ResultsAmount,
                         weeklyViews, totalViews);
 
-                    if (!PlaylistBelongsToRequestingUser(allPlaylists.ElementAt(i), requestingUser))
+                    if (!PlaylistBelongsToRequestingUser(allPlaylists.ElementAt(i), requestingUser) &&
+                        allPlaylists.ElementAt(i).Visibility == "Public")
                     {
                         deserializedTrendingPlaylistsInformation.Add(currentPlaylist);
                     }

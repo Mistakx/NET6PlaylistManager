@@ -22,31 +22,6 @@ namespace SkyPlaylistManager.Services
             _usersCollection = mongoDatabase.GetCollection<UserDocument>(databaseSettings.Value.UsersCollectionName);
             _playlistsCollectionName = databaseSettings.Value.PlaylistsCollectionName;
         }
-
-        public async Task<BsonDocument>
-            GetUserDetailsAndPlaylists(string userId) // TODO: está a retornar apenas uma playlist
-        {
-            var filter = Builders<UserDocument>.Filter.Eq(u => u.Id, userId);
-            var query = _usersCollection.Aggregate().Match(filter)
-                .Lookup(_playlistsCollectionName, "playlistIds", "_id", "userPlaylists")
-                .Project(Builders<BsonDocument>.Projection.Exclude("password"))
-                .Project(Builders<BsonDocument>.Projection.Exclude("userPlaylists.owner")
-                .Exclude("userPlaylists.resultIds"));
-
-            //var result = await query.FirstOrDefaultAsync();
-            List<BsonDocument> result = await query.ToListAsync();
-
-            return result[0];
-        }
-
-        public async Task<BsonDocument> GetUserBasicDetails(string userId)
-        {
-            var filter = Builders<UserDocument>.Filter.Eq(u => u.Id, userId);
-            var projection = Builders<UserDocument>.Projection.Exclude("password").Exclude("playlistIds");
-
-            var result = await _usersCollection.Find(filter).Project(projection).FirstOrDefaultAsync();
-            return result;
-        }
         
         public async Task CreateUser(UserDocument newUserDocument) =>
             await _usersCollection.InsertOneAsync(newUserDocument);
@@ -59,16 +34,7 @@ namespace SkyPlaylistManager.Services
 
         public async Task<UserDocument?> GetUserByEmail(string email) =>
             await _usersCollection.Find(u => u.Email == email).FirstOrDefaultAsync();
-
-        public async Task<BsonDocument?> GetUserProfilePhoto(string userId)
-        {
-            var filter = Builders<UserDocument>.Filter.Eq(u => u.Id, userId);
-            var projection = Builders<UserDocument>.Projection.Include("profilePhotoUrl");
-
-            var result = await _usersCollection.Find(filter).Project(projection).FirstOrDefaultAsync();
-            return result;
-        }
-
+        
         public async Task UpdateUserProfilePhoto(string userId, string photoPath)
         {
             var filter = Builders<UserDocument>.Filter.Eq(u => u.Id, userId);
@@ -121,24 +87,11 @@ namespace SkyPlaylistManager.Services
         {
             var filter = Builders<UserDocument>.Filter.Eq(p => p.Id, userId);
             var query = _usersCollection.Aggregate().Match(filter)
-                .Lookup(_playlistsCollectionName, "playlistIds", "_id", "playlists")
-                .Project(Builders<BsonDocument>.Projection.Include("playlists").Exclude("_id"));
+                .Lookup(_playlistsCollectionName, "playlistIds", "_id", "playlists");
             
             var result = await query.FirstOrDefaultAsync();
             return result;
         }
 
-        public async Task<BsonDocument> GetUserPlaylistOrderedIds(string userId)
-        {
-            var filter = Builders<UserDocument>.Filter.Eq(p => p.Id, userId);
-            var projection = Builders<UserDocument>.Projection
-                .Include("playlistIds")
-                .Exclude("_id");
-
-            var result = await _usersCollection.Find(filter).Project(projection).FirstOrDefaultAsync();
-
-            return result;
-        }
-        
     }
 }

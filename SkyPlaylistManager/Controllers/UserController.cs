@@ -42,55 +42,64 @@ public class UserController : ControllerBase
     {
         try
         {
-            var requestingUser =
-                await _usersService.GetUserById(_sessionTokensService.GetUserIdFromToken(request.SessionToken));
-
+            var requestingUserId = _sessionTokensService.GetUserIdFromToken(request.SessionToken);
+            var requestingUser = await _usersService.GetUserById(requestingUserId);
             var requestedUser = await _usersService.GetUserByUsername(request.Username);
-
-            var userPlaylists = await _usersService.GetUserPlaylists(requestedUser?.Id!);
-            var deserializedPlaylists = BsonSerializer.Deserialize<UserPlaylistsDto>(userPlaylists);
-
-            var playlistOrderedIds = await _usersService.GetUserPlaylistOrderedIds(requestedUser?.Id!);
-            var deserializedPlaylistOrderedIds =
-                BsonSerializer.Deserialize<UserPlaylistContentsOrderedIdsDto>(playlistOrderedIds);
-
+            if (requestingUser == null || requestedUser == null) return null;
+            
+            var requestedUserPlaylists = await _usersService.GetUserPlaylists(requestedUser.Id);
+            var requestedUserDeserializedPlaylists = BsonSerializer.Deserialize<GetUserPlaylistsLookupDto>(requestedUserPlaylists);
+            
+            // The playlists need to be returned in the order set by the user, which is not the order when you do a lookup.
+            // It is the order of the ids in the userDocument playlistIds field.
             var orderedPlaylists = new List<PlaylistDto>();
-            foreach (var playlistContentId in deserializedPlaylistOrderedIds.PlaylistIds)
+            foreach (var playlistContentId in requestedUser.UserPlaylistIds) // The playlists ids are in the order sorted by the user
             {
-                foreach (var playlistContent in deserializedPlaylists.Playlists)
+                foreach (var playlistDocument in requestedUserDeserializedPlaylists.Playlists)
                 {
-                    if (playlistContent.Id == playlistContentId.ToString())
+                    if (playlistDocument.Id == playlistContentId.ToString())
                     {
-                        var currentPlaylistViews =
-                            await _playlistRecommendationsService.GetPlaylistRecommendationsDocumentById(playlistContent
-                                .Id);
-
-                        int weeklyViews;
-                        int totalViews;
-                        if (currentPlaylistViews != null)
+                        if (playlistDocument.Visibility == "Public")
                         {
-                            weeklyViews = currentPlaylistViews.WeeklyViewsAmount;
-                            totalViews = currentPlaylistViews.TotalViewsAmount;
-                        }
-                        else
-                        {
-                            weeklyViews = 0;
-                            totalViews = 0;
+                            var currentPlaylistViews =
+                                await _playlistRecommendationsService.GetPlaylistRecommendationsDocumentById(playlistDocument
+                                    .Id);
+
+                            int weeklyViews;
+                            int totalViews;
+                            if (currentPlaylistViews != null)
+                            {
+                                weeklyViews = currentPlaylistViews.WeeklyViewsAmount;
+                                totalViews = currentPlaylistViews.TotalViewsAmount;
+                            }
+                            else
+                            {
+                                weeklyViews = 0;
+                                totalViews = 0;
+                            }
+
+                            orderedPlaylists.Add(new PlaylistDto(playlistDocument.Id, playlistDocument.Title, playlistDocument.Description, playlistDocument.ThumbnailUrl,
+                                playlistDocument.ResultsAmount, weeklyViews, totalViews));     
                         }
 
-                        orderedPlaylists.Add(new PlaylistDto(playlistContent.Id, playlistContent.Title,
-                            playlistContent.Visibility, playlistContent.Description, playlistContent.ThumbnailUrl,
-                            playlistContent.ResultsAmount, weeklyViews, totalViews));
+                        if (playlistDocument.Visibility == "Private")
+                        {
+                            orderedPlaylists.Add(new PlaylistDto(playlistDocument.Id, playlistDocument.Title, playlistDocument.Description, playlistDocument.ThumbnailUrl,
+                                playlistDocument.ResultsAmount));     
+                        }
+ 
+                        
+
                     }
                 }
             }
 
-            if (requestingUser?.Username == requestedUser?.Username)
+            if (requestingUser.Username == requestedUser.Username)
             {
                 return orderedPlaylists;
             }
 
-            if (requestingUser?.Username != requestedUser?.Username)
+            if (requestingUser.Username != requestedUser.Username)
             {
                 var publicPlaylists = new List<PlaylistDto>();
                 foreach (var playlist in orderedPlaylists)

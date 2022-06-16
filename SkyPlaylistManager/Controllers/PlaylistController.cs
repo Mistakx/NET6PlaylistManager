@@ -21,6 +21,8 @@ namespace SkyPlaylistManager.Controllers
         private readonly PlaylistsService _playListsService;
         private readonly SessionTokensService _sessionTokensService;
         private readonly UsersService _usersService;
+        private readonly PlaylistRecommendationsService _playlistRecommendationsService;
+        private readonly CommunityService _communityService;
 
         public PlaylistController(
             PlaylistsService playlistsService,
@@ -28,8 +30,9 @@ namespace SkyPlaylistManager.Controllers
             GeneralizedResultsService generalizedResultsService,
             GeneralizedResultFactory generalizedResultFactory,
             SessionTokensService sessionTokensService,
-            FilesManager filesManager
-        )
+            FilesManager filesManager,
+            PlaylistRecommendationsService playlistRecommendationsService,
+            CommunityService communityService)
         {
             _playListsService = playlistsService;
             _usersService = usersService;
@@ -37,19 +40,89 @@ namespace SkyPlaylistManager.Controllers
             _generalizedResultFactory = generalizedResultFactory;
             _sessionTokensService = sessionTokensService;
             _filesManager = filesManager;
+            _playlistRecommendationsService = playlistRecommendationsService;
+            _communityService = communityService;
         }
 
 
-        [HttpGet(
-            "getBasicDetails/{playlistId:length(24)}")] // TODO: Verificar se a playlist é privada. Só retornar a playlist caso seja pública ou partilhada com o user da sessão.
-        public async Task<PlaylistDto?> PlaylistBasicDetails(string playlistId)
+        [HttpPost("getPlaylistInformation")]
+        public async Task<PlaylistDto?> GetPlaylistInformation(GetPlaylistInformationDto request)
         {
-            var basicDetails = await _playListsService.GetPlaylistDetails(playlistId);
+            bool PlaylistBelongsToUser(string playlistId, UserDocument user)
+            {
+                foreach (var userPlaylistId in user.UserPlaylistIds)
+                {
+                    if (new ObjectId(playlistId) == userPlaylistId)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
 
             try
             {
-                var deserializedBasicDetails = BsonSerializer.Deserialize<PlaylistDto>(basicDetails);
-                return deserializedBasicDetails;
+                var requestingUserId = _sessionTokensService.GetUserIdFromToken(request.SessionToken);
+                var requestingUser = await _usersService.GetUserById(requestingUserId);
+                if (requestingUser == null) return null;
+
+                int weeklyViews;
+                int totalViews;
+                if (PlaylistBelongsToUser(request.PlaylistId, requestingUser))
+                {
+                    var requestedPlaylist = await _playListsService.GetPlaylistById(request.PlaylistId);
+                    if (requestedPlaylist?.Visibility == "Private")
+                    {
+                        return new PlaylistDto(requestedPlaylist.Id, requestedPlaylist.Title,
+                            requestedPlaylist.Description, requestedPlaylist.ThumbnailUrl,
+                            requestedPlaylist.ResultsAmount);
+                    }
+                    if (requestedPlaylist?.Visibility == "Public")
+                    {
+                        var requestedPlaylistViews = await
+                            _playlistRecommendationsService.GetPlaylistRecommendationsDocumentById(request.PlaylistId);
+
+                        if (requestedPlaylistViews != null)
+                        {
+                            weeklyViews = requestedPlaylistViews.WeeklyViewsAmount;
+                            totalViews = requestedPlaylistViews.TotalViewsAmount;
+                        }
+                        else
+                        {
+                            weeklyViews = 0;
+                            totalViews = 0;
+                        }
+                        return new PlaylistDto(requestedPlaylist.Id, requestedPlaylist.Title,
+                            requestedPlaylist.Description, requestedPlaylist.ThumbnailUrl,
+                            requestedPlaylist.ResultsAmount, weeklyViews, totalViews);
+                    }
+                    return null;
+                }
+                else 
+                {
+                    var requestedPlaylist = await _playListsService.GetPlaylistById(request.PlaylistId);
+                    if (requestedPlaylist?.Visibility == "Public")
+                    {
+                        var requestedPlaylistViews = await
+                            _playlistRecommendationsService.GetPlaylistRecommendationsDocumentById(request.PlaylistId);
+
+                        if (requestedPlaylistViews != null)
+                        {
+                            weeklyViews = requestedPlaylistViews.WeeklyViewsAmount;
+                            totalViews = requestedPlaylistViews.TotalViewsAmount;
+                        }
+                        else
+                        {
+                            weeklyViews = 0;
+                            totalViews = 0;
+                        }
+                        return new PlaylistDto(requestedPlaylist.Id, requestedPlaylist.Title,
+                            requestedPlaylist.Description, requestedPlaylist.ThumbnailUrl,
+                            requestedPlaylist.ResultsAmount, weeklyViews, totalViews);
+                    }
+                    return null;
+                }
             }
             catch (Exception ex)
             {
@@ -59,8 +132,8 @@ namespace SkyPlaylistManager.Controllers
         }
 
         [HttpGet(
-            "getGeneralizedResults/{playlistId:length(24)}")] // TODO: Verificar se a playlist é privada. Só retornar a playlist caso seja pública ou partilhada com o user da sessão.
-        public async Task<ArrayList?> PlaylistContent(string playlistId)
+            "getPlaylistContent")] // TODO: Add security
+        public async Task<ArrayList?> GetPlaylistContent(string playlistId)
         {
             try
             {
@@ -110,7 +183,7 @@ namespace SkyPlaylistManager.Controllers
             }
         }
 
-        [HttpPost("deletePlaylist")]
+        [HttpPost("deletePlaylist")] // TODO: Add security
         public async Task<IActionResult> DeletePlaylist(DeletePlaylistDto request)
         {
             try
@@ -123,7 +196,7 @@ namespace SkyPlaylistManager.Controllers
                 var id = ObjectId.Parse(request.Id);
                 await _playListsService.DeletePlaylist(request.Id);
 
-                var owner = foundPlaylist.Owner;
+                var owner = foundPlaylist.OwnerId;
                 await _usersService.DeleteUserPlaylist(owner, id);
 
                 return Ok("Playlist successfully deleted");
@@ -219,7 +292,7 @@ namespace SkyPlaylistManager.Controllers
         }
 
 
-        [HttpPost("deleteGeneralizedResult")]
+        [HttpPost("deleteGeneralizedResult")] // TODO: Add security
         public async Task<IActionResult> DeleteGeneralizedResult(DeletePlaylistContentDto request)
         {
             try
