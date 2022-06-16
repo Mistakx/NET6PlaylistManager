@@ -10,7 +10,6 @@ namespace SkyPlaylistManager.Services
         private readonly IMongoCollection<UserRecommendationsDocument> _recommendationsCollection;
         private readonly IMongoCollection<PlaylistDocument> _playlistsCollection;
         private readonly IMongoCollection<UserDocument> _userCollection;
-        private readonly string _userCollectionName;
 
         public CommunityService(IOptions<DatabaseSettings> databaseSettings)
         {
@@ -19,8 +18,6 @@ namespace SkyPlaylistManager.Services
 
             var mongoDatabase = mongoClient.GetDatabase(
                 databaseSettings.Value.DatabaseName);
-
-            _userCollectionName = databaseSettings.Value.UsersCollectionName;
 
             _recommendationsCollection =
                 mongoDatabase.GetCollection<UserRecommendationsDocument>(databaseSettings.Value
@@ -56,7 +53,8 @@ namespace SkyPlaylistManager.Services
                 .Select(group => group.First()).ToList();
         }
 
-        // Playlists
+        // READ
+        
         public async Task<List<PlaylistDocument>> GetPlaylistsByTitle(string title, int limitAmount)
         {
             var playlistDocuments = new List<PlaylistDocument>();
@@ -71,32 +69,56 @@ namespace SkyPlaylistManager.Services
             return playlistDocuments;
         }
 
-        public async Task<bool> PlaylistAlreadyBeingFollowedByUser(string playlistId, string userId)
+        public async Task<bool> UserAlreadyBeingFollowed(string userToFollowId, string userFollowingId)
+        {
+            var filter = Builders<UserDocument>.Filter.Eq(p => p.Id, userToFollowId);
+            var followedUser = await _userCollection.Find(filter).FirstOrDefaultAsync();
+            var userIsAlreadyBeingFollowed = followedUser.UsersFollowingIds.Contains(new ObjectId(userFollowingId));
+            return userIsAlreadyBeingFollowed;
+        }
+
+        public async Task<bool> PlaylistAlreadyBeingFollowed(string playlistId, string userId)
         {
             var filter = Builders<PlaylistDocument>.Filter.Eq(p => p.Id, playlistId);
             var playlist = await _playlistsCollection.Find(filter).FirstOrDefaultAsync();
             var playlistIsAlreadyBeingFollowedByUser = playlist.UsersFollowingIds.Contains(new ObjectId(userId));
             return playlistIsAlreadyBeingFollowedByUser;
         }
+        
+        
 
-        public async Task FollowPlaylist(string playlistToUnfollowId, ObjectId userUnfollowingId,
-            int currentUsersFollowingAmount)
+        // UPDATE
+        
+        public async Task FollowPlaylist(string playlistToUnfollowId, ObjectId userUnfollowingId)
         {
             var filter = Builders<PlaylistDocument>.Filter.Eq(p => p.Id, playlistToUnfollowId);
-            var update = Builders<PlaylistDocument>.Update.Pull("usersFollowingIds", userUnfollowingId)
-                .Set("resultsAmount", currentUsersFollowingAmount + 1);
+            var update = Builders<PlaylistDocument>.Update.Push("usersFollowingIds", userUnfollowingId);
 
             await _playlistsCollection.UpdateOneAsync(filter, update);
         }
 
-        public async Task UnfollowPlaylist(string playlistToUnfollowId, ObjectId userUnfollowingId,
-            int currentUsersFollowingAmount)
+        public async Task FollowUser(string userToUnfollowId, ObjectId userFollowingId)
+        {
+            var filter = Builders<UserDocument>.Filter.Eq(p => p.Id, userToUnfollowId);
+            var update = Builders<UserDocument>.Update.Push("usersFollowingIds", userFollowingId);
+
+            await _userCollection.UpdateOneAsync(filter, update);
+        }
+        
+        public async Task UnfollowPlaylist(string playlistToUnfollowId, ObjectId userUnfollowingId)
         {
             var filter = Builders<PlaylistDocument>.Filter.Eq(p => p.Id, playlistToUnfollowId);
-            var update = Builders<PlaylistDocument>.Update.Pull("usersFollowingIds", userUnfollowingId)
-                .Set("resultsAmount", currentUsersFollowingAmount - 1);
+            var update = Builders<PlaylistDocument>.Update.Pull("usersFollowingIds", userUnfollowingId);
 
             await _playlistsCollection.UpdateOneAsync(filter, update);
+        }
+        
+        public async Task UnfollowUser(string userToUnfollowId, ObjectId userFollowingId)
+        {
+            var filter = Builders<UserDocument>.Filter.Eq(p => p.Id, userToUnfollowId);
+            var update = Builders<UserDocument>.Update.Pull("usersFollowingIds", userFollowingId);
+
+            await _userCollection.UpdateOneAsync(filter, update);
         }
     }
 }

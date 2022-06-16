@@ -114,42 +114,32 @@ public class UserController : ControllerBase
     {
         try
         {
+            var userProfileDtoBuilder = new UserProfileDtoBuilder();
+
             var requestingUserId = _sessionTokensService.GetUserIdFromToken(request.SessionToken);
             var requestingUser = await _usersService.GetUserById(requestingUserId);
+            if (requestingUser == null) return null;
+
             var requestedUser = await _usersService.GetUserByUsername(request.Username);
+            if (requestedUser == null) return null;
+
             var requestedUserRecommendations =
-                await _userRecommendationsService.GetUserRecommendationsDocumentById(requestedUser?.Id!);
+                await _userRecommendationsService.GetUserRecommendationsDocumentById(requestedUser.Id!);
 
-            if (requestingUser == null || requestedUser == null) return null;
-
-            int requestedUserWeeklyViews;
-            int requestedUserTotalViews;
-            if (requestedUserRecommendations != null)
-            {
-                requestedUserWeeklyViews = requestedUserRecommendations.WeeklyViewsAmount;
-                requestedUserTotalViews = requestedUserRecommendations.TotalViewsAmount;
-            }
-            else
-            {
-                requestedUserWeeklyViews = 0;
-                requestedUserTotalViews = 0;
-            }
-
-            UserProfileDto response;
             if (requestedUser.Username == requestingUser.Username)
             {
-                response = new UserProfileDto(requestedUser.Email,
+                return userProfileDtoBuilder.BeginBuilding(
                     requestedUser.Name, requestedUser.Username,
-                    requestedUser.ProfilePhotoUrl, requestedUserWeeklyViews,
-                    requestedUserTotalViews);
-                return response;
+                    requestedUser.ProfilePhotoUrl, requestedUserRecommendations).AddEmail(requestedUser.Email).Build();
             }
 
-            response = new UserProfileDto(
-                requestedUser.Name, requestedUser.Username, requestedUser.ProfilePhotoUrl,
-                requestedUserWeeklyViews, requestedUserTotalViews);
+            var userBeingFollowed =
+                await _communityService.UserAlreadyBeingFollowed(requestedUser.Id, requestingUserId);
 
-            return response;
+            return userProfileDtoBuilder.BeginBuilding(
+                requestedUser.Name, requestedUser.Username, requestedUser.ProfilePhotoUrl,
+                requestedUserRecommendations).AddFollowed(userBeingFollowed).Build();
+            
         }
         catch (Exception ex)
         {
@@ -159,15 +149,17 @@ public class UserController : ControllerBase
     }
 
     [HttpPost("getPlaylists/")]
-    public async Task<List<PlaylistInformationDto>?> GetUserPlaylists(GetUserPlaylistsDto request)
+    public async Task<dynamic> GetUserPlaylists(GetUserPlaylistsDto request)
     {
         try
         {
             var requestingUserId = _sessionTokensService.GetUserIdFromToken(request.SessionToken);
             var requestingUser = await _usersService.GetUserById(requestingUserId);
+            if (requestingUser == null) return BadRequest("Invalid session token");
+            
             var playlistInformationDtoBuilder = new PlaylistInformationDtoBuilder();
             var requestedUser = await _usersService.GetUserByUsername(request.Username);
-            if (requestingUser == null || requestedUser == null) return null;
+            if (requestedUser == null) BadRequest("User not found");
 
             var requestedUserPlaylists = await _usersService.GetUserPlaylists(requestedUser.Id);
             var requestedUserDeserializedPlaylists =
@@ -184,7 +176,7 @@ public class UserController : ControllerBase
                     if (playlistDocument.Id == playlistContentId.ToString())
                     {
                         var requestingUserFollowsPlaylist =
-                            await _communityService.PlaylistAlreadyBeingFollowedByUser(playlistDocument.Id,
+                            await _communityService.PlaylistAlreadyBeingFollowed(playlistDocument.Id,
                                 requestingUserId);
 
                         if (requestingUser.Username == requestedUser.Username) // Playlist belongs to requesting user
@@ -193,7 +185,7 @@ public class UserController : ControllerBase
                             {
                                 orderedPlaylists.Add(playlistInformationDtoBuilder.BeginBuilding(playlistDocument.Id,
                                     playlistDocument.Title, playlistDocument.Description, playlistDocument.ThumbnailUrl,
-                                    playlistDocument.ResultsAmount).AddVisibility("Private").Build());
+                                    playlistDocument.ResultIds.Count).AddVisibility("Private").Build());
                             }
 
                             if (playlistDocument.Visibility == "Public")
@@ -206,7 +198,7 @@ public class UserController : ControllerBase
                                 orderedPlaylists.Add(playlistInformationDtoBuilder.BeginBuilding(playlistDocument.Id,
                                         playlistDocument.Title, playlistDocument.Description,
                                         playlistDocument.ThumbnailUrl,
-                                        playlistDocument.ResultsAmount).AddViews(currentPlaylistViews!)
+                                        playlistDocument.ResultIds.Count).AddViews(currentPlaylistViews!)
                                     .AddVisibility("Public").Build());
                             }
                         }
@@ -221,7 +213,7 @@ public class UserController : ControllerBase
                                 orderedPlaylists.Add(playlistInformationDtoBuilder.BeginBuilding(playlistDocument.Id,
                                         playlistDocument.Title, playlistDocument.Description,
                                         playlistDocument.ThumbnailUrl,
-                                        playlistDocument.ResultsAmount).AddViews(currentPlaylistViews!)
+                                        playlistDocument.ResultIds.Count).AddViews(currentPlaylistViews!)
                                     .AddFollowing(requestingUserFollowsPlaylist).Build());
                             }
                         }
@@ -238,7 +230,7 @@ public class UserController : ControllerBase
         }
     }
 
-    
+
     // UPDATE
 
     [HttpPost("sortPlaylist")]
@@ -325,7 +317,7 @@ public class UserController : ControllerBase
             return BadRequest("Error occurred on user information update");
         }
     }
-    
+
     [HttpPost("editPassword")]
     public async Task<IActionResult> EditPassword(EditPasswordDto request)
     {
@@ -355,5 +347,4 @@ public class UserController : ControllerBase
             return BadRequest("Password  occurred on password update");
         }
     }
-    
 }

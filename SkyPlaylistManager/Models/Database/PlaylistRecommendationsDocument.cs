@@ -16,7 +16,6 @@ namespace SkyPlaylistManager.Models.Database
         
         [BsonDateTimeOptions(Kind = DateTimeKind.Local)]
         [BsonElement("weeklyViewDates")] public List<DateTime> WeeklyViewDates { get; set; }
-        [BsonElement("weeklyViewsAmount")] public int WeeklyViewsAmount { get; set; }
         [BsonElement("totalViewsAmount")] public int TotalViewsAmount { get; set; }
         
         [BsonElement("playlistId")]
@@ -25,7 +24,6 @@ namespace SkyPlaylistManager.Models.Database
         public PlaylistRecommendationsDocument(SavePlaylistViewDto request)
         {
             WeeklyViewDates = new List<DateTime> {DateTime.Now};
-            WeeklyViewsAmount = 1;
             TotalViewsAmount = 1;
             PlaylistId = request.PlaylistId;
         }

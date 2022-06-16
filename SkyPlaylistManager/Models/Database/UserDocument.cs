@@ -16,7 +16,8 @@ namespace SkyPlaylistManager.Models.Database
         [BsonElement("name")] public string Name { get; set; }
         [BsonElement("profilePhotoUrl")] public string ProfilePhotoUrl { get; set; }
         [BsonElement("playlistIds")] public List<ObjectId> UserPlaylistIds { get; set; }
-        
+        [BsonElement("usersFollowingIds")] public List<ObjectId> UsersFollowingIds { get; set; }
+
         public UserDocument(UserSignupDto userSignup, string profilePhotoUrl)
         {
             Email = userSignup.Email;
@@ -25,6 +26,7 @@ namespace SkyPlaylistManager.Models.Database
             Username = userSignup.Username;
             ProfilePhotoUrl = profilePhotoUrl;
             UserPlaylistIds = new List<ObjectId>();
+            UsersFollowingIds = new List<ObjectId>();
         }
     }
 }

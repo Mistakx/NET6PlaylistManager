@@ -38,20 +38,18 @@ namespace SkyPlaylistManager.Controllers
             {
                 var requestingUserId = _sessionTokensService.GetUserIdFromToken(request.SessionToken);
 
-                var requestingPlaylist = await _playlistsService.GetPlaylistById(request.PlaylistId);
-                if (requestingPlaylist == null) return BadRequest("Playlist not found");
+                var requestedPlaylist = await _playlistsService.GetPlaylistById(request.PlaylistId);
+                if (requestedPlaylist == null) return BadRequest("Playlist not found");
 
-                if (await _communityService.PlaylistAlreadyBeingFollowedByUser(request.PlaylistId, requestingUserId))
+                if (await _communityService.PlaylistAlreadyBeingFollowed(request.PlaylistId, requestingUserId))
                 {
-                    await _communityService.UnfollowPlaylist(requestingPlaylist.Id, new ObjectId(requestingUserId),
-                        requestingPlaylist.UsersFollowingAmount);
+                    await _communityService.UnfollowPlaylist(requestedPlaylist.Id, new ObjectId(requestingUserId));
                     return Ok("Successfully unfollowed playlist");
                 }
 
-                if (!await _communityService.PlaylistAlreadyBeingFollowedByUser(request.PlaylistId, requestingUserId))
+                if (!await _communityService.PlaylistAlreadyBeingFollowed(request.PlaylistId, requestingUserId))
                 {
-                    await _communityService.FollowPlaylist(requestingPlaylist.Id, new ObjectId(requestingUserId),
-                        requestingPlaylist.UsersFollowingAmount);
+                    await _communityService.FollowPlaylist(requestedPlaylist.Id, new ObjectId(requestingUserId));
                     return Ok("Successfully followed playlist");
                 }
 
@@ -63,5 +61,37 @@ namespace SkyPlaylistManager.Controllers
                 return BadRequest("Unsuccessfully tried to follow/unfollow playlist");
             }
         }
+        
+        [HttpPost("toggleUserFollow")]
+        public async Task<IActionResult> ToggleUserFollow(ToggleUserFollowDto request)
+        {
+            try
+            {
+                var requestingUserId = _sessionTokensService.GetUserIdFromToken(request.SessionToken);
+                var requestedUser = await _usersService.GetUserById(request.UserId);
+                if (requestedUser == null) return BadRequest("User not found");
+                if (requestingUserId == request.UserId) return BadRequest("You cannot follow yourself");
+
+                if (await _communityService.UserAlreadyBeingFollowed(request.UserId, requestingUserId))
+                {
+                    await _communityService.UnfollowUser(requestedUser.Id, new ObjectId(requestingUserId));
+                    return Ok("Successfully unfollowed user");
+                }
+
+                if (!await _communityService.UserAlreadyBeingFollowed(request.UserId, requestingUserId))
+                {
+                    await _communityService.FollowUser(requestedUser.Id, new ObjectId(requestingUserId));
+                    return Ok("Successfully followed playlist");
+                }
+
+                return BadRequest("Something went wrong while detecting if user already follows playlist");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.StackTrace);
+                return BadRequest("Unsuccessfully tried to follow/unfollow playlist");
+            }
+        }
+        
     }
 }

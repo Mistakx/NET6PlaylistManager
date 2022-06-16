@@ -4,12 +4,12 @@ namespace SkyPlaylistManager.Models.DTOs.PlaylistResponses;
 
 public class PlaylistInformationDtoBuilder
 {
-    private PlaylistInformationDto playlistInformationDto;
+    private PlaylistInformationDto _playlistInformationDto;
 
     public PlaylistInformationDtoBuilder BeginBuilding(string playlistId, string title, string description,
         string thumbnailUrl, int resultsAmount)
     {
-        playlistInformationDto =
+        _playlistInformationDto =
             new PlaylistInformationDto(playlistId, title, description, thumbnailUrl, resultsAmount);
         return this;
     }
@@ -18,13 +18,13 @@ public class PlaylistInformationDtoBuilder
     {
         if (playlistViews != null)
         {
-            playlistInformationDto.TotalViewsAmount = playlistViews.TotalViewsAmount;
-            playlistInformationDto.WeeklyViewsAmount = playlistViews.WeeklyViewsAmount;
+            _playlistInformationDto.TotalViewsAmount = playlistViews.TotalViewsAmount;
+            _playlistInformationDto.WeeklyViewsAmount = playlistViews.WeeklyViewDates.Count;
         }
         else
         {
-            playlistInformationDto.TotalViewsAmount = 0;
-            playlistInformationDto.WeeklyViewsAmount = 0;
+            _playlistInformationDto.TotalViewsAmount = 0;
+            _playlistInformationDto.WeeklyViewsAmount = 0;
         }
 
         return this;
@@ -32,18 +32,18 @@ public class PlaylistInformationDtoBuilder
 
     public PlaylistInformationDtoBuilder AddFollowing(bool userAlreadyFollowingPlaylist)
     {
-        playlistInformationDto.Followed = userAlreadyFollowingPlaylist;
+        _playlistInformationDto.Followed = userAlreadyFollowingPlaylist;
         return this;
     }
 
     public PlaylistInformationDtoBuilder AddVisibility(string playlistVisibility)
     {
-        playlistInformationDto.Visibility = playlistVisibility;
+        _playlistInformationDto.Visibility = playlistVisibility;
         return this;
     }
 
     public PlaylistInformationDto Build()
     {
-        return playlistInformationDto;
+        return _playlistInformationDto;
     }
 }

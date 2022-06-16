@@ -105,8 +105,7 @@ namespace SkyPlaylistManager.Services
             await _playlistsCollection.UpdateOneAsync(filter, updated);
         }
 
-        public async Task InsertContentInSpecificPlaylistPosition(SortPlaylistResultsDto newSortPlaylistResults,
-            int currentAmountOfResults)
+        public async Task InsertContentInSpecificPlaylistPosition(SortPlaylistResultsDto newSortPlaylistResults)
         {
             var resultIds = new List<ObjectId>(); // The method "PushEach" only works with lists
             var generalizedResultId = ObjectId.Parse(newSortPlaylistResults.GeneralizedResultDatabaseId);
@@ -115,17 +114,15 @@ namespace SkyPlaylistManager.Services
             var filter = Builders<PlaylistDocument>.Filter.Eq(p => p.Id, newSortPlaylistResults.PlaylistId);
             var update =
                 Builders<PlaylistDocument>.Update.PushEach("resultIds", resultIds,
-                    position: newSortPlaylistResults.NewIndex).Set("resultsAmount", currentAmountOfResults + 1);
+                    position: newSortPlaylistResults.NewIndex);
 
             await _playlistsCollection.UpdateOneAsync(filter, update);
         }
 
-        public async Task InsertContentIdInPlaylist(string playlistId, ObjectId generalizedResultId,
-            int currentResultsAmount)
+        public async Task InsertContentIdInPlaylist(string playlistId, ObjectId generalizedResultId)
         {
             var filter = Builders<PlaylistDocument>.Filter.Eq(p => p.Id, playlistId);
-            var update = Builders<PlaylistDocument>.Update.Push("resultIds", generalizedResultId)
-                .Set("resultsAmount", currentResultsAmount + 1);
+            var update = Builders<PlaylistDocument>.Update.Push("resultIds", generalizedResultId);
 
             await _playlistsCollection.UpdateOneAsync(filter, update);
         }
@@ -147,12 +144,10 @@ namespace SkyPlaylistManager.Services
             await _playlistsCollection.DeleteOneAsync(deleteFilter);
         }
 
-        public async Task DeleteContentIdFromPlaylist(string playlistId, ObjectId generalizedResultId,
-            int currentResultsAmount)
+        public async Task DeleteContentIdFromPlaylist(string playlistId, ObjectId generalizedResultId)
         {
             var filter = Builders<PlaylistDocument>.Filter.Eq(p => p.Id, playlistId);
-            var update = Builders<PlaylistDocument>.Update.Pull("resultIds", generalizedResultId)
-                .Set("resultsAmount", currentResultsAmount - 1);
+            var update = Builders<PlaylistDocument>.Update.Pull("resultIds", generalizedResultId);
 
             await _playlistsCollection.UpdateOneAsync(filter, update);
         }

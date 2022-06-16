@@ -26,9 +26,10 @@ namespace SkyPlaylistManager.Services
 
         private async void DeleteOldRecommendations()
         {
-            var recommendationsWithOldDatesFilter = Builders<ContentRecommendationsDocument>.Filter.ElemMatch<BsonValue>(
-                "viewDates",
-                new BsonDocument("$lt", DateTime.Now.AddDays(-7)));
+            var recommendationsWithOldDatesFilter =
+                Builders<ContentRecommendationsDocument>.Filter.ElemMatch<BsonValue>(
+                    "viewDates",
+                    new BsonDocument("$lt", DateTime.Now.AddDays(-7)));
 
             var pullOldDates =
                 Builders<ContentRecommendationsDocument>.Update.Pull("viewDates",
@@ -39,9 +40,10 @@ namespace SkyPlaylistManager.Services
 
         public async void UpdateRecommendationsWeeklyViews()
         {
-            var recommendationsWithOldDatesFilter = Builders<ContentRecommendationsDocument>.Filter.ElemMatch<BsonValue>(
-                "viewDates",
-                new BsonDocument("$lt", DateTime.Now.AddDays(-7)));
+            var recommendationsWithOldDatesFilter =
+                Builders<ContentRecommendationsDocument>.Filter.ElemMatch<BsonValue>(
+                    "viewDates",
+                    new BsonDocument("$lt", DateTime.Now.AddDays(-7)));
 
             var recommendationWithOldDates =
                 await _recommendationsCollection.Find(recommendationsWithOldDatesFilter).ToListAsync();
@@ -61,18 +63,10 @@ namespace SkyPlaylistManager.Services
             }
         }
 
-        public async Task<List<BsonDocument>> GetTrending()
+        public async Task< List<AggregateSortByCountResult<List<DateTime>>>?> GetTrendingContent(int limit)
         {
-            
-            var projection = Builders<ContentRecommendationsDocument>.Projection
-                .Include("generalizedResult")
-                .Exclude("_id");
-
-            
-            var trendingPlaylists = await _recommendationsCollection.Find(p => true)
-                .Project(projection)
-                .SortByDescending(p => p.WeeklyViewsAmount)
-                .Limit(10).ToListAsync();
+            var trendingPlaylists = await _recommendationsCollection.Aggregate().SortByCount(p => p.WeeklyViewDates)
+                .Limit(limit).ToListAsync();
 
             return trendingPlaylists;
         }
@@ -112,8 +106,8 @@ namespace SkyPlaylistManager.Services
                          builder.Eq(p => p.GeneralizedResult.PlayerFactoryName, playerFactoryName) &
                          builder.Eq(p => p.GeneralizedResult.PlatformPlayerUrl, platformPlayerUrl);
 
-            var weeklyViewsUpdate = Builders<ContentRecommendationsDocument>.Update.Push(p => p.WeeklyViewDates, DateTime.Now)
-                .Set(p => p.WeeklyViewsAmount, currentWeeklyViewAmount + 1)
+            var weeklyViewsUpdate = Builders<ContentRecommendationsDocument>.Update
+                .Push(p => p.WeeklyViewDates, DateTime.Now)
                 .Set(p => p.TotalViewsAmount, totalViewAmount + 1);
             await _recommendationsCollection.UpdateOneAsync(filter, weeklyViewsUpdate);
         }
@@ -122,11 +116,12 @@ namespace SkyPlaylistManager.Services
             string platformId,
             string? platformPlayerUrl)
         {
-            var filter = Builders<ContentRecommendationsDocument>.Filter.Eq(p => p.GeneralizedResult.PlatformId, platformId) &
-                         Builders<ContentRecommendationsDocument>.Filter.Eq(p => p.GeneralizedResult.PlayerFactoryName,
-                             playerFactoryName) &
-                         Builders<ContentRecommendationsDocument>.Filter.Eq(p => p.GeneralizedResult.PlatformPlayerUrl,
-                             platformPlayerUrl);
+            var filter =
+                Builders<ContentRecommendationsDocument>.Filter.Eq(p => p.GeneralizedResult.PlatformId, platformId) &
+                Builders<ContentRecommendationsDocument>.Filter.Eq(p => p.GeneralizedResult.PlayerFactoryName,
+                    playerFactoryName) &
+                Builders<ContentRecommendationsDocument>.Filter.Eq(p => p.GeneralizedResult.PlatformPlayerUrl,
+                    platformPlayerUrl);
 
             var projection = Builders<ContentRecommendationsDocument>.Projection
                 .Include("weeklyViewsAmount")
@@ -138,6 +133,4 @@ namespace SkyPlaylistManager.Services
             return result;
         }
     }
-    
-    
 }

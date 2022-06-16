@@ -69,7 +69,7 @@ namespace SkyPlaylistManager.Services
         public async Task<List<BsonDocument>?> GetTrendingPlaylists(string playlistNameBeginningLetters, int resultsLimit)
         {
             var query = await _recommendationsCollection.Aggregate()
-                .SortByDescending(p => p.WeeklyViewsAmount)
+                .SortByDescending(p => p.WeeklyViewDates)
                 .Lookup(_playlistCollectionName, "playlistId", "_id", "playlist")
                 .Unwind("playlist")
                 .Match(Builders<BsonDocument>.Filter
@@ -97,7 +97,6 @@ namespace SkyPlaylistManager.Services
 
             var weeklyViewsUpdate = Builders<PlaylistRecommendationsDocument>.Update
                 .Push(p => p.WeeklyViewDates, DateTime.Now)
-                .Set(p => p.WeeklyViewsAmount, currentWeeklyViewAmount + 1)
                 .Set(p => p.TotalViewsAmount, totalViewAmount + 1);
             await _recommendationsCollection.UpdateOneAsync(filter, weeklyViewsUpdate);
         }

@@ -26,9 +26,7 @@ namespace SkyPlaylistManager.Models.Database
         [BsonElement("description")] public string Description { get; set; }
         [BsonElement("thumbnailUrl")] public string ThumbnailUrl { get; set; }
         [BsonElement("usersFollowingIds")] public List<ObjectId> UsersFollowingIds { get; set; }
-        [BsonElement("usersFollowingAmount")] public int UsersFollowingAmount { get; set; }
         [BsonElement("resultIds")] public List<ObjectId> ResultIds { get; set; }
-        [BsonElement("resultsAmount")] public int ResultsAmount { get; set; }
 
 
         public PlaylistDocument(CreatePlaylistDto request, SessionTokensService sessionTokensService)
@@ -39,9 +37,7 @@ namespace SkyPlaylistManager.Models.Database
             Visibility = request.Visibility;
             OwnerId = sessionTokensService.GetUserIdFromToken(request.SessionToken);
             ResultIds = new List<ObjectId>();
-            ResultsAmount = 0;
             UsersFollowingIds = new List<ObjectId>();
-            UsersFollowingAmount = 0;
         }
     }
 }

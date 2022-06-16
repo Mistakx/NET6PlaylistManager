@@ -84,7 +84,7 @@ namespace SkyPlaylistManager.Controllers
                         return playlistInformationDtoBuilder.BeginBuilding(requestedPlaylist.Id,
                             requestedPlaylist.Title,
                             requestedPlaylist.Description, requestedPlaylist.ThumbnailUrl,
-                            requestedPlaylist.ResultsAmount).AddVisibility("Private").Build();
+                            requestedPlaylist.ResultIds.Count).AddVisibility("Private").Build();
                     }
 
                     if (requestedPlaylist?.Visibility == "Public")
@@ -95,7 +95,7 @@ namespace SkyPlaylistManager.Controllers
                         return playlistInformationDtoBuilder.BeginBuilding(requestedPlaylist.Id,
                                 requestedPlaylist.Title,
                                 requestedPlaylist.Description, requestedPlaylist.ThumbnailUrl,
-                                requestedPlaylist.ResultsAmount).AddVisibility("Public")
+                                requestedPlaylist.ResultIds.Count).AddVisibility("Public")
                             .AddViews(requestedPlaylistViews!)
                             .Build();
                     }
@@ -113,7 +113,7 @@ namespace SkyPlaylistManager.Controllers
                         return playlistInformationDtoBuilder.BeginBuilding(requestedPlaylist.Id,
                             requestedPlaylist.Title,
                             requestedPlaylist.Description, requestedPlaylist.ThumbnailUrl,
-                            requestedPlaylist.ResultsAmount).AddViews(requestedPlaylistViews!).Build();
+                            requestedPlaylist.ResultIds.Count).AddViews(requestedPlaylistViews!).Build();
                     }
 
                     return null;
@@ -173,14 +173,12 @@ namespace SkyPlaylistManager.Controllers
 
                 var foundPlaylist = await _playListsService.GetPlaylistById(request.PlaylistId);
                 if (foundPlaylist == null) return BadRequest(PlaylistIdDoesntExistMessage);
-                await _playListsService.DeleteContentIdFromPlaylist(request.PlaylistId, generalResultId,
-                    foundPlaylist.ResultsAmount);
+                await _playListsService.DeleteContentIdFromPlaylist(request.PlaylistId, generalResultId);
 
                 foundPlaylist = await _playListsService.GetPlaylistById(request.PlaylistId);
                 if (foundPlaylist == null) return BadRequest(PlaylistIdDoesntExistMessage);
-                await _playListsService.DeleteContentIdFromPlaylist(request.PlaylistId, generalResultId,
-                    foundPlaylist.ResultsAmount);
-                await _playListsService.InsertContentInSpecificPlaylistPosition(request, foundPlaylist.ResultsAmount);
+                await _playListsService.DeleteContentIdFromPlaylist(request.PlaylistId, generalResultId);
+                await _playListsService.InsertContentInSpecificPlaylistPosition(request);
                 return Ok("Successfully sorted result");
             }
 
@@ -216,8 +214,7 @@ namespace SkyPlaylistManager.Controllers
                 var generalizedResultId = ObjectId.Parse(generalizedResult.Id);
 
 
-                await _playListsService.InsertContentIdInPlaylist(request.PlaylistId, generalizedResultId,
-                    foundPlaylist.ResultsAmount);
+                await _playListsService.InsertContentIdInPlaylist(request.PlaylistId, generalizedResultId);
                 return Ok("Successfully added to playlist");
             }
 
@@ -330,8 +327,7 @@ namespace SkyPlaylistManager.Controllers
                 if (foundPlaylist == null) return BadRequest(PlaylistIdDoesntExistMessage);
 
                 var generalizedResultToDeleteId = new ObjectId(request.GeneralizedResultDatabaseId);
-                await _playListsService.DeleteContentIdFromPlaylist(request.PlaylistId,
-                    generalizedResultToDeleteId, foundPlaylist.ResultsAmount);
+                await _playListsService.DeleteContentIdFromPlaylist(request.PlaylistId, generalizedResultToDeleteId);
                 return Ok("Successfully removed from playlist");
             }
             catch (Exception e)

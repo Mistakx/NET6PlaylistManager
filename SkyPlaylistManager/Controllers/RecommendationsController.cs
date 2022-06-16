@@ -60,7 +60,7 @@ namespace SkyPlaylistManager.Controllers
                 {
                     await _contentRecommendationsService.AddViewToResult(request.GeneralizedResult.Title,
                         request.GeneralizedResult.PlayerFactoryName, request.GeneralizedResult.PlatformPlayerUrl!,
-                        recommendation.WeeklyViewsAmount, recommendation.TotalViewsAmount);
+                        recommendation.WeeklyViewDates.Count, recommendation.TotalViewsAmount);
                 }
 
                 return Ok("View saved");
@@ -72,19 +72,19 @@ namespace SkyPlaylistManager.Controllers
             }
         }
 
-        [HttpGet("getTrendingContent")]
-        public async Task<List<UnknownGeneralizedResultDto>?> GetTrendingContent()
+        [HttpPost("getTrendingContent")]
+        public async Task<List<UnknownGeneralizedResultDto>?> GetTrendingContent(GetTrendingContentDto request)
         {
             try
             {
                 _contentRecommendationsService.UpdateRecommendationsWeeklyViews();
-                var trendingResults = await _contentRecommendationsService.GetTrending();
+                var trendingResults = await _contentRecommendationsService.GetTrendingContent(request.Limit);
 
                 var deserializedList = new List<UnknownGeneralizedResultDto>();
                 foreach (var trendingResult in trendingResults)
                 {
-                    var deserializedResponse = BsonSerializer.Deserialize<GetTrendingContentDto>(trendingResult);
-                    deserializedList.Add(deserializedResponse.generalizedResult);
+                    // var deserializedResponse = BsonSerializer.Deserialize<GetTrendingContentLookupDto>(trendingResult);
+                    // deserializedList.Add(deserializedResponse.generalizedResult);
                 }
 
                 return deserializedList;
@@ -137,6 +137,8 @@ namespace SkyPlaylistManager.Controllers
         {
             try
             {
+                var userProfileDtoBuilder = new UserProfileDtoBuilder();
+
                 var requestingUserId = _sessionTokensService.GetUserIdFromToken(request.SessionToken);
                 var requestingUser = await _userService.GetUserById(requestingUserId);
 
@@ -157,10 +159,17 @@ namespace SkyPlaylistManager.Controllers
                 foreach (var deserializedTrendingUser in deserializedTrendingUsers)
                 {
                     if (requestingUser?.Username != deserializedTrendingUser.User.Username)
-                        deserializedTrendingUsersInformation.Add(new UserProfileDto(
-                            deserializedTrendingUser.User.Name, deserializedTrendingUser.User.Username,
-                            deserializedTrendingUser.User.ProfilePhotoUrl, deserializedTrendingUser.WeeklyViewsAmount,
-                            deserializedTrendingUser.TotalViewsAmount));
+                    {
+                        var deserializedTrendingUserIsBeingFollowedAlready =
+                            await _communityService.UserAlreadyBeingFollowed(deserializedTrendingUser.User.Id,
+                                requestingUserId);
+
+                        deserializedTrendingUsersInformation.Add(userProfileDtoBuilder.BeginBuilding(
+                                deserializedTrendingUser.User.Name, deserializedTrendingUser.User.Username,
+                                deserializedTrendingUser.User.ProfilePhotoUrl, deserializedTrendingUser)
+                            .AddFollowed(deserializedTrendingUserIsBeingFollowedAlready)
+                            .Build());
+                    }
                 }
 
                 // Need to find other users that are not in the trending list
@@ -182,22 +191,13 @@ namespace SkyPlaylistManager.Controllers
                     var currentUserViews = await
                         _userRecommendationsService.GetUserRecommendationsDocumentById(allUsers.ElementAt(i).Id);
 
-                    int weeklyViews;
-                    int totalViews;
-                    if (currentUserViews != null)
-                    {
-                        weeklyViews = currentUserViews.WeeklyViewsAmount;
-                        totalViews = currentUserViews.TotalViewsAmount;
-                    }
-                    else
-                    {
-                        weeklyViews = 0;
-                        totalViews = 0;
-                    }
+                    var currentUserIsBeingFollowed = await
+                        _communityService.UserAlreadyBeingFollowed(allUsers.ElementAt(i).Id, requestingUserId);
 
-                    var currentUser = new UserProfileDto(allUsers.ElementAt(i).Name,
-                        allUsers.ElementAt(i).Username, allUsers.ElementAt(i).ProfilePhotoUrl,
-                        weeklyViews, totalViews);
+                    var currentUser = userProfileDtoBuilder.BeginBuilding(allUsers.ElementAt(i).Name,
+                            allUsers.ElementAt(i).Username, allUsers.ElementAt(i).ProfilePhotoUrl, currentUserViews)
+                        .AddFollowed(currentUserIsBeingFollowed)
+                        .Build();
 
                     if (requestingUser?.Username != currentUser.Username)
                     {
@@ -245,7 +245,7 @@ namespace SkyPlaylistManager.Controllers
                 else
                 {
                     await _playlistRecommendationsService.AddViewToPlaylist(request.PlaylistId,
-                        playlistRecommendationDocument.WeeklyViewsAmount,
+                        playlistRecommendationDocument.WeeklyViewDates.Count,
                         playlistRecommendationDocument.TotalViewsAmount);
                 }
 
@@ -305,7 +305,7 @@ namespace SkyPlaylistManager.Controllers
                                 deserializedTrendingPlaylist.Playlist.Title,
                                 deserializedTrendingPlaylist.Playlist.Description,
                                 deserializedTrendingPlaylist.Playlist.ThumbnailUrl,
-                                deserializedTrendingPlaylist.Playlist.ResultsAmount)
+                                deserializedTrendingPlaylist.Playlist.ResultIds.Count)
                             .AddViews(deserializedTrendingPlaylist)
                             .Build());
                 }
@@ -334,7 +334,7 @@ namespace SkyPlaylistManager.Controllers
                             allPlaylists.ElementAt(i).Id,
                             allPlaylists.ElementAt(i).Title,
                             allPlaylists.ElementAt(i).Description,
-                            allPlaylists.ElementAt(i).ThumbnailUrl, allPlaylists.ElementAt(i).ResultsAmount)
+                            allPlaylists.ElementAt(i).ThumbnailUrl, allPlaylists.ElementAt(i).ResultIds.Count)
                         .AddViews(currentPlaylistViews!).Build();
 
                     if (!PlaylistBelongsToRequestingUser(allPlaylists.ElementAt(i), requestingUser) &&
