@@ -71,7 +71,7 @@ namespace SkyPlaylistManager.Services
                 .Lookup(_userCollectionName, "userId", "_id", "user")
                 .Unwind("user")
                 .Match(Builders<BsonDocument>.Filter
-                    .Regex("user.username", new BsonRegularExpression("(?i)^" + usernameBeginningLetters)))
+                    .Regex("username", new BsonRegularExpression("(?i)^" + usernameBeginningLetters)))
                 .ToListAsync();
 
             var deserializedTrendingUsers = new List<GetTrendingUsersLookupDto>();
