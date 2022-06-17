@@ -1,9 +1,9 @@
-﻿using SkyPlaylistManager.Models.DTOs.GeneralizedResults;
+﻿using SkyPlaylistManager.Models.Database;
 
 namespace SkyPlaylistManager.Models.DTOs.RecommendationRequests;
 
 public class SaveContentViewDto
 {
-    public UnknownGeneralizedResultDto GeneralizedResult { get; set; }
+    public UnknownContentDocumentDto Content { get; set; }
     public string SessionToken { get; set; }
 }

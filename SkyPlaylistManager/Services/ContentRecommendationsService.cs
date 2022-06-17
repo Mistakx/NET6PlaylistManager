@@ -22,6 +22,7 @@ namespace SkyPlaylistManager.Services
             _recommendationsCollection =
                 mongoDatabase.GetCollection<ContentRecommendationsDocument>(databaseSettings.Value
                     .ContentRecommendationsCollectionName);
+
         }
 
         private async void DeleteOldRecommendations()
@@ -63,12 +64,11 @@ namespace SkyPlaylistManager.Services
             }
         }
 
-        public async Task< List<AggregateSortByCountResult<List<DateTime>>>?> GetTrendingContent(int limit)
+        public async Task<List<ContentRecommendationsDocument>?> GetTrendingContent(int limit)
         {
-            var trendingPlaylists = await _recommendationsCollection.Aggregate().SortByCount(p => p.WeeklyViewDates)
-                .Limit(limit).ToListAsync();
-
-            return trendingPlaylists;
+            var trendingContentList = await _recommendationsCollection.Find(p => true).ToListAsync();
+            trendingContentList.Sort((x, y) => y.WeeklyViewDates.Count.CompareTo(x.WeeklyViewDates.Count));
+            return trendingContentList.Take(limit).ToList();
         }
 
 

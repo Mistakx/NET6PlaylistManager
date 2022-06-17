@@ -1,7 +1,9 @@
 ﻿using Microsoft.Extensions.Options;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using SkyPlaylistManager.Models.Database;
+using SkyPlaylistManager.Models.DTOs.RecommendationResponses;
 
 namespace SkyPlaylistManager.Services
 {
@@ -62,18 +64,25 @@ namespace SkyPlaylistManager.Services
             }
         }
 
-        public async Task<List<BsonDocument>?> GetTrendingUsers(string usernameBeginningLetters, int resultsLimit)
+        public async Task<List<GetTrendingUsersLookupDto>?> GetTrendingUsers(string usernameBeginningLetters,
+            int resultsLimit)
         {
-            var query = await _recommendationsCollection.Aggregate()
-                .SortByDescending(p => p.WeeklyViewsAmount)
+            var trendingUsers = await _recommendationsCollection.Aggregate()
                 .Lookup(_userCollectionName, "userId", "_id", "user")
                 .Unwind("user")
                 .Match(Builders<BsonDocument>.Filter
                     .Regex("user.username", new BsonRegularExpression("(?i)^" + usernameBeginningLetters)))
-                .Limit(resultsLimit)
                 .ToListAsync();
 
-            return query;
+            var deserializedTrendingUsers = new List<GetTrendingUsersLookupDto>();
+            foreach (var trendingUser in trendingUsers)
+            {
+                var deserializedTrendingUser = BsonSerializer.Deserialize<GetTrendingUsersLookupDto>(trendingUser);
+                deserializedTrendingUsers.Add(deserializedTrendingUser);
+            }
+
+            deserializedTrendingUsers.Sort((x, y) => y.WeeklyViewDates.Count.CompareTo(x.WeeklyViewDates.Count));
+            return deserializedTrendingUsers.Take(resultsLimit).ToList();
         }
 
 
@@ -82,10 +91,9 @@ namespace SkyPlaylistManager.Services
             var recommendationsDocument = new UserRecommendationsDocument(userId);
             await _recommendationsCollection.InsertOneAsync(recommendationsDocument);
         }
-        
+
         public async Task AddViewToUser(
             string userId,
-            int currentWeeklyViewAmount,
             int totalViewAmount
         )
         {
@@ -94,7 +102,6 @@ namespace SkyPlaylistManager.Services
 
             var weeklyViewsUpdate = Builders<UserRecommendationsDocument>.Update
                 .Push(p => p.WeeklyViewDates, DateTime.Now)
-                .Set(p => p.WeeklyViewsAmount, currentWeeklyViewAmount + 1)
                 .Set(p => p.TotalViewsAmount, totalViewAmount + 1);
             await _recommendationsCollection.UpdateOneAsync(filter, weeklyViewsUpdate);
         }

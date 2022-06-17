@@ -2,8 +2,8 @@
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using SkyPlaylistManager.Models.Database;
+using SkyPlaylistManager.Models.DTOs.ContentResponses;
 using SkyPlaylistManager.Services;
-using SkyPlaylistManager.Models.DTOs.GeneralizedResults;
 using SkyPlaylistManager.Models.DTOs.PlaylistResponses;
 using SkyPlaylistManager.Models.DTOs.RecommendationRequests;
 using SkyPlaylistManager.Models.DTOs.RecommendationResponses;
@@ -49,8 +49,8 @@ namespace SkyPlaylistManager.Controllers
             try
             {
                 var recommendation = await _contentRecommendationsService.GetResultInRecommended(
-                    request.GeneralizedResult.Title,
-                    request.GeneralizedResult.PlayerFactoryName, request.GeneralizedResult.PlatformPlayerUrl!);
+                    request.Content.Title,
+                    request.Content.PlayerFactoryName, request.Content.PlatformPlayerUrl!);
 
                 if (recommendation == null)
                 {
@@ -58,8 +58,8 @@ namespace SkyPlaylistManager.Controllers
                 }
                 else
                 {
-                    await _contentRecommendationsService.AddViewToResult(request.GeneralizedResult.Title,
-                        request.GeneralizedResult.PlayerFactoryName, request.GeneralizedResult.PlatformPlayerUrl!,
+                    await _contentRecommendationsService.AddViewToResult(request.Content.Title,
+                        request.Content.PlayerFactoryName, request.Content.PlatformPlayerUrl!,
                         recommendation.WeeklyViewDates.Count, recommendation.TotalViewsAmount);
                 }
 
@@ -73,18 +73,20 @@ namespace SkyPlaylistManager.Controllers
         }
 
         [HttpPost("getTrendingContent")]
-        public async Task<List<UnknownGeneralizedResultDto>?> GetTrendingContent(GetTrendingContentDto request)
+        public async Task<List<UnknownContentResponseDto>?> GetTrendingContent(GetTrendingContentDto request)
         {
             try
             {
+                var unknownContentResponseDtoBuilder = new UnknownContentResponseDtoBuilder();
                 _contentRecommendationsService.UpdateRecommendationsWeeklyViews();
                 var trendingResults = await _contentRecommendationsService.GetTrendingContent(request.Limit);
+                if (trendingResults == null) return new List<UnknownContentResponseDto>();
 
-                var deserializedList = new List<UnknownGeneralizedResultDto>();
+                var deserializedList = new List<UnknownContentResponseDto>();
                 foreach (var trendingResult in trendingResults)
                 {
-                    // var deserializedResponse = BsonSerializer.Deserialize<GetTrendingContentLookupDto>(trendingResult);
-                    // deserializedList.Add(deserializedResponse.generalizedResult);
+                    deserializedList.Add(unknownContentResponseDtoBuilder
+                        .BeginBuilding(trendingResult.GeneralizedResult).AddViews(trendingResult).Build());
                 }
 
                 return deserializedList;
@@ -120,7 +122,7 @@ namespace SkyPlaylistManager.Controllers
                 else
                 {
                     await _userRecommendationsService.AddViewToUser(requestedUser?.Id!,
-                        recommendation.WeeklyViewsAmount, recommendation.TotalViewsAmount);
+                        recommendation.TotalViewsAmount);
                 }
 
                 return Ok("View saved");
@@ -133,7 +135,7 @@ namespace SkyPlaylistManager.Controllers
         }
 
         [HttpPost("getTrendingUsers")]
-        public async Task<List<UserProfileDto>?> GetTrendingUsers(GetTrendingUsersDto request)
+        public async Task<List<UserProfileDto>> GetTrendingUsers(GetTrendingUsersDto request)
         {
             try
             {
@@ -143,20 +145,13 @@ namespace SkyPlaylistManager.Controllers
                 var requestingUser = await _userService.GetUserById(requestingUserId);
 
                 _userRecommendationsService.UpdateRecommendationsWeeklyViews();
+
                 var trendingUsers =
                     await _userRecommendationsService.GetTrendingUsers(request.Username, request.Limit);
-
-                if (trendingUsers == null) return null;
-
-                var deserializedTrendingUsers = new List<GetTrendingUsersLookupDto>();
-                foreach (var trendingUser in trendingUsers)
-                {
-                    var deserializedTrendingUser = BsonSerializer.Deserialize<GetTrendingUsersLookupDto>(trendingUser);
-                    deserializedTrendingUsers.Add(deserializedTrendingUser);
-                }
+                if (trendingUsers == null) return new List<UserProfileDto>();
 
                 var deserializedTrendingUsersInformation = new List<UserProfileDto>();
-                foreach (var deserializedTrendingUser in deserializedTrendingUsers)
+                foreach (var deserializedTrendingUser in trendingUsers)
                 {
                     if (requestingUser?.Username != deserializedTrendingUser.User.Username)
                     {
@@ -211,7 +206,7 @@ namespace SkyPlaylistManager.Controllers
             catch (Exception e)
             {
                 Console.WriteLine(e.StackTrace);
-                return null;
+                return new List<UserProfileDto>();
             }
         }
 
@@ -286,16 +281,8 @@ namespace SkyPlaylistManager.Controllers
                     await _playlistRecommendationsService.GetTrendingPlaylists(request.PlaylistName, request.Limit);
                 if (trendingPlaylists == null) return null;
 
-                var deserializedTrendingPlaylists = new List<GetTrendingPlaylistsLookupDto>();
-                foreach (var trendingPlaylist in trendingPlaylists)
-                {
-                    var deserializedTrendingPlaylist =
-                        BsonSerializer.Deserialize<GetTrendingPlaylistsLookupDto>(trendingPlaylist);
-                    deserializedTrendingPlaylists.Add(deserializedTrendingPlaylist);
-                }
-
                 var deserializedTrendingPlaylistsInformation = new List<PlaylistInformationDto>();
-                foreach (var deserializedTrendingPlaylist in deserializedTrendingPlaylists)
+                foreach (var deserializedTrendingPlaylist in trendingPlaylists)
                 {
                     if (!PlaylistBelongsToRequestingUser(deserializedTrendingPlaylist.Playlist, requestingUser) &&
                         deserializedTrendingPlaylist.Playlist.Visibility == "Public")

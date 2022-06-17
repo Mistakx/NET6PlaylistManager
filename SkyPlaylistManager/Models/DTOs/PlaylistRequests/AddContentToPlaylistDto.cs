@@ -1,8 +1,8 @@
-﻿using SkyPlaylistManager.Models.DTOs.GeneralizedResults;
+﻿using SkyPlaylistManager.Models.Database;
 
 namespace SkyPlaylistManager.Models.DTOs.PlaylistRequests;
 
-public class AddContentToPlaylistDto: UnknownGeneralizedResultDto
+public class AddContentToPlaylistDto: UnknownContentDocumentDto
 {
     public string PlaylistId { get; set; }
 }

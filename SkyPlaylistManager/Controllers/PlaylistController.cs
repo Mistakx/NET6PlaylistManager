@@ -1,10 +1,9 @@
-﻿using System.Collections;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using SkyPlaylistManager.Services;
-using SkyPlaylistManager.Models;
 using SkyPlaylistManager.Models.Database;
+using SkyPlaylistManager.Models.DTOs.ContentResponses;
 using SkyPlaylistManager.Models.DTOs.PlaylistRequests;
 using SkyPlaylistManager.Models.DTOs.PlaylistResponses;
 
@@ -16,8 +15,7 @@ namespace SkyPlaylistManager.Controllers
     {
         private const string PlaylistIdDoesntExistMessage = "Playlist ID doesn't exist";
         private readonly FilesManager _filesManager;
-        private readonly GeneralizedResultFactory _generalizedResultFactory;
-        private readonly GeneralizedResultsService _generalizedResultsService;
+        private readonly ContentService _contentService;
         private readonly PlaylistsService _playListsService;
         private readonly SessionTokensService _sessionTokensService;
         private readonly UsersService _usersService;
@@ -27,8 +25,7 @@ namespace SkyPlaylistManager.Controllers
         public PlaylistController(
             PlaylistsService playlistsService,
             UsersService usersService,
-            GeneralizedResultsService generalizedResultsService,
-            GeneralizedResultFactory generalizedResultFactory,
+            ContentService contentService,
             SessionTokensService sessionTokensService,
             FilesManager filesManager,
             PlaylistRecommendationsService playlistRecommendationsService,
@@ -36,8 +33,7 @@ namespace SkyPlaylistManager.Controllers
         {
             _playListsService = playlistsService;
             _usersService = usersService;
-            _generalizedResultsService = generalizedResultsService;
-            _generalizedResultFactory = generalizedResultFactory;
+            _contentService = contentService;
             _sessionTokensService = sessionTokensService;
             _filesManager = filesManager;
             _playlistRecommendationsService = playlistRecommendationsService;
@@ -127,10 +123,12 @@ namespace SkyPlaylistManager.Controllers
         }
 
         [HttpGet("getPlaylistContent/{playlistId}")] // TODO: Add security
-        public async Task<ArrayList?> GetPlaylistContent(string playlistId)
+        public async Task<List<UnknownContentResponseDto>?> GetPlaylistContent(string playlistId)
         {
             try
             {
+                var unknownContentResponseDtoBuilder = new UnknownContentResponseDtoBuilder();
+
                 var playlistResults = await _playListsService.GetPlaylistContent(playlistId);
                 var deserializedPlaylistResults =
                     BsonSerializer.Deserialize<GetPlaylistContentLookupDto>(playlistResults);
@@ -139,14 +137,15 @@ namespace SkyPlaylistManager.Controllers
                 var deserializedPlaylistResultsOrderedIds =
                     BsonSerializer.Deserialize<PlaylistContentsOrderedIdsDto>(playlistResultsOrderedIds);
 
-                var orderedPlaylistResults = new ArrayList();
+                var orderedPlaylistResults = new List<UnknownContentResponseDto>();
                 foreach (var playlistContentId in deserializedPlaylistResultsOrderedIds.ResultIds)
                 {
                     foreach (var playlistContent in deserializedPlaylistResults.Content)
                     {
                         if (playlistContent.DatabaseId == playlistContentId.ToString())
                         {
-                            orderedPlaylistResults.Add(playlistContent);
+                            orderedPlaylistResults.Add(unknownContentResponseDtoBuilder.BeginBuilding(playlistContent)
+                                .Build());
                         }
                     }
                 }
@@ -207,11 +206,8 @@ namespace SkyPlaylistManager.Controllers
                     return BadRequest("Result already in playlist");
                 }
 
-                _generalizedResultFactory.Request = request;
-                var generalizedResult = _generalizedResultFactory[request.ResultType];
-                await _generalizedResultsService.CreateGeneralizedResult(generalizedResult);
-
-                var generalizedResultId = ObjectId.Parse(generalizedResult.Id);
+                await _contentService.CreateContent(request);
+                var generalizedResultId = ObjectId.Parse(request.DatabaseId);
 
 
                 await _playListsService.InsertContentIdInPlaylist(request.PlaylistId, generalizedResultId);

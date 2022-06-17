@@ -1,8 +1,10 @@
 ﻿using Microsoft.Extensions.Options;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using SkyPlaylistManager.Models.Database;
 using SkyPlaylistManager.Models.DTOs.RecommendationRequests;
+using SkyPlaylistManager.Models.DTOs.RecommendationResponses;
 
 
 namespace SkyPlaylistManager.Services
@@ -66,19 +68,27 @@ namespace SkyPlaylistManager.Services
             }
         }
 
-        public async Task<List<BsonDocument>?> GetTrendingPlaylists(string playlistNameBeginningLetters, int resultsLimit)
+        public async Task<List<GetTrendingPlaylistsLookupDto>?> GetTrendingPlaylists(
+            string playlistNameBeginningLetters,
+            int resultsLimit)
         {
-            var query = await _recommendationsCollection.Aggregate()
-                .SortByDescending(p => p.WeeklyViewDates)
+            var trendingPlaylists = await _recommendationsCollection.Aggregate()
                 .Lookup(_playlistCollectionName, "playlistId", "_id", "playlist")
                 .Unwind("playlist")
                 .Match(Builders<BsonDocument>.Filter
                     .Regex("title", new BsonRegularExpression("(?i)^" + playlistNameBeginningLetters)))
-                .Limit(resultsLimit).
-                ToListAsync();
-            
-            return query;
+                .ToListAsync();
 
+            var deserializedTrendingPlaylists = new List<GetTrendingPlaylistsLookupDto>();
+            foreach (var trendingPlaylist in trendingPlaylists)
+            {
+                var deserializedTrendingPlaylist =
+                    BsonSerializer.Deserialize<GetTrendingPlaylistsLookupDto>(trendingPlaylist);
+                deserializedTrendingPlaylists.Add(deserializedTrendingPlaylist);
+            }
+
+            deserializedTrendingPlaylists.Sort((x, y) => y.WeeklyViewDates.Count.CompareTo(x.WeeklyViewDates.Count));
+            return deserializedTrendingPlaylists.Take(resultsLimit).ToList();
         }
 
 

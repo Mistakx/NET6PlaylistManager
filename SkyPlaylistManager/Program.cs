@@ -1,8 +1,6 @@
-using SkyPlaylistManager.Models;
 using SkyPlaylistManager.Models.Database;
 using SkyPlaylistManager.Services;
 using SkyPlaylistManager;
-using SkyPlaylistManager.Models.DTOs.GeneralizedResults;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,23 +10,12 @@ builder.Services.Configure<DatabaseSettings>(builder.Configuration.GetSection("S
 builder.Services.AddSingleton<UsersService>();
 builder.Services.AddSingleton<PlaylistsService>();
 builder.Services.AddSingleton<SessionTokensService>();
-builder.Services.AddSingleton<GeneralizedResultsService>();
-builder.Services.AddSingleton<GeneralizedResultFactory>();
+builder.Services.AddSingleton<ContentService>();
 builder.Services.AddSingleton<UserRecommendationsService>();
 builder.Services.AddSingleton<PlaylistRecommendationsService>();
 builder.Services.AddSingleton<ContentRecommendationsService>();
 builder.Services.AddSingleton<FilesManager>();
 builder.Services.AddSingleton<CommunityService>();
-
-
-builder.Services.AddScoped(_ =>
-{
-    var generalizedResultFactory = new GeneralizedResultFactory();
-    generalizedResultFactory.RegisterType("GenericVideoResult", () => new GeneralizedVideoResult(generalizedResultFactory.Request));
-    generalizedResultFactory.RegisterType("GenericTrackResult", () => new GeneralizedTrackResult(generalizedResultFactory.Request));
-    generalizedResultFactory.RegisterType("GenericLivestreamResult", () => new GeneralizedLivestreamResult(generalizedResultFactory.Request));
-    return generalizedResultFactory;
-});
 
 builder.Services.AddControllersWithViews();
 

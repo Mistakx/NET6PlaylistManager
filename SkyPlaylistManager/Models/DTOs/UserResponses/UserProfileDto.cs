@@ -20,7 +20,7 @@ public class UserProfileDto
 
         if (userViews != null)
         {
-            WeeklyViewsAmount = userViews.WeeklyViewsAmount;
+            WeeklyViewsAmount = userViews.WeeklyViewDates.Count;
             TotalViewsAmount = userViews.TotalViewsAmount;
         }
         else

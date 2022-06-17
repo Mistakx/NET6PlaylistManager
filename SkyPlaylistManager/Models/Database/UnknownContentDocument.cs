@@ -1,9 +1,9 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace SkyPlaylistManager.Models.DTOs.GeneralizedResults;
+namespace SkyPlaylistManager.Models.Database;
 
-public class UnknownGeneralizedResultDto
+public class UnknownContentDocumentDto
 {
     [BsonId]
     [BsonRepresentation(BsonType.ObjectId)]

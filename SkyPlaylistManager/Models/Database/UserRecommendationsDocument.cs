@@ -1,10 +1,5 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
-using SkyPlaylistManager.Models.DTOs.GeneralizedResults;
-using SkyPlaylistManager.Models.DTOs.PlaylistRequests;
-using SkyPlaylistManager.Models.DTOs.PlaylistResponses;
-using SkyPlaylistManager.Models.DTOs.RecommendationRequests;
-using SkyPlaylistManager.Services;
 
 namespace SkyPlaylistManager.Models.Database
 {
@@ -18,7 +13,6 @@ namespace SkyPlaylistManager.Models.Database
         [BsonElement("weeklyViewDates")]
         public List<DateTime> WeeklyViewDates { get; set; }
 
-        [BsonElement("weeklyViewsAmount")] public int WeeklyViewsAmount { get; set; }
         [BsonElement("totalViewsAmount")] public int TotalViewsAmount { get; set; }
 
         [BsonElement("userId")]
@@ -28,7 +22,6 @@ namespace SkyPlaylistManager.Models.Database
         public UserRecommendationsDocument(string userId)
         {
             WeeklyViewDates = new List<DateTime> {DateTime.Now};
-            WeeklyViewsAmount = 1;
             TotalViewsAmount = 1;
             UserId = userId;
         }

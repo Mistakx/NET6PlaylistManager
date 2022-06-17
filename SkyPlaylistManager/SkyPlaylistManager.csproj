@@ -107,6 +107,7 @@
   <ItemGroup>
     <Folder Include="Images\PlaylistsThumbnails\" />
     <Folder Include="Images\UsersProfilePhotos\" />
+    <Folder Include="Models\DTOs\GeneralizedResults" />
     <Folder Include="NET6React\.git\branches" />
     <Folder Include="NET6React\.git\objects\info" />
     <Folder Include="NET6React\.git\refs\tags" />
@@ -220,6 +221,10 @@
 
   <ItemGroup>
     <Compile Remove="NET6PlaylistManager\**" />
+    <Compile Remove="Models\DTOs\GeneralizedResults\GeneralizedLivestreamResult.cs" />
+    <Compile Remove="Models\DTOs\GeneralizedResults\GeneralizedResult.cs" />
+    <Compile Remove="Models\DTOs\GeneralizedResults\GeneralizedTrackResult.cs" />
+    <Compile Remove="Models\GeneralizedResultFactory.cs" />
   </ItemGroup>
 
   <ItemGroup>
