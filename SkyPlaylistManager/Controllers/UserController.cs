@@ -139,7 +139,6 @@ public class UserController : ControllerBase
             return userProfileDtoBuilder.BeginBuilding(
                 requestedUser.Name, requestedUser.Username, requestedUser.ProfilePhotoUrl,
                 requestedUserRecommendations).AddFollowed(userBeingFollowed).Build();
-            
         }
         catch (Exception ex)
         {
@@ -156,7 +155,7 @@ public class UserController : ControllerBase
             var requestingUserId = _sessionTokensService.GetUserIdFromToken(request.SessionToken);
             var requestingUser = await _usersService.GetUserById(requestingUserId);
             if (requestingUser == null) return BadRequest("Invalid session token");
-            
+
             var playlistInformationDtoBuilder = new PlaylistInformationDtoBuilder();
             var requestedUser = await _usersService.GetUserByUsername(request.Username);
             if (requestedUser == null) BadRequest("User not found");
@@ -210,11 +209,12 @@ public class UserController : ControllerBase
                                     await _playlistRecommendationsService.GetPlaylistRecommendationsDocumentById(
                                         playlistDocument
                                             .Id);
+                                var playlistOwner = await _usersService.GetUserById(playlistDocument.OwnerId);
                                 orderedPlaylists.Add(playlistInformationDtoBuilder.BeginBuilding(playlistDocument.Id,
                                         playlistDocument.Title, playlistDocument.Description,
                                         playlistDocument.ThumbnailUrl,
                                         playlistDocument.ResultIds.Count).AddViews(currentPlaylistViews!)
-                                    .AddFollowing(requestingUserFollowsPlaylist).Build());
+                                    .AddFollowing(requestingUserFollowsPlaylist).AddOwner(playlistOwner!).Build());
                             }
                         }
                     }

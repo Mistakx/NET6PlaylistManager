@@ -2,7 +2,9 @@
 
 namespace SkyPlaylistManager.Models.DTOs.PlaylistRequests;
 
-public class AddContentToPlaylistDto: UnknownContentDocumentDto
+public class AddContentToPlaylistDto
 {
     public string PlaylistId { get; set; }
+    public UnknownContentDocumentDto Content { get; set; }
+
 }

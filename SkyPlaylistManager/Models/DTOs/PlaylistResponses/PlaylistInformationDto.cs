@@ -1,3 +1,5 @@
+using SkyPlaylistManager.Models.DTOs.UserResponses;
+
 namespace SkyPlaylistManager.Models.DTOs.PlaylistResponses;
 
 public class PlaylistInformationDto
@@ -11,6 +13,7 @@ public class PlaylistInformationDto
     public int? WeeklyViewsAmount { get; set; }
     public int? TotalViewsAmount { get; set; }
     public bool? Followed { get; set; }
+    public UserProfileDto? Owner { get; set; }
 
     public PlaylistInformationDto(string playlistId, string title, string description, string thumbnailUrl,
         int resultsAmount)

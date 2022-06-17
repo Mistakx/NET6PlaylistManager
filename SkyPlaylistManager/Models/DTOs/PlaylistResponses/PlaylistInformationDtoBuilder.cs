@@ -1,4 +1,5 @@
 using SkyPlaylistManager.Models.Database;
+using SkyPlaylistManager.Models.DTOs.UserResponses;
 
 namespace SkyPlaylistManager.Models.DTOs.PlaylistResponses;
 
@@ -39,6 +40,12 @@ public class PlaylistInformationDtoBuilder
     public PlaylistInformationDtoBuilder AddVisibility(string playlistVisibility)
     {
         _playlistInformationDto.Visibility = playlistVisibility;
+        return this;
+    }
+
+    public PlaylistInformationDtoBuilder AddOwner(UserDocument owner)
+    {
+        _playlistInformationDto.Owner = new UserProfileDto(owner.Name, owner.Username, owner.ProfilePhotoUrl, null);
         return this;
     }
 

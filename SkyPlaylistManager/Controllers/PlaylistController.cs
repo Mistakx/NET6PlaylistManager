@@ -198,16 +198,16 @@ namespace SkyPlaylistManager.Controllers
 
                 if (await _playListsService.ContentIsAlreadyInPlaylist(
                         request.PlaylistId,
-                        request.Title,
-                        request.PlayerFactoryName,
-                        request.PlatformPlayerUrl!
+                        request.Content.Title,
+                        request.Content.PlayerFactoryName,
+                        request.Content.PlatformPlayerUrl!
                     ))
                 {
                     return BadRequest("Result already in playlist");
                 }
 
-                await _contentService.CreateContent(request);
-                var generalizedResultId = ObjectId.Parse(request.DatabaseId);
+                await _contentService.CreateContent(request.Content);
+                var generalizedResultId = ObjectId.Parse(request.Content.DatabaseId);
 
 
                 await _playListsService.InsertContentIdInPlaylist(request.PlaylistId, generalizedResultId);

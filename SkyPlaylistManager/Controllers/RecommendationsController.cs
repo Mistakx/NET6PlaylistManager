@@ -254,7 +254,7 @@ namespace SkyPlaylistManager.Controllers
         }
 
         [HttpPost("getTrendingPlaylists")]
-        public async Task<List<PlaylistInformationDto>?> GetTrendingPlaylists(GetTrendingPlaylistsDto request)
+        public async Task<List<PlaylistInformationDto>> GetTrendingPlaylists(GetTrendingPlaylistsDto request)
         {
             bool PlaylistBelongsToRequestingUser(PlaylistDocument playlist, UserDocument user)
             {
@@ -273,28 +273,33 @@ namespace SkyPlaylistManager.Controllers
             {
                 var requestingUserId = _sessionTokensService.GetUserIdFromToken(request.SessionToken);
                 var requestingUser = await _userService.GetUserById(requestingUserId);
-                if (requestingUser == null) return null;
+                if (requestingUser == null) return new List<PlaylistInformationDto>();
                 var playlistInformationDtoBuilder = new PlaylistInformationDtoBuilder();
 
                 _playlistRecommendationsService.UpdateRecommendationsWeeklyViews();
-                var trendingPlaylists =
+                var trendingPlaylistDocuments =
                     await _playlistRecommendationsService.GetTrendingPlaylists(request.PlaylistName, request.Limit);
-                if (trendingPlaylists == null) return null;
+                if (trendingPlaylistDocuments == null) return new List<PlaylistInformationDto>();
 
                 var deserializedTrendingPlaylistsInformation = new List<PlaylistInformationDto>();
-                foreach (var deserializedTrendingPlaylist in trendingPlaylists)
+                foreach (var trendingPlaylistDocument in trendingPlaylistDocuments)
                 {
-                    if (!PlaylistBelongsToRequestingUser(deserializedTrendingPlaylist.Playlist, requestingUser) &&
-                        deserializedTrendingPlaylist.Playlist.Visibility == "Public")
+                    if (!PlaylistBelongsToRequestingUser(trendingPlaylistDocument.Playlist, requestingUser) &&
+                        trendingPlaylistDocument.Playlist.Visibility == "Public")
+                    {
+                        var requestingUserFollowsPlaylist =
+                            await _communityService.PlaylistAlreadyBeingFollowed(trendingPlaylistDocument.PlaylistId,
+                                requestingUserId);
 
                         deserializedTrendingPlaylistsInformation.Add(playlistInformationDtoBuilder.BeginBuilding(
-                                deserializedTrendingPlaylist.Playlist.Id,
-                                deserializedTrendingPlaylist.Playlist.Title,
-                                deserializedTrendingPlaylist.Playlist.Description,
-                                deserializedTrendingPlaylist.Playlist.ThumbnailUrl,
-                                deserializedTrendingPlaylist.Playlist.ResultIds.Count)
-                            .AddViews(deserializedTrendingPlaylist)
+                                trendingPlaylistDocument.Playlist.Id,
+                                trendingPlaylistDocument.Playlist.Title,
+                                trendingPlaylistDocument.Playlist.Description,
+                                trendingPlaylistDocument.Playlist.ThumbnailUrl,
+                                trendingPlaylistDocument.Playlist.ResultIds.Count)
+                            .AddViews(trendingPlaylistDocument).AddFollowing(requestingUserFollowsPlaylist)
                             .Build());
+                    }
                 }
 
                 // Need to find other playlists that are not in the trending list
@@ -303,30 +308,31 @@ namespace SkyPlaylistManager.Controllers
                     request.Limit + deserializedTrendingPlaylistsInformation.Count);
                 int amountOfPlaylistsToFind;
                 if (allPlaylists.Count > request.Limit)
-                {
                     amountOfPlaylistsToFind = request.Limit - deserializedTrendingPlaylistsInformation.Count;
-                }
-                else
-                {
-                    amountOfPlaylistsToFind = allPlaylists.Count;
-                }
-
+                else amountOfPlaylistsToFind = allPlaylists.Count;
+                
                 for (var i = 0; i < amountOfPlaylistsToFind; i++)
                 {
-                    var currentPlaylistViews = await
-                        _playlistRecommendationsService.GetPlaylistRecommendationsDocumentById(allPlaylists.ElementAt(i)
-                            .Id);
-
-                    var currentPlaylistInformation = playlistInformationDtoBuilder.BeginBuilding(
-                            allPlaylists.ElementAt(i).Id,
-                            allPlaylists.ElementAt(i).Title,
-                            allPlaylists.ElementAt(i).Description,
-                            allPlaylists.ElementAt(i).ThumbnailUrl, allPlaylists.ElementAt(i).ResultIds.Count)
-                        .AddViews(currentPlaylistViews!).Build();
-
                     if (!PlaylistBelongsToRequestingUser(allPlaylists.ElementAt(i), requestingUser) &&
                         allPlaylists.ElementAt(i).Visibility == "Public")
                     {
+                        var currentPlaylistViews = await
+                            _playlistRecommendationsService.GetPlaylistRecommendationsDocumentById(allPlaylists
+                                .ElementAt(i)
+                                .Id);
+
+                        var requestingUserFollowsPlaylist =
+                            await _communityService.PlaylistAlreadyBeingFollowed(allPlaylists.ElementAt(i).Id,
+                                requestingUserId);
+
+                        var currentPlaylistInformation = playlistInformationDtoBuilder.BeginBuilding(
+                                allPlaylists.ElementAt(i).Id,
+                                allPlaylists.ElementAt(i).Title,
+                                allPlaylists.ElementAt(i).Description,
+                                allPlaylists.ElementAt(i).ThumbnailUrl, allPlaylists.ElementAt(i).ResultIds.Count)
+                            .AddViews(currentPlaylistViews!)
+                            .AddFollowing(requestingUserFollowsPlaylist).Build();
+
                         deserializedTrendingPlaylistsInformation.Add(currentPlaylistInformation);
                     }
                 }
@@ -337,7 +343,7 @@ namespace SkyPlaylistManager.Controllers
             catch (Exception e)
             {
                 Console.WriteLine(e.StackTrace);
-                return null;
+                return new List<PlaylistInformationDto>();
             }
         }
     }

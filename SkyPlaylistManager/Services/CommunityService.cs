@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Options;
+﻿using System.Collections;
+using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using SkyPlaylistManager.Models.Database;
@@ -85,8 +86,21 @@ namespace SkyPlaylistManager.Services
             return playlistIsAlreadyBeingFollowedByUser;
         }
         
-        
+        public async Task<List<PlaylistDocument>?> GetFollowedPlaylists(string userId)
+        {
+            var filter = Builders<PlaylistDocument>.Filter.AnyIn(p => p.UsersFollowingIds, new List<ObjectId>{new ObjectId(userId)});
+            var followedPlaylists = await _playlistsCollection.Find(filter).ToListAsync();
+            return followedPlaylists;
+        }
 
+        public async Task<List<UserDocument>?> GetFollowedUsers(string userId)
+        {
+            var filter = Builders<UserDocument>.Filter.AnyIn(p => p.UsersFollowingIds, new List<ObjectId>{new ObjectId(userId)});
+            var followedUsers = await _userCollection.Find(filter).ToListAsync();
+            return followedUsers;
+        }
+
+        
         // UPDATE
         
         public async Task FollowPlaylist(string playlistToUnfollowId, ObjectId userUnfollowingId)
