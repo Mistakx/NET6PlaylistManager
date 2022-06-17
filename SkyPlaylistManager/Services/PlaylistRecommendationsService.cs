@@ -76,7 +76,7 @@ namespace SkyPlaylistManager.Services
                 .Lookup(_playlistCollectionName, "playlistId", "_id", "playlist")
                 .Unwind("playlist")
                 .Match(Builders<BsonDocument>.Filter
-                    .Regex("title", new BsonRegularExpression("(?i)^" + playlistNameBeginningLetters)))
+                    .Regex("playlist.title", new BsonRegularExpression("(?i)^" + playlistNameBeginningLetters)))
                 .ToListAsync();
 
             var deserializedTrendingPlaylists = new List<GetTrendingPlaylistsLookupDto>();
