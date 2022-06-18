@@ -290,6 +290,8 @@ namespace SkyPlaylistManager.Controllers
                         var requestingUserFollowsPlaylist =
                             await _communityService.PlaylistAlreadyBeingFollowed(trendingPlaylistDocument.PlaylistId,
                                 requestingUserId);
+                        
+                        var playlistOwner = await _userService.GetUserById(trendingPlaylistDocument.Playlist.OwnerId);
 
                         deserializedTrendingPlaylistsInformation.Add(playlistInformationDtoBuilder.BeginBuilding(
                                 trendingPlaylistDocument.Playlist.Id,
@@ -297,7 +299,7 @@ namespace SkyPlaylistManager.Controllers
                                 trendingPlaylistDocument.Playlist.Description,
                                 trendingPlaylistDocument.Playlist.ThumbnailUrl,
                                 trendingPlaylistDocument.Playlist.ResultIds.Count)
-                            .AddViews(trendingPlaylistDocument).AddFollowing(requestingUserFollowsPlaylist)
+                            .AddViews(trendingPlaylistDocument).AddFollowing(requestingUserFollowsPlaylist).AddOwner(playlistOwner!)
                             .Build());
                     }
                 }
@@ -325,13 +327,15 @@ namespace SkyPlaylistManager.Controllers
                             await _communityService.PlaylistAlreadyBeingFollowed(allPlaylists.ElementAt(i).Id,
                                 requestingUserId);
 
+                        var playlistOwner = await _userService.GetUserById(allPlaylists.ElementAt(i).OwnerId);
+
                         var currentPlaylistInformation = playlistInformationDtoBuilder.BeginBuilding(
                                 allPlaylists.ElementAt(i).Id,
                                 allPlaylists.ElementAt(i).Title,
                                 allPlaylists.ElementAt(i).Description,
                                 allPlaylists.ElementAt(i).ThumbnailUrl, allPlaylists.ElementAt(i).ResultIds.Count)
                             .AddViews(currentPlaylistViews!)
-                            .AddFollowing(requestingUserFollowsPlaylist).Build();
+                            .AddFollowing(requestingUserFollowsPlaylist).AddOwner(playlistOwner!).Build();
 
                         deserializedTrendingPlaylistsInformation.Add(currentPlaylistInformation);
                     }

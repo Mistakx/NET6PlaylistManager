@@ -205,16 +205,17 @@ public class UserController : ControllerBase
                         {
                             if (playlistDocument.Visibility == "Public")
                             {
+                                
                                 var currentPlaylistViews =
                                     await _playlistRecommendationsService.GetPlaylistRecommendationsDocumentById(
                                         playlistDocument
                                             .Id);
-                                var playlistOwner = await _usersService.GetUserById(playlistDocument.OwnerId);
+                                
                                 orderedPlaylists.Add(playlistInformationDtoBuilder.BeginBuilding(playlistDocument.Id,
                                         playlistDocument.Title, playlistDocument.Description,
                                         playlistDocument.ThumbnailUrl,
                                         playlistDocument.ResultIds.Count).AddViews(currentPlaylistViews!)
-                                    .AddFollowing(requestingUserFollowsPlaylist).AddOwner(playlistOwner!).Build());
+                                    .AddFollowing(requestingUserFollowsPlaylist).Build());
                             }
                         }
                     }

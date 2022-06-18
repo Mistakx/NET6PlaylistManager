@@ -106,10 +106,14 @@ namespace SkyPlaylistManager.Controllers
                         var requestedPlaylistViews = await
                             _playlistRecommendationsService.GetPlaylistRecommendationsDocumentById(request.PlaylistId);
 
+                        var requestedPlaylistOwner = await
+                            _usersService.GetUserById(requestedPlaylist.OwnerId);
+
                         return playlistInformationDtoBuilder.BeginBuilding(requestedPlaylist.Id,
-                            requestedPlaylist.Title,
-                            requestedPlaylist.Description, requestedPlaylist.ThumbnailUrl,
-                            requestedPlaylist.ResultIds.Count).AddViews(requestedPlaylistViews!).Build();
+                                requestedPlaylist.Title,
+                                requestedPlaylist.Description, requestedPlaylist.ThumbnailUrl,
+                                requestedPlaylist.ResultIds.Count).AddViews(requestedPlaylistViews!)
+                            .AddOwner(requestedPlaylistOwner!).Build();
                     }
 
                     return null;
