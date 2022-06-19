@@ -9,7 +9,7 @@ public class GetTrendingPlaylistsLookupDto : PlaylistRecommendationsDocument
     [BsonElement("playlist")] public PlaylistDocument Playlist { get; set; }
 
 
-    public GetTrendingPlaylistsLookupDto(SavePlaylistViewDto request) : base(request)
+    public GetTrendingPlaylistsLookupDto(string playlistId) : base(playlistId)
     {
     }
 }

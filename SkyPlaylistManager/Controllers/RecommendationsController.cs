@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
+using SkyPlaylistManager.Controllers.Utils;
 using SkyPlaylistManager.Models.Database;
 using SkyPlaylistManager.Models.DTOs.ContentResponses;
 using SkyPlaylistManager.Services;
@@ -48,7 +49,7 @@ namespace SkyPlaylistManager.Controllers
         {
             try
             {
-                var recommendation = await _contentRecommendationsService.GetResultInRecommended(
+                var recommendation = await _contentRecommendationsService.GetContentInRecommendedCollection(
                     request.Content.Title,
                     request.Content.PlayerFactoryName, request.Content.PlatformPlayerUrl!);
 
@@ -60,7 +61,7 @@ namespace SkyPlaylistManager.Controllers
                 {
                     await _contentRecommendationsService.AddViewToResult(request.Content.Title,
                         request.Content.PlayerFactoryName, request.Content.PlatformPlayerUrl!,
-                        recommendation.WeeklyViewDates.Count, recommendation.TotalViewsAmount);
+                        recommendation.TotalViewsAmount);
                 }
 
                 return Ok("View saved");
@@ -155,15 +156,25 @@ namespace SkyPlaylistManager.Controllers
                 {
                     if (requestingUser?.Username != deserializedTrendingUser.User.Username)
                     {
+                        var userPlaylistsWeeklyViews =
+                            await _playlistRecommendationsService.GetUserWeeklyPlaylistViews(deserializedTrendingUser
+                                .User.UserPlaylistIds);
+
+                        var userPlaylistsTotalView =
+                            await _playlistRecommendationsService.GetUserTotalPlaylistViews(deserializedTrendingUser
+                                .User.UserPlaylistIds);
+
+                        var userViews =
+                            await _userRecommendationsService.GetUserRecommendationsDocumentById(
+                                deserializedTrendingUser.User.Id);
+
                         var deserializedTrendingUserIsBeingFollowedAlready =
                             await _communityService.UserAlreadyBeingFollowed(deserializedTrendingUser.User.Id,
                                 requestingUserId);
 
                         deserializedTrendingUsersInformation.Add(userProfileDtoBuilder.BeginBuilding(
-                                deserializedTrendingUser.User.Name, deserializedTrendingUser.User.Username,
-                                deserializedTrendingUser.User.ProfilePhotoUrl, deserializedTrendingUser)
-                            .AddFollowed(deserializedTrendingUserIsBeingFollowedAlready)
-                            .Build());
+                            deserializedTrendingUser.User, userPlaylistsWeeklyViews, userPlaylistsTotalView,
+                            userViews).AddFollowed(deserializedTrendingUserIsBeingFollowedAlready).Build());
                     }
                 }
 
@@ -183,16 +194,23 @@ namespace SkyPlaylistManager.Controllers
 
                 for (var i = 0; i < amountOfUsersToFind; i++)
                 {
+                    var userPlaylistsWeeklyViews =
+                        await _playlistRecommendationsService.GetUserWeeklyPlaylistViews(allUsers.ElementAt(i)
+                            .UserPlaylistIds);
+
+                    var userPlaylistsTotalView =
+                        await _playlistRecommendationsService.GetUserTotalPlaylistViews(allUsers.ElementAt(i)
+                            .UserPlaylistIds);
+
                     var currentUserViews = await
                         _userRecommendationsService.GetUserRecommendationsDocumentById(allUsers.ElementAt(i).Id);
 
                     var currentUserIsBeingFollowed = await
                         _communityService.UserAlreadyBeingFollowed(allUsers.ElementAt(i).Id, requestingUserId);
 
-                    var currentUser = userProfileDtoBuilder.BeginBuilding(allUsers.ElementAt(i).Name,
-                            allUsers.ElementAt(i).Username, allUsers.ElementAt(i).ProfilePhotoUrl, currentUserViews)
-                        .AddFollowed(currentUserIsBeingFollowed)
-                        .Build();
+                    var currentUser = userProfileDtoBuilder.BeginBuilding(allUsers.ElementAt(i),
+                        userPlaylistsWeeklyViews,
+                        userPlaylistsTotalView, currentUserViews).AddFollowed(currentUserIsBeingFollowed).Build();
 
                     if (requestingUser?.Username != currentUser.Username)
                     {
@@ -235,12 +253,11 @@ namespace SkyPlaylistManager.Controllers
 
                 if (playlistRecommendationDocument == null)
                 {
-                    await _playlistRecommendationsService.SaveNewPlaylistView(request);
+                    await _playlistRecommendationsService.SaveNewPlaylistView(request.PlaylistId);
                 }
                 else
                 {
                     await _playlistRecommendationsService.AddViewToPlaylist(request.PlaylistId,
-                        playlistRecommendationDocument.WeeklyViewDates.Count,
                         playlistRecommendationDocument.TotalViewsAmount);
                 }
 
@@ -256,19 +273,6 @@ namespace SkyPlaylistManager.Controllers
         [HttpPost("getTrendingPlaylists")]
         public async Task<List<PlaylistInformationDto>> GetTrendingPlaylists(GetTrendingPlaylistsDto request)
         {
-            bool PlaylistBelongsToRequestingUser(PlaylistDocument playlist, UserDocument user)
-            {
-                foreach (var userPlaylistId in user.UserPlaylistIds)
-                {
-                    if (new ObjectId(playlist.Id) == userPlaylistId)
-                    {
-                        return true;
-                    }
-                }
-
-                return false;
-            }
-
             try
             {
                 var requestingUserId = _sessionTokensService.GetUserIdFromToken(request.SessionToken);
@@ -284,13 +288,14 @@ namespace SkyPlaylistManager.Controllers
                 var deserializedTrendingPlaylistsInformation = new List<PlaylistInformationDto>();
                 foreach (var trendingPlaylistDocument in trendingPlaylistDocuments)
                 {
-                    if (!PlaylistBelongsToRequestingUser(trendingPlaylistDocument.Playlist, requestingUser) &&
+                    if (!RecommendationUtils.PlaylistBelongsToRequestingUser(trendingPlaylistDocument.Playlist,
+                            requestingUser) &&
                         trendingPlaylistDocument.Playlist.Visibility == "Public")
                     {
                         var requestingUserFollowsPlaylist =
                             await _communityService.PlaylistAlreadyBeingFollowed(trendingPlaylistDocument.PlaylistId,
                                 requestingUserId);
-                        
+
                         var playlistOwner = await _userService.GetUserById(trendingPlaylistDocument.Playlist.OwnerId);
 
                         deserializedTrendingPlaylistsInformation.Add(playlistInformationDtoBuilder.BeginBuilding(
@@ -299,7 +304,8 @@ namespace SkyPlaylistManager.Controllers
                                 trendingPlaylistDocument.Playlist.Description,
                                 trendingPlaylistDocument.Playlist.ThumbnailUrl,
                                 trendingPlaylistDocument.Playlist.ResultIds.Count)
-                            .AddViews(trendingPlaylistDocument).AddFollowing(requestingUserFollowsPlaylist).AddOwner(playlistOwner!)
+                            .AddViews(trendingPlaylistDocument).AddFollowing(requestingUserFollowsPlaylist)
+                            .AddOwner(playlistOwner!)
                             .Build());
                     }
                 }
@@ -312,10 +318,11 @@ namespace SkyPlaylistManager.Controllers
                 if (allPlaylists.Count > request.Limit)
                     amountOfPlaylistsToFind = request.Limit - deserializedTrendingPlaylistsInformation.Count;
                 else amountOfPlaylistsToFind = allPlaylists.Count;
-                
+
                 for (var i = 0; i < amountOfPlaylistsToFind; i++)
                 {
-                    if (!PlaylistBelongsToRequestingUser(allPlaylists.ElementAt(i), requestingUser) &&
+                    if (!RecommendationUtils.PlaylistBelongsToRequestingUser(allPlaylists.ElementAt(i),
+                            requestingUser) &&
                         allPlaylists.ElementAt(i).Visibility == "Public")
                     {
                         var currentPlaylistViews = await

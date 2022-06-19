@@ -1,9 +1,7 @@
 ﻿using Microsoft.Extensions.Options;
 using MongoDB.Bson;
-using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using SkyPlaylistManager.Models.Database;
-using SkyPlaylistManager.Models.DTOs.UserResponses;
 
 
 namespace SkyPlaylistManager.Services
@@ -25,6 +23,7 @@ namespace SkyPlaylistManager.Services
             _playlistsCollectionName = databaseSettings.Value.PlaylistsCollectionName;
         }
 
+        
         // CREATE
 
         public async Task CreateUser(UserDocument newUserDocument) =>
@@ -32,7 +31,7 @@ namespace SkyPlaylistManager.Services
 
 
         // READ
-
+        
         public async Task<UserDocument?> GetUserById(string userId) =>
             await _usersCollection.Find(u => u.Id == userId).FirstOrDefaultAsync();
 
@@ -52,22 +51,6 @@ namespace SkyPlaylistManager.Services
             return result;
         }
 
-        public async Task<bool> PlaylistBelongsToUser(string playlistId, string userId)
-        {
-            var userPlaylists = await GetUserPlaylists(userId);
-            var requestedUserDeserializedPlaylists =
-                BsonSerializer.Deserialize<GetUserPlaylistsLookupDto>(userPlaylists);
-
-            foreach (var userPlaylist in requestedUserDeserializedPlaylists.Playlists)
-            {
-                if (playlistId == userPlaylist.Id)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
 
         // UPDATE
 

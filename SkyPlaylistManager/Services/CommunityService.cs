@@ -8,7 +8,6 @@ namespace SkyPlaylistManager.Services
 {
     public class CommunityService
     {
-        private readonly IMongoCollection<UserRecommendationsDocument> _recommendationsCollection;
         private readonly IMongoCollection<PlaylistDocument> _playlistsCollection;
         private readonly IMongoCollection<UserDocument> _userCollection;
 
@@ -20,10 +19,6 @@ namespace SkyPlaylistManager.Services
             var mongoDatabase = mongoClient.GetDatabase(
                 databaseSettings.Value.DatabaseName);
 
-            _recommendationsCollection =
-                mongoDatabase.GetCollection<UserRecommendationsDocument>(databaseSettings.Value
-                    .UserRecommendationsCollectionName);
-
             _userCollection =
                 mongoDatabase.GetCollection<UserDocument>(databaseSettings.Value
                     .UsersCollectionName);
@@ -32,6 +27,9 @@ namespace SkyPlaylistManager.Services
                 .PlaylistsCollectionName);
         }
 
+
+        // READ
+        
         public async Task<List<UserDocument>> GetUsersByNameOrUsername(string username, int limitAmount)
         {
             var userDocuments = new List<UserDocument>();
@@ -53,8 +51,6 @@ namespace SkyPlaylistManager.Services
             return userDocuments.GroupBy(userDocument => userDocument.Username)
                 .Select(group => group.First()).ToList();
         }
-
-        // READ
         
         public async Task<List<PlaylistDocument>> GetPlaylistsByTitle(string title, int limitAmount)
         {
@@ -100,7 +96,6 @@ namespace SkyPlaylistManager.Services
             return followedUsers;
         }
 
-        
         // UPDATE
         
         public async Task FollowPlaylist(string playlistToUnfollowId, ObjectId userUnfollowingId)

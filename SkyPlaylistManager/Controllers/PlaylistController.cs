@@ -67,57 +67,60 @@ namespace SkyPlaylistManager.Controllers
         {
             try
             {
+                var playlistInformationDtoBuilder = new PlaylistInformationDtoBuilder();
+
                 var requestingUserId = _sessionTokensService.GetUserIdFromToken(request.SessionToken);
                 var requestingUser = await _usersService.GetUserById(requestingUserId);
                 if (requestingUser == null) return null;
-                var playlistInformationDtoBuilder = new PlaylistInformationDtoBuilder();
 
-                if (await _usersService.PlaylistBelongsToUser(request.PlaylistId, requestingUser.Id))
+                var requestedPlaylist = await _playListsService.GetPlaylistById(request.PlaylistId);
+                if (requestedPlaylist == null) return null;
+
+                // Playlist owned by requesting user
+                if (requestedPlaylist.OwnerId == requestingUser.Id)
                 {
-                    var requestedPlaylist = await _playListsService.GetPlaylistById(request.PlaylistId);
-                    if (requestedPlaylist?.Visibility == "Private")
+                    switch (requestedPlaylist.Visibility)
                     {
-                        return playlistInformationDtoBuilder.BeginBuilding(requestedPlaylist.Id,
-                            requestedPlaylist.Title,
-                            requestedPlaylist.Description, requestedPlaylist.ThumbnailUrl,
-                            requestedPlaylist.ResultIds.Count).AddVisibility("Private").Build();
-                    }
-
-                    if (requestedPlaylist?.Visibility == "Public")
-                    {
-                        var requestedPlaylistViews = await
-                            _playlistRecommendationsService.GetPlaylistRecommendationsDocumentById(request.PlaylistId);
-
-                        return playlistInformationDtoBuilder.BeginBuilding(requestedPlaylist.Id,
+                        case "Private":
+                            return playlistInformationDtoBuilder.BeginBuilding(requestedPlaylist.Id,
                                 requestedPlaylist.Title,
                                 requestedPlaylist.Description, requestedPlaylist.ThumbnailUrl,
-                                requestedPlaylist.ResultIds.Count).AddVisibility("Public")
-                            .AddViews(requestedPlaylistViews!)
-                            .Build();
-                    }
+                                requestedPlaylist.ResultIds.Count).AddVisibility("Private").Build();
+                        case "Public":
+                        {
+                            var requestedPlaylistViews = await
+                                _playlistRecommendationsService.GetPlaylistRecommendationsDocumentById(
+                                    request.PlaylistId);
 
-                    return null;
+                            return playlistInformationDtoBuilder.BeginBuilding(requestedPlaylist.Id,
+                                    requestedPlaylist.Title,
+                                    requestedPlaylist.Description, requestedPlaylist.ThumbnailUrl,
+                                    requestedPlaylist.ResultIds.Count).AddVisibility("Public")
+                                .AddViews(requestedPlaylistViews!)
+                                .Build();
+                        }
+                    }
                 }
+
+                // Playlist not owned by requesting user
                 else
                 {
-                    var requestedPlaylist = await _playListsService.GetPlaylistById(request.PlaylistId);
-                    if (requestedPlaylist?.Visibility == "Public")
-                    {
-                        var requestedPlaylistViews = await
-                            _playlistRecommendationsService.GetPlaylistRecommendationsDocumentById(request.PlaylistId);
+                    if (requestedPlaylist.Visibility != "Public") return null;
 
-                        var requestedPlaylistOwner = await
-                            _usersService.GetUserById(requestedPlaylist.OwnerId);
+                    var requestedPlaylistViews = await
+                        _playlistRecommendationsService.GetPlaylistRecommendationsDocumentById(request.PlaylistId);
 
-                        return playlistInformationDtoBuilder.BeginBuilding(requestedPlaylist.Id,
-                                requestedPlaylist.Title,
-                                requestedPlaylist.Description, requestedPlaylist.ThumbnailUrl,
-                                requestedPlaylist.ResultIds.Count).AddViews(requestedPlaylistViews!)
-                            .AddOwner(requestedPlaylistOwner!).Build();
-                    }
+                    var requestedPlaylistOwner = await
+                        _usersService.GetUserById(requestedPlaylist.OwnerId);
 
-                    return null;
+                    return playlistInformationDtoBuilder.BeginBuilding(requestedPlaylist.Id,
+                            requestedPlaylist.Title,
+                            requestedPlaylist.Description, requestedPlaylist.ThumbnailUrl,
+                            requestedPlaylist.ResultIds.Count).AddViews(requestedPlaylistViews!)
+                        .AddOwner(requestedPlaylistOwner!).Build();
                 }
+
+                return null;
             }
             catch (Exception ex)
             {
@@ -125,6 +128,7 @@ namespace SkyPlaylistManager.Controllers
                 return null;
             }
         }
+
 
         [HttpGet("getPlaylistContent/{playlistId}")] // TODO: Add security
         public async Task<List<UnknownContentResponseDto>?> GetPlaylistContent(string playlistId)
@@ -200,19 +204,14 @@ namespace SkyPlaylistManager.Controllers
                 var foundPlaylist = await _playListsService.GetPlaylistById(request.PlaylistId);
                 if (foundPlaylist == null) return BadRequest(PlaylistIdDoesntExistMessage);
 
-                if (await _playListsService.ContentIsAlreadyInPlaylist(
-                        request.PlaylistId,
-                        request.Content.Title,
-                        request.Content.PlayerFactoryName,
-                        request.Content.PlatformPlayerUrl!
-                    ))
+                if (await _playListsService.ContentIsAlreadyInPlaylist(request.PlaylistId, request.Content.Title,
+                        request.Content.PlayerFactoryName, request.Content.PlatformPlayerUrl!))
                 {
                     return BadRequest("Result already in playlist");
                 }
 
                 await _contentService.CreateContent(request.Content);
                 var generalizedResultId = ObjectId.Parse(request.Content.DatabaseId);
-
 
                 await _playListsService.InsertContentIdInPlaylist(request.PlaylistId, generalizedResultId);
                 return Ok("Successfully added to playlist");

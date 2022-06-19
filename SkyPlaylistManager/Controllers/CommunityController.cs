@@ -84,13 +84,21 @@ namespace SkyPlaylistManager.Controllers
                 var followedUsersInformation = new List<UserProfileDto>();
                 foreach (var followedUsersDocument in followedUserDocuments)
                 {
+                    var userPlaylistsWeeklyViews =
+                        await _playlistRecommendationsService.GetUserWeeklyPlaylistViews(followedUsersDocument
+                            .UserPlaylistIds);
+
+                    var userPlaylistsTotalView =
+                        await _playlistRecommendationsService.GetUserTotalPlaylistViews(followedUsersDocument
+                            .UserPlaylistIds);
+
                     var userViews =
                         await _userRecommendationsService.GetUserRecommendationsDocumentById(
                             followedUsersDocument.Id);
+
                     followedUsersInformation.Add(userProfileDtoBuilder
-                        .BeginBuilding(followedUsersDocument.Name, followedUsersDocument.Username,
-                            followedUsersDocument.ProfilePhotoUrl, userViews)
-                        .AddFollowed(true).Build());
+                        .BeginBuilding(followedUsersDocument, userPlaylistsWeeklyViews, userPlaylistsTotalView,
+                            userViews).AddFollowed(true).Build());
                 }
 
                 return followedUsersInformation;
@@ -102,6 +110,63 @@ namespace SkyPlaylistManager.Controllers
             }
         }
 
+        [HttpPost("getUsersFollowingUser")]
+        public async Task<List<UserProfileDto>> GetUsersFollowingUser(GetUsersFollowingUserDto request)
+        {
+            try
+            {
+                var requestedUser = await _usersService.GetUserByUsername(request.Username);
+                if (requestedUser == null) return new List<UserProfileDto>();
+
+                var followingUsersDocuments = new List<UserDocument?>();
+                foreach (var userId in requestedUser.UsersFollowingIds)
+                {
+                    followingUsersDocuments.Add(await _usersService.GetUserById(userId.ToString()));
+                }
+
+                var followedUsersInformation = new List<UserProfileDto>();
+                foreach (var followingUsersDocument in followingUsersDocuments)
+                {
+                    followedUsersInformation.Add(new UserProfileDto(followingUsersDocument!));
+                }
+
+                return followedUsersInformation;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.StackTrace);
+                return new List<UserProfileDto>();
+            }
+        }
+
+        [HttpPost("getUsersFollowingPlaylist")]
+        public async Task<List<UserProfileDto>> GetUsersFollowingPlaylist(GetUsersFollowingPlaylistDto request)
+        {
+            try
+            {
+                var requestedPlaylist = await _playlistsService.GetPlaylistById(request.PlaylistId);
+                if (requestedPlaylist == null) return new List<UserProfileDto>();
+
+                var followingUsersDocuments = new List<UserDocument?>();
+                foreach (var userId in requestedPlaylist.UsersFollowingIds)
+                {
+                    followingUsersDocuments.Add(await _usersService.GetUserById(userId.ToString()));
+                }
+
+                var followedUsersInformation = new List<UserProfileDto>();
+                foreach (var followingUsersDocument in followingUsersDocuments)
+                {
+                    followedUsersInformation.Add(new UserProfileDto(followingUsersDocument!));
+                }
+
+                return followedUsersInformation;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.StackTrace);
+                return new List<UserProfileDto>();
+            }
+        }
 
         // UPDATE
 

@@ -17,11 +17,11 @@ namespace SkyPlaylistManager.Models.Database
         [BsonElement("playlistId")]
         [BsonRepresentation(BsonType.ObjectId)]
         public string PlaylistId { get; set; }
-        public PlaylistRecommendationsDocument(SavePlaylistViewDto request)
+        public PlaylistRecommendationsDocument(string playlistId)
         {
             WeeklyViewDates = new List<DateTime> {DateTime.Now};
             TotalViewsAmount = 1;
-            PlaylistId = request.PlaylistId;
+            PlaylistId = playlistId;
         }
     }
 }

@@ -90,9 +90,8 @@ namespace SkyPlaylistManager.Services
 
             return false;
         }
-        
 
-        
+
         // UPDATE
         
         public async Task UpdatePlaylistInformation(EditPlaylistDto updatedPlaylist)
@@ -137,6 +136,7 @@ namespace SkyPlaylistManager.Services
 
         
         // DELETE
+        
         public async Task DeletePlaylist(string playlistId)
         {
             var deleteFilter = Builders<PlaylistDocument>.Filter.Eq(p => p.Id, playlistId);

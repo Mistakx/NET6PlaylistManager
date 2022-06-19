@@ -45,7 +45,7 @@ public class PlaylistInformationDtoBuilder
 
     public PlaylistInformationDtoBuilder AddOwner(UserDocument owner)
     {
-        _playlistInformationDto.Owner = new UserProfileDto(owner.Name, owner.Username, owner.ProfilePhotoUrl, null);
+        _playlistInformationDto.Owner = new UserProfileDto(owner);
         return this;
     }
 

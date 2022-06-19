@@ -22,22 +22,41 @@ namespace SkyPlaylistManager.Services
             _recommendationsCollection =
                 mongoDatabase.GetCollection<ContentRecommendationsDocument>(databaseSettings.Value
                     .ContentRecommendationsCollectionName);
-
         }
 
-        private async void DeleteOldRecommendations()
+        
+        // CREATE
+
+        public async Task SaveView(SaveContentViewDto request)
         {
-            var recommendationsWithOldDatesFilter =
-                Builders<ContentRecommendationsDocument>.Filter.ElemMatch<BsonValue>(
-                    "viewDates",
-                    new BsonDocument("$lt", DateTime.Now.AddDays(-7)));
-
-            var pullOldDates =
-                Builders<ContentRecommendationsDocument>.Update.Pull("viewDates",
-                    new BsonDocument("$lt", DateTime.Now.AddDays(-7)));
-
-            await _recommendationsCollection.UpdateOneAsync(recommendationsWithOldDatesFilter, pullOldDates);
+            var recommendationsDocument = new ContentRecommendationsDocument(request);
+            await _recommendationsCollection.InsertOneAsync(recommendationsDocument);
         }
+
+
+        // READ
+
+        public async Task<List<ContentRecommendationsDocument>?> GetTrendingContent(int limit)
+        {
+            var trendingContentList = await _recommendationsCollection.Find(p => true).ToListAsync();
+            trendingContentList.Sort((x, y) => y.WeeklyViewDates.Count.CompareTo(x.WeeklyViewDates.Count));
+            return trendingContentList.Take(limit).ToList();
+        }
+
+        public async Task<ContentRecommendationsDocument?> GetContentInRecommendedCollection(string title, string playerFactoryName,
+            string platformPlayerUrl)
+        {
+            var builder = Builders<ContentRecommendationsDocument>.Filter;
+            var filter = builder.Eq(p => p.GeneralizedResult.Title, title) &
+                         builder.Eq(p => p.GeneralizedResult.PlayerFactoryName, playerFactoryName) &
+                         builder.Eq(p => p.GeneralizedResult.PlatformPlayerUrl, platformPlayerUrl);
+
+            var recommendation = await _recommendationsCollection.Find(filter).FirstOrDefaultAsync();
+            return recommendation;
+        }
+
+
+        // UPDATE
 
         public async void UpdateRecommendationsWeeklyViews()
         {
@@ -64,42 +83,8 @@ namespace SkyPlaylistManager.Services
             }
         }
 
-        public async Task<List<ContentRecommendationsDocument>?> GetTrendingContent(int limit)
-        {
-            var trendingContentList = await _recommendationsCollection.Find(p => true).ToListAsync();
-            trendingContentList.Sort((x, y) => y.WeeklyViewDates.Count.CompareTo(x.WeeklyViewDates.Count));
-            return trendingContentList.Take(limit).ToList();
-        }
-
-
-        public async Task SaveView(SaveContentViewDto request)
-        {
-            var recommendationsDocument = new ContentRecommendationsDocument(request);
-            await _recommendationsCollection.InsertOneAsync(recommendationsDocument);
-        }
-
-        public async Task<ContentRecommendationsDocument?> GetResultInRecommended(
-            string title,
-            string playerFactoryName,
-            string platformPlayerUrl)
-        {
-            var builder = Builders<ContentRecommendationsDocument>.Filter;
-            var filter = builder.Eq(p => p.GeneralizedResult.Title, title) &
-                         builder.Eq(p => p.GeneralizedResult.PlayerFactoryName, playerFactoryName) &
-                         builder.Eq(p => p.GeneralizedResult.PlatformPlayerUrl, platformPlayerUrl);
-
-            var recommendation = await _recommendationsCollection.Find(filter).FirstOrDefaultAsync();
-
-            return recommendation;
-        }
-
-        public async Task AddViewToResult(
-            string title,
-            string playerFactoryName,
-            string platformPlayerUrl,
-            int currentWeeklyViewAmount,
-            int totalViewAmount
-        )
+        public async Task AddViewToResult(string title, string playerFactoryName, string platformPlayerUrl,
+            int totalViewAmount)
         {
             var builder = Builders<ContentRecommendationsDocument>.Filter;
             var filter = builder.Eq(p => p.GeneralizedResult.Title, title) &
@@ -112,25 +97,21 @@ namespace SkyPlaylistManager.Services
             await _recommendationsCollection.UpdateOneAsync(filter, weeklyViewsUpdate);
         }
 
-        public async Task<BsonDocument?> GetViews(string playerFactoryName,
-            string platformId,
-            string? platformPlayerUrl)
+
+        // DELETE
+
+        private async void DeleteOldRecommendations()
         {
-            var filter =
-                Builders<ContentRecommendationsDocument>.Filter.Eq(p => p.GeneralizedResult.PlatformId, platformId) &
-                Builders<ContentRecommendationsDocument>.Filter.Eq(p => p.GeneralizedResult.PlayerFactoryName,
-                    playerFactoryName) &
-                Builders<ContentRecommendationsDocument>.Filter.Eq(p => p.GeneralizedResult.PlatformPlayerUrl,
-                    platformPlayerUrl);
+            var recommendationsWithOldDatesFilter =
+                Builders<ContentRecommendationsDocument>.Filter.ElemMatch<BsonValue>(
+                    "viewDates",
+                    new BsonDocument("$lt", DateTime.Now.AddDays(-7)));
 
-            var projection = Builders<ContentRecommendationsDocument>.Projection
-                .Include("weeklyViewsAmount")
-                .Include("totalViewsAmount")
-                .Exclude("_id");
+            var pullOldDates =
+                Builders<ContentRecommendationsDocument>.Update.Pull("viewDates",
+                    new BsonDocument("$lt", DateTime.Now.AddDays(-7)));
 
-            var result = await _recommendationsCollection.Find(filter).Project(projection).FirstOrDefaultAsync();
-
-            return result;
+            await _recommendationsCollection.UpdateOneAsync(recommendationsWithOldDatesFilter, pullOldDates);
         }
     }
 }

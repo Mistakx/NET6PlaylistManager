@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using SkyPlaylistManager.Models.Database;
-using SkyPlaylistManager.Models.DTOs.PlaylistRequests;
 
 namespace SkyPlaylistManager.Services
 {
@@ -20,6 +19,9 @@ namespace SkyPlaylistManager.Services
             _generalizedResultsCollection = mongoDatabase.GetCollection<UnknownContentDocumentDto>(databaseSettings.Value.GeneralizedResultsCollectionName);
         }
 
+        
+        // CREATE
+        
         public async Task CreateContent(UnknownContentDocumentDto generalizedResult) =>
             await _generalizedResultsCollection.InsertOneAsync(generalizedResult);
         

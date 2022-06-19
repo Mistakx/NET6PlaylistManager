@@ -12,6 +12,8 @@ namespace SkyPlaylistManager.Services
     public class PlaylistRecommendationsService
     {
         private readonly IMongoCollection<PlaylistRecommendationsDocument> _recommendationsCollection;
+        private readonly IMongoCollection<PlaylistDocument> _playlistsCollection;
+
         private readonly string _playlistCollectionName;
 
         public PlaylistRecommendationsService(IOptions<DatabaseSettings> databaseSettings)
@@ -29,19 +31,83 @@ namespace SkyPlaylistManager.Services
             _playlistCollectionName = databaseSettings.Value.PlaylistsCollectionName;
         }
 
-        private async void DeleteOldRecommendations()
+
+        // CREATE
+
+        public async Task SaveNewPlaylistView(string playlistId)
         {
-            var recommendationsWithOldDatesFilter =
-                Builders<PlaylistRecommendationsDocument>.Filter.ElemMatch<BsonValue>(
-                    "viewDates",
-                    new BsonDocument("$lt", DateTime.Now.AddDays(-7)));
-
-            var pullOldDates =
-                Builders<PlaylistRecommendationsDocument>.Update.Pull("viewDates",
-                    new BsonDocument("$lt", DateTime.Now.AddDays(-7)));
-
-            await _recommendationsCollection.UpdateOneAsync(recommendationsWithOldDatesFilter, pullOldDates);
+            var recommendationsDocument = new PlaylistRecommendationsDocument(playlistId);
+            await _recommendationsCollection.InsertOneAsync(recommendationsDocument);
         }
+
+
+        // READ
+
+        public async Task<List<GetTrendingPlaylistsLookupDto>?> GetTrendingPlaylists(
+            string playlistNameBeginningLetters, int resultsLimit)
+        {
+            var trendingPlaylists = await _recommendationsCollection.Aggregate()
+                .Lookup(_playlistCollectionName, "playlistId", "_id", "playlist")
+                .Unwind("playlist")
+                .Match(Builders<BsonDocument>.Filter
+                    .Regex("playlist.title", new BsonRegularExpression("(?i)^" + playlistNameBeginningLetters)))
+                .ToListAsync();
+
+            var deserializedTrendingPlaylists = new List<GetTrendingPlaylistsLookupDto>();
+            foreach (var trendingPlaylist in trendingPlaylists)
+            {
+                var deserializedTrendingPlaylist =
+                    BsonSerializer.Deserialize<GetTrendingPlaylistsLookupDto>(trendingPlaylist);
+                deserializedTrendingPlaylists.Add(deserializedTrendingPlaylist);
+            }
+
+            deserializedTrendingPlaylists.Sort((x, y) => y.WeeklyViewDates.Count.CompareTo(x.WeeklyViewDates.Count));
+            return deserializedTrendingPlaylists.Take(resultsLimit).ToList();
+        }
+
+        public async Task<PlaylistRecommendationsDocument?> GetPlaylistRecommendationsDocumentById(string playlistId)
+        {
+            var filter = Builders<PlaylistRecommendationsDocument>.Filter.Eq(p => p.PlaylistId, playlistId);
+
+            var result = await _recommendationsCollection.Find(filter).FirstOrDefaultAsync();
+
+            return result;
+        }
+
+        public async Task<int> GetUserTotalPlaylistViews(List<ObjectId> userPlaylistIds)
+        {
+            int totalViews = 0;
+
+            foreach (var playlistId in userPlaylistIds)
+            {
+                var playlist = await GetPlaylistRecommendationsDocumentById(playlistId.ToString());
+                if (playlist != null)
+                {
+                    totalViews += playlist.TotalViewsAmount;
+                }
+            }
+
+            return totalViews;
+        }
+
+        public async Task<int> GetUserWeeklyPlaylistViews(List<ObjectId> userPlaylistIds)
+        {
+            int totalViews = 0;
+
+            foreach (var playlistId in userPlaylistIds)
+            {
+                var playlist = await GetPlaylistRecommendationsDocumentById(playlistId.ToString());
+                if (playlist != null)
+                {
+                    totalViews += playlist.WeeklyViewDates.Count;
+                }
+            }
+
+            return totalViews;
+        }
+
+        
+        // UPDATE
 
         public async void UpdateRecommendationsWeeklyViews()
         {
@@ -67,41 +133,8 @@ namespace SkyPlaylistManager.Services
                         recommendationWithNewDates.WeeklyViewDates.Count));
             }
         }
-
-        public async Task<List<GetTrendingPlaylistsLookupDto>?> GetTrendingPlaylists(
-            string playlistNameBeginningLetters,
-            int resultsLimit)
-        {
-            var trendingPlaylists = await _recommendationsCollection.Aggregate()
-                .Lookup(_playlistCollectionName, "playlistId", "_id", "playlist")
-                .Unwind("playlist")
-                .Match(Builders<BsonDocument>.Filter
-                    .Regex("playlist.title", new BsonRegularExpression("(?i)^" + playlistNameBeginningLetters)))
-                .ToListAsync();
-
-            var deserializedTrendingPlaylists = new List<GetTrendingPlaylistsLookupDto>();
-            foreach (var trendingPlaylist in trendingPlaylists)
-            {
-                var deserializedTrendingPlaylist =
-                    BsonSerializer.Deserialize<GetTrendingPlaylistsLookupDto>(trendingPlaylist);
-                deserializedTrendingPlaylists.Add(deserializedTrendingPlaylist);
-            }
-
-            deserializedTrendingPlaylists.Sort((x, y) => y.WeeklyViewDates.Count.CompareTo(x.WeeklyViewDates.Count));
-            return deserializedTrendingPlaylists.Take(resultsLimit).ToList();
-        }
-
-
-        public async Task SaveNewPlaylistView(SavePlaylistViewDto request)
-        {
-            var recommendationsDocument = new PlaylistRecommendationsDocument(request);
-            await _recommendationsCollection.InsertOneAsync(recommendationsDocument);
-        }
-
-        public async Task AddViewToPlaylist(string playlistId,
-            int currentWeeklyViewAmount,
-            int totalViewAmount
-        )
+        
+        public async Task AddViewToPlaylist(string playlistId, int totalViewAmount)
         {
             var filter = Builders<PlaylistRecommendationsDocument>.Filter.Eq(p => p.PlaylistId, playlistId);
 
@@ -111,13 +144,21 @@ namespace SkyPlaylistManager.Services
             await _recommendationsCollection.UpdateOneAsync(filter, weeklyViewsUpdate);
         }
 
-        public async Task<PlaylistRecommendationsDocument?> GetPlaylistRecommendationsDocumentById(string playlistId)
+        
+        // DELETE
+
+        private async void DeleteOldRecommendations()
         {
-            var filter = Builders<PlaylistRecommendationsDocument>.Filter.Eq(p => p.PlaylistId, playlistId);
+            var recommendationsWithOldDatesFilter =
+                Builders<PlaylistRecommendationsDocument>.Filter.ElemMatch<BsonValue>(
+                    "viewDates",
+                    new BsonDocument("$lt", DateTime.Now.AddDays(-7)));
 
-            var result = await _recommendationsCollection.Find(filter).FirstOrDefaultAsync();
+            var pullOldDates =
+                Builders<PlaylistRecommendationsDocument>.Update.Pull("viewDates",
+                    new BsonDocument("$lt", DateTime.Now.AddDays(-7)));
 
-            return result;
+            await _recommendationsCollection.UpdateOneAsync(recommendationsWithOldDatesFilter, pullOldDates);
         }
     }
 }

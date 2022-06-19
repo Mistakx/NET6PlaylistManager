@@ -123,22 +123,27 @@ public class UserController : ControllerBase
             var requestedUser = await _usersService.GetUserByUsername(request.Username);
             if (requestedUser == null) return null;
 
-            var requestedUserRecommendations =
-                await _userRecommendationsService.GetUserRecommendationsDocumentById(requestedUser.Id!);
+            var userPlaylistsWeeklyViews =
+                await _playlistRecommendationsService.GetUserWeeklyPlaylistViews(requestedUser.UserPlaylistIds);
+
+            var userPlaylistsTotalView =
+                await _playlistRecommendationsService.GetUserTotalPlaylistViews(requestedUser.UserPlaylistIds);
+
+            var userViews =
+                await _userRecommendationsService.GetUserRecommendationsDocumentById(requestedUser.Id);
 
             if (requestedUser.Username == requestingUser.Username)
             {
-                return userProfileDtoBuilder.BeginBuilding(
-                    requestedUser.Name, requestedUser.Username,
-                    requestedUser.ProfilePhotoUrl, requestedUserRecommendations).AddEmail(requestedUser.Email).Build();
+                return userProfileDtoBuilder.BeginBuilding(requestedUser, userPlaylistsWeeklyViews,
+                    userPlaylistsTotalView, userViews).AddEmail(requestedUser.Email).Build();
             }
 
             var userBeingFollowed =
                 await _communityService.UserAlreadyBeingFollowed(requestedUser.Id, requestingUserId);
 
             return userProfileDtoBuilder.BeginBuilding(
-                requestedUser.Name, requestedUser.Username, requestedUser.ProfilePhotoUrl,
-                requestedUserRecommendations).AddFollowed(userBeingFollowed).Build();
+                    requestedUser, userPlaylistsWeeklyViews, userPlaylistsTotalView, userViews)
+                .AddFollowed(userBeingFollowed).Build();
         }
         catch (Exception ex)
         {
@@ -205,12 +210,11 @@ public class UserController : ControllerBase
                         {
                             if (playlistDocument.Visibility == "Public")
                             {
-                                
                                 var currentPlaylistViews =
                                     await _playlistRecommendationsService.GetPlaylistRecommendationsDocumentById(
                                         playlistDocument
                                             .Id);
-                                
+
                                 orderedPlaylists.Add(playlistInformationDtoBuilder.BeginBuilding(playlistDocument.Id,
                                         playlistDocument.Title, playlistDocument.Description,
                                         playlistDocument.ThumbnailUrl,
