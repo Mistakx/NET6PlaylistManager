@@ -129,21 +129,24 @@ public class UserController : ControllerBase
             var userPlaylistsTotalView =
                 await _playlistRecommendationsService.GetUserTotalPlaylistViews(requestedUser.UserPlaylistIds);
 
+            var userPlaylistsItemsAmount =
+                await _playlistsService.GetTotalContentInPlaylists(requestedUser.UserPlaylistIds);
+
             var userViews =
                 await _userRecommendationsService.GetUserRecommendationsDocumentById(requestedUser.Id);
 
             if (requestedUser.Username == requestingUser.Username)
             {
                 return userProfileDtoBuilder.BeginBuilding(requestedUser, userPlaylistsWeeklyViews,
-                    userPlaylistsTotalView, userViews).AddEmail(requestedUser.Email).Build();
+                    userPlaylistsTotalView, userPlaylistsItemsAmount, userViews).AddEmail(requestedUser.Email).Build();
             }
 
             var userBeingFollowed =
                 await _communityService.UserAlreadyBeingFollowed(requestedUser.Id, requestingUserId);
 
             return userProfileDtoBuilder.BeginBuilding(
-                    requestedUser, userPlaylistsWeeklyViews, userPlaylistsTotalView, userViews)
-                .AddFollowed(userBeingFollowed).Build();
+                requestedUser, userPlaylistsWeeklyViews, userPlaylistsTotalView, userPlaylistsItemsAmount,
+                userViews).AddFollowed(userBeingFollowed).Build();
         }
         catch (Exception ex)
         {

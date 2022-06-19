@@ -90,6 +90,22 @@ namespace SkyPlaylistManager.Services
 
             return false;
         }
+        
+        public async Task<int> GetTotalContentInPlaylists(List<ObjectId> playlistIds)
+        {
+            int totalItems = 0;
+
+            foreach (var playlistId in playlistIds)
+            {
+                var playlist = await GetPlaylistById(playlistId.ToString());
+                if (playlist != null)
+                {
+                    totalItems += playlist.ResultIds.Count;
+                }
+            }
+
+            return totalItems;
+        }
 
 
         // UPDATE

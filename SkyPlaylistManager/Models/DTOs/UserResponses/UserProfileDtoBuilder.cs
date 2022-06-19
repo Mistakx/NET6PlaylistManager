@@ -7,10 +7,11 @@ public class UserProfileDtoBuilder
     private UserProfileDto _userProfileDto;
 
     public UserProfileDtoBuilder BeginBuilding(UserDocument user, int playlistsWeeklyViewsAmount,
-        int playlistsTotalViewsAmount, UserRecommendationsDocument? userViews)
+        int playlistsTotalViewsAmount, int playlistsContentAmount, UserRecommendationsDocument? userViews)
     {
         _userProfileDto =
-            new UserProfileDto(user, playlistsWeeklyViewsAmount, playlistsTotalViewsAmount, userViews);
+            new UserProfileDto(user, playlistsWeeklyViewsAmount, playlistsTotalViewsAmount, playlistsContentAmount,
+                userViews);
         return this;
     }
 

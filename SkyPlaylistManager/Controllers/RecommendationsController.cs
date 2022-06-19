@@ -164,6 +164,10 @@ namespace SkyPlaylistManager.Controllers
                             await _playlistRecommendationsService.GetUserTotalPlaylistViews(deserializedTrendingUser
                                 .User.UserPlaylistIds);
 
+                        var userPlaylistsItemsAmount =
+                            await _playlistsService.GetTotalContentInPlaylists(deserializedTrendingUser.User
+                                .UserPlaylistIds);
+
                         var userViews =
                             await _userRecommendationsService.GetUserRecommendationsDocumentById(
                                 deserializedTrendingUser.User.Id);
@@ -173,8 +177,9 @@ namespace SkyPlaylistManager.Controllers
                                 requestingUserId);
 
                         deserializedTrendingUsersInformation.Add(userProfileDtoBuilder.BeginBuilding(
-                            deserializedTrendingUser.User, userPlaylistsWeeklyViews, userPlaylistsTotalView,
-                            userViews).AddFollowed(deserializedTrendingUserIsBeingFollowedAlready).Build());
+                                deserializedTrendingUser.User, userPlaylistsWeeklyViews, userPlaylistsTotalView,
+                                userPlaylistsItemsAmount, userViews)
+                            .AddFollowed(deserializedTrendingUserIsBeingFollowedAlready).Build());
                     }
                 }
 
@@ -202,6 +207,9 @@ namespace SkyPlaylistManager.Controllers
                         await _playlistRecommendationsService.GetUserTotalPlaylistViews(allUsers.ElementAt(i)
                             .UserPlaylistIds);
 
+                    var userPlaylistsItemsAmount =
+                        await _playlistsService.GetTotalContentInPlaylists(allUsers.ElementAt(i).UserPlaylistIds);
+
                     var currentUserViews = await
                         _userRecommendationsService.GetUserRecommendationsDocumentById(allUsers.ElementAt(i).Id);
 
@@ -209,8 +217,9 @@ namespace SkyPlaylistManager.Controllers
                         _communityService.UserAlreadyBeingFollowed(allUsers.ElementAt(i).Id, requestingUserId);
 
                     var currentUser = userProfileDtoBuilder.BeginBuilding(allUsers.ElementAt(i),
-                        userPlaylistsWeeklyViews,
-                        userPlaylistsTotalView, currentUserViews).AddFollowed(currentUserIsBeingFollowed).Build();
+                            userPlaylistsWeeklyViews, userPlaylistsTotalView, userPlaylistsItemsAmount,
+                            currentUserViews)
+                        .AddFollowed(currentUserIsBeingFollowed).Build();
 
                     if (requestingUser?.Username != currentUser.Username)
                     {

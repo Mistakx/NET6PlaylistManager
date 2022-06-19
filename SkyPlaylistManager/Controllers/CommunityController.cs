@@ -92,13 +92,16 @@ namespace SkyPlaylistManager.Controllers
                         await _playlistRecommendationsService.GetUserTotalPlaylistViews(followedUsersDocument
                             .UserPlaylistIds);
 
+                    var userPlaylistsItemsAmount =
+                        await _playlistsService.GetTotalContentInPlaylists(followedUsersDocument.UserPlaylistIds);
+                    
                     var userViews =
                         await _userRecommendationsService.GetUserRecommendationsDocumentById(
                             followedUsersDocument.Id);
 
                     followedUsersInformation.Add(userProfileDtoBuilder
                         .BeginBuilding(followedUsersDocument, userPlaylistsWeeklyViews, userPlaylistsTotalView,
-                            userViews).AddFollowed(true).Build());
+                            userPlaylistsItemsAmount, userViews).AddFollowed(true).Build());
                 }
 
                 return followedUsersInformation;
