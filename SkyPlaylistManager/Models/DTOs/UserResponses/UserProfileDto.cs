@@ -18,12 +18,14 @@ public class UserProfileDto
     public int? TotalViewsAmount { get; }
 
     public int? FollowersAmount { get; }
+    public int? FollowingUsersAmount { get; }
+    public int? FollowingPlaylistsAmount { get; }
 
     public bool? Followed { get; set; }
 
 
     public UserProfileDto(UserDocument user, int playlistsWeeklyViewsAmount, int playlistsTotalViewsAmount,
-        int playlistsContentAmount, UserRecommendationsDocument? userViews)
+        int playlistsContentAmount, int followersAmount, UserRecommendationsDocument? userViews)
     {
         Name = user.Name;
         Username = user.Username;
@@ -34,7 +36,9 @@ public class UserProfileDto
         PlaylistsTotalViewsAmount = playlistsTotalViewsAmount;
         PlaylistsContentAmount = playlistsContentAmount;
 
-        FollowersAmount = user.UsersFollowingIds.Count;
+        FollowersAmount = followersAmount;
+        FollowingUsersAmount = user.FollowingUsersIds.Count;
+        FollowingPlaylistsAmount = user.FollowingPlaylistsIds.Count;
 
         if (userViews != null)
         {
@@ -50,7 +54,7 @@ public class UserProfileDto
 
     public UserProfileDto(UserDocument user)
     {
-        Name = user.Name;
+        Username = user.Username;
         ProfilePhotoUrl = user.ProfilePhotoUrl;
     }
 }

@@ -49,6 +49,12 @@ public class PlaylistInformationDtoBuilder
         return this;
     }
 
+    public PlaylistInformationDtoBuilder AddFollowersAmount(int followersAmount)
+    {
+        _playlistInformationDto.FollowersAmount = followersAmount;
+        return this;
+    }
+
     public PlaylistInformationDto Build()
     {
         return _playlistInformationDto;

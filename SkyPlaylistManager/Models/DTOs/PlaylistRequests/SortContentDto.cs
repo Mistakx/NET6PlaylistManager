@@ -1,6 +1,6 @@
 ﻿namespace SkyPlaylistManager.Models.DTOs.PlaylistRequests;
 
-public class SortPlaylistResultsDto
+public class SortContentDto
 {
     public string PlaylistId { get; set; }
     public string GeneralizedResultDatabaseId { get; set; }

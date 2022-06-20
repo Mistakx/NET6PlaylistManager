@@ -132,13 +132,16 @@ public class UserController : ControllerBase
             var userPlaylistsItemsAmount =
                 await _playlistsService.GetTotalContentInPlaylists(requestedUser.UserPlaylistIds);
 
+            var userFollowersAmount = await _communityService.GetUserFollowersAmount(requestedUser.Id);
+
             var userViews =
                 await _userRecommendationsService.GetUserRecommendationsDocumentById(requestedUser.Id);
 
             if (requestedUser.Username == requestingUser.Username)
             {
                 return userProfileDtoBuilder.BeginBuilding(requestedUser, userPlaylistsWeeklyViews,
-                    userPlaylistsTotalView, userPlaylistsItemsAmount, userViews).AddEmail(requestedUser.Email).Build();
+                        userPlaylistsTotalView, userPlaylistsItemsAmount, userFollowersAmount, userViews)
+                    .AddEmail(requestedUser.Email).Build();
             }
 
             var userBeingFollowed =
@@ -146,7 +149,7 @@ public class UserController : ControllerBase
 
             return userProfileDtoBuilder.BeginBuilding(
                 requestedUser, userPlaylistsWeeklyViews, userPlaylistsTotalView, userPlaylistsItemsAmount,
-                userViews).AddFollowed(userBeingFollowed).Build();
+                userFollowersAmount, userViews).AddFollowed(userBeingFollowed).Build();
         }
         catch (Exception ex)
         {
@@ -156,17 +159,17 @@ public class UserController : ControllerBase
     }
 
     [HttpPost("getPlaylists/")]
-    public async Task<dynamic> GetUserPlaylists(GetUserPlaylistsDto request)
+    public async Task<List<PlaylistInformationDto>> GetUserPlaylists(GetUserPlaylistsDto request)
     {
         try
         {
             var requestingUserId = _sessionTokensService.GetUserIdFromToken(request.SessionToken);
             var requestingUser = await _usersService.GetUserById(requestingUserId);
-            if (requestingUser == null) return BadRequest("Invalid session token");
+            if (requestingUser == null) return new List<PlaylistInformationDto>();
 
             var playlistInformationDtoBuilder = new PlaylistInformationDtoBuilder();
             var requestedUser = await _usersService.GetUserByUsername(request.Username);
-            if (requestedUser == null) BadRequest("User not found");
+            if (requestedUser == null) return new List<PlaylistInformationDto>();
 
             var requestedUserPlaylists = await _usersService.GetUserPlaylists(requestedUser.Id);
             var requestedUserDeserializedPlaylists =
@@ -234,7 +237,7 @@ public class UserController : ControllerBase
         catch (Exception ex)
         {
             Console.WriteLine(ex.StackTrace);
-            return null;
+            return new List<PlaylistInformationDto>();
         }
     }
 

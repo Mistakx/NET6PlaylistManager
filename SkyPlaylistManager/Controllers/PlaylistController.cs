@@ -171,7 +171,7 @@ namespace SkyPlaylistManager.Controllers
         // UPDATE
 
         [HttpPost("sortContent")]
-        public async Task<IActionResult> SortResult(SortPlaylistResultsDto request)
+        public async Task<IActionResult> SortResult(SortContentDto request)
         {
             try
             {

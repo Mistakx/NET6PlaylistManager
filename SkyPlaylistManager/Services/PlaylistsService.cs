@@ -120,16 +120,16 @@ namespace SkyPlaylistManager.Services
             await _playlistsCollection.UpdateOneAsync(filter, updated);
         }
 
-        public async Task InsertContentInSpecificPlaylistPosition(SortPlaylistResultsDto newSortPlaylistResults)
+        public async Task InsertContentInSpecificPlaylistPosition(SortContentDto newSortContent)
         {
             var resultIds = new List<ObjectId>(); // The method "PushEach" only works with lists
-            var generalizedResultId = ObjectId.Parse(newSortPlaylistResults.GeneralizedResultDatabaseId);
+            var generalizedResultId = ObjectId.Parse(newSortContent.GeneralizedResultDatabaseId);
             resultIds.Add(generalizedResultId);
 
-            var filter = Builders<PlaylistDocument>.Filter.Eq(p => p.Id, newSortPlaylistResults.PlaylistId);
+            var filter = Builders<PlaylistDocument>.Filter.Eq(p => p.Id, newSortContent.PlaylistId);
             var update =
                 Builders<PlaylistDocument>.Update.PushEach("resultIds", resultIds,
-                    position: newSortPlaylistResults.NewIndex);
+                    position: newSortContent.NewIndex);
 
             await _playlistsCollection.UpdateOneAsync(filter, update);
         }

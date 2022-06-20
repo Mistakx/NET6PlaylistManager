@@ -168,6 +168,9 @@ namespace SkyPlaylistManager.Controllers
                             await _playlistsService.GetTotalContentInPlaylists(deserializedTrendingUser.User
                                 .UserPlaylistIds);
 
+                        var userFollowersAmount =
+                            await _communityService.GetUserFollowersAmount(deserializedTrendingUser.User.Id);
+
                         var userViews =
                             await _userRecommendationsService.GetUserRecommendationsDocumentById(
                                 deserializedTrendingUser.User.Id);
@@ -178,7 +181,7 @@ namespace SkyPlaylistManager.Controllers
 
                         deserializedTrendingUsersInformation.Add(userProfileDtoBuilder.BeginBuilding(
                                 deserializedTrendingUser.User, userPlaylistsWeeklyViews, userPlaylistsTotalView,
-                                userPlaylistsItemsAmount, userViews)
+                                userPlaylistsItemsAmount, userFollowersAmount, userViews)
                             .AddFollowed(deserializedTrendingUserIsBeingFollowedAlready).Build());
                     }
                 }
@@ -210,6 +213,8 @@ namespace SkyPlaylistManager.Controllers
                     var userPlaylistsItemsAmount =
                         await _playlistsService.GetTotalContentInPlaylists(allUsers.ElementAt(i).UserPlaylistIds);
 
+                    var userFollowersAmount = await _communityService.GetUserFollowersAmount(allUsers.ElementAt(i).Id);
+
                     var currentUserViews = await
                         _userRecommendationsService.GetUserRecommendationsDocumentById(allUsers.ElementAt(i).Id);
 
@@ -218,7 +223,7 @@ namespace SkyPlaylistManager.Controllers
 
                     var currentUser = userProfileDtoBuilder.BeginBuilding(allUsers.ElementAt(i),
                             userPlaylistsWeeklyViews, userPlaylistsTotalView, userPlaylistsItemsAmount,
-                            currentUserViews)
+                            userFollowersAmount, currentUserViews)
                         .AddFollowed(currentUserIsBeingFollowed).Build();
 
                     if (requestingUser?.Username != currentUser.Username)

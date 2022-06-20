@@ -9,6 +9,7 @@ namespace SkyPlaylistManager.Services
     public class UsersService
     {
         private readonly IMongoCollection<UserDocument> _usersCollection;
+        private readonly IMongoCollection<PlaylistDocument> _playlistsCollection;
         private readonly string _playlistsCollectionName;
 
         public UsersService(IOptions<DatabaseSettings> databaseSettings)
@@ -20,10 +21,13 @@ namespace SkyPlaylistManager.Services
                 databaseSettings.Value.DatabaseName);
 
             _usersCollection = mongoDatabase.GetCollection<UserDocument>(databaseSettings.Value.UsersCollectionName);
+            _playlistsCollection =
+                mongoDatabase.GetCollection<PlaylistDocument>(databaseSettings.Value.PlaylistsCollectionName);
+
             _playlistsCollectionName = databaseSettings.Value.PlaylistsCollectionName;
         }
 
-        
+
         // CREATE
 
         public async Task CreateUser(UserDocument newUserDocument) =>
@@ -31,7 +35,7 @@ namespace SkyPlaylistManager.Services
 
 
         // READ
-        
+
         public async Task<UserDocument?> GetUserById(string userId) =>
             await _usersCollection.Find(u => u.Id == userId).FirstOrDefaultAsync();
 
@@ -118,5 +122,7 @@ namespace SkyPlaylistManager.Services
 
             await _usersCollection.UpdateOneAsync(filter, update);
         }
+
+
     }
 }
