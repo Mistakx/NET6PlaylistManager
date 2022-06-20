@@ -145,7 +145,7 @@ public class UserController : ControllerBase
             }
 
             var userBeingFollowed =
-                await _communityService.UserAlreadyBeingFollowed(requestedUser.Id, requestingUserId);
+                await _communityService.UserAlreadyBeingFollowed(requestingUserId, requestedUser.Id);
 
             return userProfileDtoBuilder.BeginBuilding(
                 requestedUser, userPlaylistsWeeklyViews, userPlaylistsTotalView, userPlaylistsItemsAmount,

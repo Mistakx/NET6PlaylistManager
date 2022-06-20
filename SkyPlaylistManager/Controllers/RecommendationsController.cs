@@ -176,8 +176,7 @@ namespace SkyPlaylistManager.Controllers
                                 deserializedTrendingUser.User.Id);
 
                         var deserializedTrendingUserIsBeingFollowedAlready =
-                            await _communityService.UserAlreadyBeingFollowed(deserializedTrendingUser.User.Id,
-                                requestingUserId);
+                            await _communityService.UserAlreadyBeingFollowed(requestingUserId, deserializedTrendingUser.User.Id);
 
                         deserializedTrendingUsersInformation.Add(userProfileDtoBuilder.BeginBuilding(
                                 deserializedTrendingUser.User, userPlaylistsWeeklyViews, userPlaylistsTotalView,
@@ -219,7 +218,7 @@ namespace SkyPlaylistManager.Controllers
                         _userRecommendationsService.GetUserRecommendationsDocumentById(allUsers.ElementAt(i).Id);
 
                     var currentUserIsBeingFollowed = await
-                        _communityService.UserAlreadyBeingFollowed(allUsers.ElementAt(i).Id, requestingUserId);
+                        _communityService.UserAlreadyBeingFollowed(requestingUserId, allUsers.ElementAt(i).Id);
 
                     var currentUser = userProfileDtoBuilder.BeginBuilding(allUsers.ElementAt(i),
                             userPlaylistsWeeklyViews, userPlaylistsTotalView, userPlaylistsItemsAmount,

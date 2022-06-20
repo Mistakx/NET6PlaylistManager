@@ -182,13 +182,13 @@ namespace SkyPlaylistManager.Controllers
 
                 if (await _communityService.PlaylistAlreadyBeingFollowed(request.PlaylistId, requestingUserId))
                 {
-                    await _communityService.UnfollowPlaylist(requestedPlaylist.Id, new ObjectId(requestingUserId));
+                    await _communityService.UnfollowPlaylist(requestingUserId, ObjectId.Parse(requestedPlaylist.Id));
                     return Ok("Successfully unfollowed playlist");
                 }
 
                 if (!await _communityService.PlaylistAlreadyBeingFollowed(request.PlaylistId, requestingUserId))
                 {
-                    await _communityService.FollowPlaylist(requestedPlaylist.Id, new ObjectId(requestingUserId));
+                    await _communityService.FollowPlaylist(requestingUserId, ObjectId.Parse(requestedPlaylist.Id));
                     return Ok("Successfully followed playlist");
                 }
 
@@ -211,15 +211,15 @@ namespace SkyPlaylistManager.Controllers
                 if (requestedUser == null) return BadRequest("User not found");
                 if (requestingUserId == requestedUser.Id) return BadRequest("You cannot follow yourself");
 
-                if (await _communityService.UserAlreadyBeingFollowed(requestedUser.Id, requestingUserId))
+                if (await _communityService.UserAlreadyBeingFollowed(requestingUserId, requestedUser.Id))
                 {
-                    await _communityService.UnfollowUser(requestedUser.Id, new ObjectId(requestingUserId));
+                    await _communityService.UnfollowUser(requestingUserId, ObjectId.Parse(requestedUser.Id));
                     return Ok("Successfully unfollowed user");
                 }
 
-                if (!await _communityService.UserAlreadyBeingFollowed(requestedUser.Id, requestingUserId))
+                if (!await _communityService.UserAlreadyBeingFollowed(requestingUserId, requestedUser.Id))
                 {
-                    await _communityService.FollowUser(requestedUser.Id, new ObjectId(requestingUserId));
+                    await _communityService.FollowUser(requestingUserId, new ObjectId(requestedUser.Id));
                     return Ok("Successfully followed user");
                 }
 

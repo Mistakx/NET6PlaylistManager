@@ -64,7 +64,7 @@ namespace SkyPlaylistManager.Services
             return playlistDocuments;
         }
 
-        public async Task<bool> UserAlreadyBeingFollowed(string userToFollowId, string userFollowingId)
+        public async Task<bool> UserAlreadyBeingFollowed(string userFollowingId, string userToFollowId)
         {
             var filter = Builders<UserDocument>.Filter.Eq(p => p.Id, userFollowingId);
             var userFollowing = await _usersCollection.Find(filter).FirstOrDefaultAsync();
