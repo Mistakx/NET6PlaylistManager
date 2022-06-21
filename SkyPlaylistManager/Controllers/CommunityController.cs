@@ -168,6 +168,7 @@ namespace SkyPlaylistManager.Controllers
             }
         }
 
+        
         // UPDATE
 
         [HttpPost("togglePlaylistFollow")]
@@ -273,5 +274,48 @@ namespace SkyPlaylistManager.Controllers
                 return BadRequest("Error occurred while sorting followed playlists");
             }
         }
+        
+        [HttpPost("removeFollowFromUser")]
+        public async Task<IActionResult> RemoveFollowFromUser(RemoveFollowFromUserDto request)
+        {
+            try
+            {
+                var requestingUserId = _sessionTokensService.GetUserIdFromToken(request.SessionToken);
+                var requestedUser = await _usersService.GetUserByUsername(request.Username);
+                if (requestedUser == null) return BadRequest("User not found");
+                
+                await _communityService.DeleteFollowedUserId(requestedUser.Id, new ObjectId(requestingUserId));
+                return Ok("Successfully removed follower");
+            }
+
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.StackTrace);
+                return BadRequest("Error occurred while removing follower");
+            }
+        }
+        
+        [HttpPost("removeFollowFromPlaylist")] // TODO: Add security
+        public async Task<IActionResult> RemoveFollowFromPlaylist(RemoveFollowFromPlaylistDto request)
+        {
+            try
+            {
+                var requestedUser = await _usersService.GetUserByUsername(request.Username);
+                if (requestedUser == null) return BadRequest("User not found");
+                
+                var requestedPlaylist = await _playlistsService.GetPlaylistById(request.PlaylistId);
+                if (requestedPlaylist == null) return BadRequest("Playlist not found");
+                
+                await _communityService.DeleteFollowedPlaylistId(requestedUser.Id, new ObjectId(requestedPlaylist.Id));
+                return Ok("Successfully removed follower");
+            }
+
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.StackTrace);
+                return BadRequest("Error occurred while removing follower");
+            }
+        }
+        
     }
 }

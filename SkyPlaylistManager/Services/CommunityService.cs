@@ -118,19 +118,21 @@ namespace SkyPlaylistManager.Services
 
         public async Task<List<UserDocument>?> GetUsersFollowingUser(string userId)
         {
-            // var filter = Builders<PlaylistDocument>.Filter.AnyIn(p => p.UsersFollowingIds,
-            //     new List<ObjectId> {new ObjectId(userId)});
+            var filter = Builders<UserDocument>.Filter.AnyIn(p => p.FollowingUsersIds,
+                new List<ObjectId> {new ObjectId(userId)});
+            
             var usersFollowingUser = await _usersCollection
-                .Find(u => u.FollowingUsersIds.Contains(ObjectId.Parse(userId))).ToListAsync();
+                .Find(filter).ToListAsync();
             return usersFollowingUser;
         }
         
         public async Task<List<UserDocument>?> GetUsersFollowingPlaylist(string playlistId)
         {
-            // var filter = Builders<PlaylistDocument>.Filter.AnyIn(p => p.UsersFollowingIds,
-            //     new List<ObjectId> {new ObjectId(userId)});
+            var filter = Builders<UserDocument>.Filter.AnyIn(p => p.FollowingPlaylistsIds,
+                new List<ObjectId> {new ObjectId(playlistId)});
+            
             var usersFollowingPlaylist = await _usersCollection
-                .Find(u => u.FollowingPlaylistsIds.Contains(ObjectId.Parse(playlistId))).ToListAsync();
+                .Find(filter).ToListAsync();
             return usersFollowingPlaylist;
         }
 
@@ -216,9 +218,6 @@ namespace SkyPlaylistManager.Services
             await _usersCollection.UpdateOneAsync(filter, update);
         }
 
-
-        // DELETE
-
         public async Task DeleteFollowedUserId(string followingUserId, ObjectId followedUserId)
         {
             var filter = Builders<UserDocument>.Filter.Eq(u => u.Id, followingUserId);
@@ -234,5 +233,6 @@ namespace SkyPlaylistManager.Services
 
             await _usersCollection.UpdateOneAsync(filter, update);
         }
+
     }
 }
