@@ -2,7 +2,7 @@
 
 public class SortPlaylistFollowDto
 {
-    public string PlaylistId { get; set; }
+    public string FollowedPlaylistId { get; set; }
     public int NewIndex { get; set; }
     public string SessionToken { get; set; }
 }

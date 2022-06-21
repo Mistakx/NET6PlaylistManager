@@ -238,7 +238,7 @@ namespace SkyPlaylistManager.Controllers
             try
             {
                 var requestingUserId = _sessionTokensService.GetUserIdFromToken(request.SessionToken);
-                var requestedUser = await _usersService.GetUserByUsername(request.Username);
+                var requestedUser = await _usersService.GetUserByUsername(request.followedUserUsername);
                 if (requestedUser == null) return BadRequest("User not found");
                 
                 await _communityService.DeleteFollowedUserId(requestingUserId, ObjectId.Parse(requestedUser.Id));
@@ -259,7 +259,7 @@ namespace SkyPlaylistManager.Controllers
             try
             {
                 var requestingUserId = _sessionTokensService.GetUserIdFromToken(request.SessionToken);
-                var requestedPlaylist = await _playlistsService.GetPlaylistById(request.PlaylistId);
+                var requestedPlaylist = await _playlistsService.GetPlaylistById(request.FollowedPlaylistId);
                 if (requestedPlaylist == null) return BadRequest("Playlist not found");
                 
                 await _communityService.DeleteFollowedPlaylistId(requestingUserId, new ObjectId(requestedPlaylist.Id));

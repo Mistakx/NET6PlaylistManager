@@ -2,7 +2,7 @@
 
 public class SortUserFollowDto
 {
-    public string Username { get; set; }
+    public string followedUserUsername { get; set; }
     public int NewIndex { get; set; }
     public string SessionToken { get; set; }
 }
