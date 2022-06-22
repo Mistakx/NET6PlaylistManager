@@ -112,12 +112,14 @@ namespace SkyPlaylistManager.Controllers
 
                     var requestedPlaylistOwner = await
                         _usersService.GetUserById(requestedPlaylist.OwnerId);
+                    
+                    var playlistFollowedByRequestingUser = await _communityService.PlaylistAlreadyBeingFollowed(request.PlaylistId, requestingUserId);
 
                     return playlistInformationDtoBuilder.BeginBuilding(requestedPlaylist.Id,
                             requestedPlaylist.Title,
                             requestedPlaylist.Description, requestedPlaylist.ThumbnailUrl,
                             requestedPlaylist.ResultIds.Count).AddViews(requestedPlaylistViews!)
-                        .AddOwner(requestedPlaylistOwner!).Build();
+                        .AddOwner(requestedPlaylistOwner!).AddFollowing(playlistFollowedByRequestingUser).Build();
                 }
 
                 return null;

@@ -33,7 +33,7 @@ namespace SkyPlaylistManager.Services
         }
 
         // CREATE
-        
+
         public async Task CreatePlaylist(PlaylistDocument newPlaylist, string userId)
         {
             await _playlistsCollection.InsertOneAsync(newPlaylist);
@@ -43,11 +43,17 @@ namespace SkyPlaylistManager.Services
             await _usersCollection.UpdateOneAsync(filter, update);
         }
 
-        
+
         // READ
-        
+
         public async Task<PlaylistDocument?> GetPlaylistById(string playlistId) =>
             await _playlistsCollection.Find(p => p.Id == playlistId).FirstOrDefaultAsync();
+
+        public async Task<List<PlaylistDocument>?> GetPlaylistsByIds(IEnumerable<string> playlistIds)
+        {
+            var filter = Builders<PlaylistDocument>.Filter.In(p => p.Id, playlistIds);
+            return await _playlistsCollection.Find(filter).ToListAsync();
+        }
         
         public async Task<BsonDocument> GetPlaylistContentOrderedIds(string playlistId)
         {
@@ -90,26 +96,43 @@ namespace SkyPlaylistManager.Services
 
             return false;
         }
-        
-        public async Task<int> GetTotalContentInPlaylists(List<ObjectId> playlistIds)
+
+        public async Task<int> GetAmountTotalContentInPlaylists(List<ObjectId> playlistIds)
         {
             int totalItems = 0;
 
-            foreach (var playlistId in playlistIds)
-            {
-                var playlist = await GetPlaylistById(playlistId.ToString());
-                if (playlist != null)
-                {
-                    totalItems += playlist.ResultIds.Count;
-                }
-            }
+            var playlistIdsString = playlistIds.Select(p => p.ToString());
+
+            var playlists = await GetPlaylistsByIds(playlistIdsString);
+            if (playlists == null) return totalItems;
+            
+            foreach (var playlist in playlists) totalItems += playlist.ResultIds.Count;
 
             return totalItems;
         }
 
+        public async Task<List<ObjectId>> GetPublicPlaylistsIds(List<ObjectId> playlistIds)
+        {
+            var publicPlaylistsIds = new List<ObjectId>();
+            
+            var playlistIdsString = playlistIds.Select(p => p.ToString());
+
+            var playlists = await GetPlaylistsByIds(playlistIdsString);
+            if (playlists == null) return publicPlaylistsIds;
+            
+            foreach (var playlist in playlists)
+            {
+                if (playlist.Visibility == "Public")
+                {
+                    publicPlaylistsIds.Add(ObjectId.Parse(playlist.Id));
+                }
+            }
+
+            return publicPlaylistsIds;
+        }
 
         // UPDATE
-        
+
         public async Task UpdatePlaylistInformation(EditPlaylistDto updatedPlaylist)
         {
             var filter = Builders<PlaylistDocument>.Filter.Eq(p => p.Id, updatedPlaylist.PlaylistId);
@@ -141,7 +164,7 @@ namespace SkyPlaylistManager.Services
 
             await _playlistsCollection.UpdateOneAsync(filter, update);
         }
-        
+
         public async Task UpdatePlaylistPhoto(string playlistId, string photoPath)
         {
             var filter = Builders<PlaylistDocument>.Filter.Eq(u => u.Id, playlistId);
@@ -150,9 +173,9 @@ namespace SkyPlaylistManager.Services
             await _playlistsCollection.UpdateOneAsync(filter, update);
         }
 
-        
+
         // DELETE
-        
+
         public async Task DeletePlaylist(string playlistId)
         {
             var deleteFilter = Builders<PlaylistDocument>.Filter.Eq(p => p.Id, playlistId);
@@ -167,22 +190,5 @@ namespace SkyPlaylistManager.Services
 
             await _playlistsCollection.UpdateOneAsync(filter, update);
         }
-
-
- 
-
-
-
-
-
-
-
-
-
-
-
-
- 
-
     }
 }

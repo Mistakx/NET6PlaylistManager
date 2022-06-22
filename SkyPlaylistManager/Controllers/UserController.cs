@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Diagnostics;
+using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using SkyPlaylistManager.Services;
@@ -123,33 +124,57 @@ public class UserController : ControllerBase
             var requestedUser = await _usersService.GetUserByUsername(request.Username);
             if (requestedUser == null) return null;
 
-            var userPlaylistsWeeklyViews =
-                await _playlistRecommendationsService.GetUserWeeklyPlaylistViews(requestedUser.UserPlaylistIds);
-
-            var userPlaylistsTotalView =
-                await _playlistRecommendationsService.GetUserTotalPlaylistViews(requestedUser.UserPlaylistIds);
-
-            var userPlaylistsItemsAmount =
-                await _playlistsService.GetTotalContentInPlaylists(requestedUser.UserPlaylistIds);
-
             var userFollowersAmount = await _communityService.GetUserFollowersAmount(requestedUser.Id);
 
             var userViews =
                 await _userRecommendationsService.GetUserRecommendationsDocumentById(requestedUser.Id);
 
+            // Get my profile
             if (requestedUser.Username == requestingUser.Username)
             {
-                return userProfileDtoBuilder.BeginBuilding(requestedUser, userPlaylistsWeeklyViews,
-                        userPlaylistsTotalView, userPlaylistsItemsAmount, userFollowersAmount, userViews)
-                    .AddEmail(requestedUser.Email).Build();
+                
+                var userPlaylistsWeeklyViews =
+                    await _playlistRecommendationsService.GetAmountWeeklyPlaylistViews(requestedUser.UserPlaylistIds);
+
+                var userPlaylistsTotalViews =
+                    await _playlistRecommendationsService.GetAmountTotalPlaylistViews(requestedUser.UserPlaylistIds);
+
+                var userPlaylistsItemsAmount =
+                    await _playlistsService.GetAmountTotalContentInPlaylists(requestedUser.UserPlaylistIds);
+                
+                return userProfileDtoBuilder.BeginBuilding(requestedUser, requestedUser.UserPlaylistIds.Count)
+                    .AddEmail(requestedUser.Email).AddWeeklyViewsAmount(userViews).AddTotalViewsAmount(userViews)
+                    .AddFollowersAmount(userFollowersAmount).AddPlaylistsContentAmount(userPlaylistsItemsAmount)
+                    .AddPlaylistsTotalViewsAmount(userPlaylistsTotalViews)
+                    .AddPlaylistsWeeklyViewsAmount(userPlaylistsWeeklyViews)
+                    .AddFollowingPlaylistsAmount(requestedUser.FollowingPlaylistsIds.Count)
+                    .AddFollowingUsersAmount(requestedUser.FollowingUsersIds.Count).Build();
             }
+
+            // Get another user profile
+
+            var userPublicPlaylistsIds = await _playlistsService.GetPublicPlaylistsIds(requestedUser.UserPlaylistIds);
+
+            var publicPlaylistContentAmount =
+                await _playlistsService.GetAmountTotalContentInPlaylists(userPublicPlaylistsIds);
+
+            var publicPlaylistTotalViewsAmount =
+                await _playlistRecommendationsService.GetAmountTotalPlaylistViews(userPublicPlaylistsIds);
+
+            var publicPlaylistWeeklyViewsAmount =
+                await _playlistRecommendationsService.GetAmountWeeklyPlaylistViews(userPublicPlaylistsIds);
 
             var userBeingFollowed =
                 await _communityService.UserAlreadyBeingFollowed(requestingUserId, requestedUser.Id);
 
             return userProfileDtoBuilder.BeginBuilding(
-                requestedUser, userPlaylistsWeeklyViews, userPlaylistsTotalView, userPlaylistsItemsAmount,
-                userFollowersAmount, userViews).AddFollowed(userBeingFollowed).Build();
+                    requestedUser, userPublicPlaylistsIds.Count).AddWeeklyViewsAmount(userViews)
+                .AddTotalViewsAmount(userViews)
+                .AddFollowersAmount(userFollowersAmount).AddPlaylistsContentAmount(publicPlaylistContentAmount)
+                .AddPlaylistsTotalViewsAmount(publicPlaylistTotalViewsAmount)
+                .AddPlaylistsWeeklyViewsAmount(publicPlaylistWeeklyViewsAmount).AddFollowed(userBeingFollowed)
+                .AddFollowingPlaylistsAmount(requestedUser.FollowingPlaylistsIds.Count)
+                .AddFollowingUsersAmount(requestedUser.FollowingUsersIds.Count).Build();
         }
         catch (Exception ex)
         {

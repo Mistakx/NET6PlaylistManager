@@ -84,26 +84,16 @@ namespace SkyPlaylistManager.Controllers
                 var followedUsersInformation = new List<UserProfileDto>();
                 foreach (var followedUsersDocument in followedUserDocuments)
                 {
-                    var userPlaylistsWeeklyViews =
-                        await _playlistRecommendationsService.GetUserWeeklyPlaylistViews(followedUsersDocument
-                            .UserPlaylistIds);
+                    var userViewablePlaylistsAmount =
+                        await _playlistsService.GetPublicPlaylistsIds(followedUsersDocument.UserPlaylistIds);
 
-                    var userPlaylistsTotalView =
-                        await _playlistRecommendationsService.GetUserTotalPlaylistViews(followedUsersDocument
-                            .UserPlaylistIds);
-
-                    var userPlaylistsItemsAmount =
-                        await _playlistsService.GetTotalContentInPlaylists(followedUsersDocument.UserPlaylistIds);
-                    
-                    var userFollowersAmount = await _communityService.GetUserFollowersAmount(followedUsersDocument.Id);
-                    
                     var userViews =
                         await _userRecommendationsService.GetUserRecommendationsDocumentById(
                             followedUsersDocument.Id);
 
                     followedUsersInformation.Add(userProfileDtoBuilder
-                        .BeginBuilding(followedUsersDocument, userPlaylistsWeeklyViews, userPlaylistsTotalView,
-                            userPlaylistsItemsAmount, userFollowersAmount, userViews).AddFollowed(true).Build());
+                        .BeginBuilding(followedUsersDocument, userViewablePlaylistsAmount.Count).AddFollowed(true)
+                        .AddWeeklyViewsAmount(userViews).AddTotalViewsAmount(userViews).Build());
                 }
 
                 return followedUsersInformation;
@@ -125,7 +115,7 @@ namespace SkyPlaylistManager.Controllers
 
                 var followingUsersDocuments = await _communityService.GetUsersFollowingUser(requestedUser.Id);
                 if (followingUsersDocuments == null) return new List<UserProfileDto>();
-                
+
                 var followedUsersInformation = new List<UserProfileDto>();
                 foreach (var followingUsersDocument in followingUsersDocuments)
                 {
@@ -168,7 +158,7 @@ namespace SkyPlaylistManager.Controllers
             }
         }
 
-        
+
         // UPDATE
 
         [HttpPost("togglePlaylistFollow")]
@@ -232,7 +222,7 @@ namespace SkyPlaylistManager.Controllers
                 return BadRequest("Unsuccessfully tried to follow/unfollow playlist");
             }
         }
-        
+
         [HttpPost("sortUserFollow")]
         public async Task<IActionResult> SortUserFollow(SortUserFollowDto request)
         {
@@ -241,9 +231,10 @@ namespace SkyPlaylistManager.Controllers
                 var requestingUserId = _sessionTokensService.GetUserIdFromToken(request.SessionToken);
                 var requestedUser = await _usersService.GetUserByUsername(request.followedUserUsername);
                 if (requestedUser == null) return BadRequest("User not found");
-                
+
                 await _communityService.DeleteFollowedUserId(requestingUserId, ObjectId.Parse(requestedUser.Id));
-                await _communityService.InsertFollowedUserIdInSpecificPosition(requestingUserId, request.NewIndex, requestedUser.Id);
+                await _communityService.InsertFollowedUserIdInSpecificPosition(requestingUserId, request.NewIndex,
+                    requestedUser.Id);
                 return Ok("Successfully sorted followed user");
             }
 
@@ -253,7 +244,7 @@ namespace SkyPlaylistManager.Controllers
                 return BadRequest("Error occurred while sorting followed users");
             }
         }
-        
+
         [HttpPost("sortPlaylistFollow")]
         public async Task<IActionResult> SortPlaylistFollow(SortPlaylistFollowDto request)
         {
@@ -262,9 +253,10 @@ namespace SkyPlaylistManager.Controllers
                 var requestingUserId = _sessionTokensService.GetUserIdFromToken(request.SessionToken);
                 var requestedPlaylist = await _playlistsService.GetPlaylistById(request.FollowedPlaylistId);
                 if (requestedPlaylist == null) return BadRequest("Playlist not found");
-                
+
                 await _communityService.DeleteFollowedPlaylistId(requestingUserId, new ObjectId(requestedPlaylist.Id));
-                await _communityService.InsertFollowedPlaylistIdInSpecificPosition(requestingUserId, request.NewIndex, requestedPlaylist.Id);
+                await _communityService.InsertFollowedPlaylistIdInSpecificPosition(requestingUserId, request.NewIndex,
+                    requestedPlaylist.Id);
                 return Ok("Successfully sorted followed playlist");
             }
 
@@ -274,7 +266,7 @@ namespace SkyPlaylistManager.Controllers
                 return BadRequest("Error occurred while sorting followed playlists");
             }
         }
-        
+
         [HttpPost("removeFollowFromUser")]
         public async Task<IActionResult> RemoveFollowFromUser(RemoveFollowFromUserDto request)
         {
@@ -283,7 +275,7 @@ namespace SkyPlaylistManager.Controllers
                 var requestingUserId = _sessionTokensService.GetUserIdFromToken(request.SessionToken);
                 var requestedUser = await _usersService.GetUserByUsername(request.Username);
                 if (requestedUser == null) return BadRequest("User not found");
-                
+
                 await _communityService.DeleteFollowedUserId(requestedUser.Id, new ObjectId(requestingUserId));
                 return Ok("Successfully removed follower");
             }
@@ -294,7 +286,7 @@ namespace SkyPlaylistManager.Controllers
                 return BadRequest("Error occurred while removing follower");
             }
         }
-        
+
         [HttpPost("removeFollowFromPlaylist")] // TODO: Add security
         public async Task<IActionResult> RemoveFollowFromPlaylist(RemoveFollowFromPlaylistDto request)
         {
@@ -302,10 +294,10 @@ namespace SkyPlaylistManager.Controllers
             {
                 var requestedUser = await _usersService.GetUserByUsername(request.Username);
                 if (requestedUser == null) return BadRequest("User not found");
-                
+
                 var requestedPlaylist = await _playlistsService.GetPlaylistById(request.PlaylistId);
                 if (requestedPlaylist == null) return BadRequest("Playlist not found");
-                
+
                 await _communityService.DeleteFollowedPlaylistId(requestedUser.Id, new ObjectId(requestedPlaylist.Id));
                 return Ok("Successfully removed follower");
             }
@@ -316,6 +308,5 @@ namespace SkyPlaylistManager.Controllers
                 return BadRequest("Error occurred while removing follower");
             }
         }
-        
     }
 }

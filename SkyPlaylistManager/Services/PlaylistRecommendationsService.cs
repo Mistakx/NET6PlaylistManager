@@ -1,9 +1,9 @@
-﻿using Microsoft.Extensions.Options;
+﻿using System.Diagnostics;
+using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using SkyPlaylistManager.Models.Database;
-using SkyPlaylistManager.Models.DTOs.RecommendationRequests;
 using SkyPlaylistManager.Models.DTOs.RecommendationResponses;
 
 
@@ -74,39 +74,50 @@ namespace SkyPlaylistManager.Services
             return result;
         }
 
-        public async Task<int> GetUserTotalPlaylistViews(List<ObjectId> userPlaylistIds)
+        public async Task<List<PlaylistRecommendationsDocument>?> GetPlaylistsRecommendationsDocumentsByIds(
+            IEnumerable<string> playlistId)
+        {
+            var filter = Builders<PlaylistRecommendationsDocument>.Filter.In(p => p.PlaylistId, playlistId);
+
+            var result = await _recommendationsCollection.Find(filter).ToListAsync();
+
+            return result;
+        }
+
+        public async Task<int> GetAmountTotalPlaylistViews(List<ObjectId> userPlaylistIds)
         {
             int totalViews = 0;
 
-            foreach (var playlistId in userPlaylistIds)
+            var playlistIdsString = userPlaylistIds.Select(p => p.ToString());
+
+            var playlists = await GetPlaylistsRecommendationsDocumentsByIds(playlistIdsString);
+            if (playlists == null) return totalViews;
+
+            foreach (var playlist in playlists)
             {
-                var playlist = await GetPlaylistRecommendationsDocumentById(playlistId.ToString());
-                if (playlist != null)
-                {
-                    totalViews += playlist.TotalViewsAmount;
-                }
+                totalViews += playlist.TotalViewsAmount;
             }
 
             return totalViews;
         }
 
-        public async Task<int> GetUserWeeklyPlaylistViews(List<ObjectId> userPlaylistIds)
+        public async Task<int> GetAmountWeeklyPlaylistViews(List<ObjectId> userPlaylistIds)
         {
             int totalViews = 0;
 
-            foreach (var playlistId in userPlaylistIds)
-            {
-                var playlist = await GetPlaylistRecommendationsDocumentById(playlistId.ToString());
-                if (playlist != null)
-                {
-                    totalViews += playlist.WeeklyViewDates.Count;
-                }
-            }
+            var playlistIdsString = userPlaylistIds.Select(p => p.ToString());
 
+            var playlists = await GetPlaylistsRecommendationsDocumentsByIds(playlistIdsString);
+            if (playlists == null) return totalViews;
+
+            foreach (var playlist in playlists)
+            {
+                totalViews += playlist.WeeklyViewDates.Count;
+            }
             return totalViews;
         }
 
-        
+
         // UPDATE
 
         public async void UpdateRecommendationsWeeklyViews()
@@ -133,7 +144,7 @@ namespace SkyPlaylistManager.Services
                         recommendationWithNewDates.WeeklyViewDates.Count));
             }
         }
-        
+
         public async Task AddViewToPlaylist(string playlistId, int totalViewAmount)
         {
             var filter = Builders<PlaylistRecommendationsDocument>.Filter.Eq(p => p.PlaylistId, playlistId);
@@ -144,7 +155,7 @@ namespace SkyPlaylistManager.Services
             await _recommendationsCollection.UpdateOneAsync(filter, weeklyViewsUpdate);
         }
 
-        
+
         // DELETE
 
         private async void DeleteOldRecommendations()
