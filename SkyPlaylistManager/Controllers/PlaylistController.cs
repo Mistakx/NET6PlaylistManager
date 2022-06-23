@@ -75,6 +75,7 @@ namespace SkyPlaylistManager.Controllers
 
                 var requestedPlaylist = await _playListsService.GetPlaylistById(request.PlaylistId);
                 if (requestedPlaylist == null) return null;
+                
 
                 // Playlist owned by requesting user
                 if (requestedPlaylist.OwnerId == requestingUser.Id)
@@ -86,8 +87,12 @@ namespace SkyPlaylistManager.Controllers
                                 requestedPlaylist.Title,
                                 requestedPlaylist.Description, requestedPlaylist.ThumbnailUrl,
                                 requestedPlaylist.ResultIds.Count).AddVisibility("Private").Build();
+                        
                         case "Public":
                         {
+                            
+                            var playlistFollowersAmount = await _communityService.GetPlaylistFollowersAmount(request.PlaylistId);
+
                             var requestedPlaylistViews = await
                                 _playlistRecommendationsService.GetPlaylistRecommendationsDocumentById(
                                     request.PlaylistId);
@@ -96,7 +101,7 @@ namespace SkyPlaylistManager.Controllers
                                     requestedPlaylist.Title,
                                     requestedPlaylist.Description, requestedPlaylist.ThumbnailUrl,
                                     requestedPlaylist.ResultIds.Count).AddVisibility("Public")
-                                .AddViews(requestedPlaylistViews!)
+                                .AddViews(requestedPlaylistViews!).AddFollowersAmount(playlistFollowersAmount)
                                 .Build();
                         }
                     }
@@ -106,6 +111,8 @@ namespace SkyPlaylistManager.Controllers
                 else
                 {
                     if (requestedPlaylist.Visibility != "Public") return null;
+
+                    var playlistFollowersAmount = await _communityService.GetPlaylistFollowersAmount(request.PlaylistId);
 
                     var requestedPlaylistViews = await
                         _playlistRecommendationsService.GetPlaylistRecommendationsDocumentById(request.PlaylistId);
@@ -119,7 +126,7 @@ namespace SkyPlaylistManager.Controllers
                             requestedPlaylist.Title,
                             requestedPlaylist.Description, requestedPlaylist.ThumbnailUrl,
                             requestedPlaylist.ResultIds.Count).AddViews(requestedPlaylistViews!)
-                        .AddOwner(requestedPlaylistOwner!).AddFollowing(playlistFollowedByRequestingUser).Build();
+                        .AddOwner(requestedPlaylistOwner!).AddFollowersAmount(playlistFollowersAmount).AddFollowing(playlistFollowedByRequestingUser).Build();
                 }
 
                 return null;
