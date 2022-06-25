@@ -84,9 +84,16 @@
     <Content Include="NET6React\.git\objects\pack\pack-7b531af66c6c09d7b1b6c3e075b513530ae33ce4.pack" />
     <Content Include="NET6React\.git\objects\pack\pack-88fc6df6837353b05720f6c89f5f591592ed3511.idx" />
     <Content Include="NET6React\.git\objects\pack\pack-88fc6df6837353b05720f6c89f5f591592ed3511.pack" />
+    <Content Include="NET6React\.git\objects\pack\pack-fb496b6f4bd8f01e5d6948595dac1743c60dbb37.idx" />
+    <Content Include="NET6React\.git\objects\pack\pack-fb496b6f4bd8f01e5d6948595dac1743c60dbb37.pack" />
     <Content Include="NET6React\.git\packed-refs" />
     <Content Include="NET6React\.git\refs\heads\master" />
     <Content Include="NET6React\.git\refs\remotes\origin\HEAD" />
+    <Content Include="NET6React\.idea\.gitignore" />
+    <Content Include="NET6React\.idea\modules.xml" />
+    <Content Include="NET6React\.idea\NET6React.iml" />
+    <Content Include="NET6React\.idea\vcs.xml" />
+    <Content Include="NET6React\.idea\workspace.xml" />
     <Content Include="NET6React\.vscode\settings.json" />
     <Content Include="NET6React\package-lock.json" />
     <Content Include="NET6React\package.json" />

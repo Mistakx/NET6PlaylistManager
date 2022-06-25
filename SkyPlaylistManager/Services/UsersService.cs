@@ -43,7 +43,7 @@ namespace SkyPlaylistManager.Services
             await _usersCollection.Find(u => u.Username == username).FirstOrDefaultAsync();
 
         public async Task<UserDocument?> GetUserByEmail(string email) =>
-            await _usersCollection.Find(u => u.Email == email).FirstOrDefaultAsync();
+            await _usersCollection.Find(u => u.Email == email.ToLower()).FirstOrDefaultAsync();
 
         public async Task<BsonDocument> GetUserPlaylists(string userId)
         {

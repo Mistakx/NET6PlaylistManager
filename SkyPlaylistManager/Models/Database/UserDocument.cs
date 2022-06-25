@@ -21,7 +21,7 @@ namespace SkyPlaylistManager.Models.Database
 
         public UserDocument(UserSignupDto userSignup, string profilePhotoUrl)
         {
-            Email = userSignup.Email;
+            Email = userSignup.Email.ToLower();
             Password = BCrypt.Net.BCrypt.HashPassword(userSignup.Password);
             Name = userSignup.Name;
             Username = userSignup.Username;
