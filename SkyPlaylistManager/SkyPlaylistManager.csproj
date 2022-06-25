@@ -149,6 +149,7 @@
     <TypeScriptCompile Include="NET6React\src\components\homePage\HomePage.tsx" />
     <TypeScriptCompile Include="NET6React\src\components\loginPage\LoginPage.tsx" />
     <TypeScriptCompile Include="NET6React\src\components\players\CloseVideoButton.tsx" />
+    <TypeScriptCompile Include="NET6React\src\components\players\MixcloudPlayer.tsx" />
     <TypeScriptCompile Include="NET6React\src\components\players\MoveVideoButton.tsx" />
     <TypeScriptCompile Include="NET6React\src\components\players\MultiPlatformPlayer.tsx" />
     <TypeScriptCompile Include="NET6React\src\components\players\ResizeablePlayer.tsx" />
@@ -188,6 +189,7 @@
     <TypeScriptCompile Include="NET6React\src\models\backendSearches\Playlist.ts" />
     <TypeScriptCompile Include="NET6React\src\models\backendSearches\UserPlaylist.ts" />
     <TypeScriptCompile Include="NET6React\src\models\backendSearches\UserProfile.ts" />
+    <TypeScriptCompile Include="NET6React\src\models\components\players\MixcloudPlayerProperties.ts" />
     <TypeScriptCompile Include="NET6React\src\models\components\players\MultiPlatformPlayerProperties.ts" />
     <TypeScriptCompile Include="NET6React\src\models\components\players\SpotifyPlayerProperties.ts" />
     <TypeScriptCompile Include="NET6React\src\models\components\players\TwitchClipPlayerProperties.ts" />
