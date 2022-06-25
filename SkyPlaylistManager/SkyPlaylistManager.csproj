@@ -207,6 +207,16 @@
     <TypeScriptCompile Include="NET6React\src\playerCreators\TwitchClipPlayerCreator.tsx" />
     <TypeScriptCompile Include="NET6React\src\react-app-env.d.ts" />
     <TypeScriptCompile Include="NET6React\src\reportWebVitals.ts" />
+    <TypeScriptCompile Include="NET6React\src\requests\apiRequests\converters\DailymotionVideosPageToListItemsConverter.ts" />
+    <TypeScriptCompile Include="NET6React\src\requests\apiRequests\converters\MixcloudTracksPageToListItemsConverter.ts" />
+    <TypeScriptCompile Include="NET6React\src\requests\apiRequests\converters\SoundcloudTracksPageToListItemsConverter.ts" />
+    <TypeScriptCompile Include="NET6React\src\requests\apiRequests\platforms\Dailymotion.tsx" />
+    <TypeScriptCompile Include="NET6React\src\requests\apiRequests\platforms\Facebook.tsx" />
+    <TypeScriptCompile Include="NET6React\src\requests\apiRequests\platforms\Mixcloud.tsx" />
+    <TypeScriptCompile Include="NET6React\src\requests\apiRequests\platforms\Soundcloud.tsx" />
+    <TypeScriptCompile Include="NET6React\src\requests\apiRequests\specificSearches\DailymotionSearchVideo.ts" />
+    <TypeScriptCompile Include="NET6React\src\requests\apiRequests\specificSearches\MixcloudSearchTrack.ts" />
+    <TypeScriptCompile Include="NET6React\src\requests\apiRequests\specificSearches\SoundcloudSearchTrackByAlbum.ts" />
     <TypeScriptCompile Include="NET6React\src\searchLists\LivestreamSearchList.tsx" />
     <TypeScriptCompile Include="NET6React\src\searchLists\SearchList.ts" />
     <TypeScriptCompile Include="NET6React\src\searchLists\TrackSearchList.tsx" />
