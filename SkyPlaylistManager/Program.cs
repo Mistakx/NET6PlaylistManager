@@ -16,8 +16,11 @@ builder.Services.AddSingleton<PlaylistRecommendationsService>();
 builder.Services.AddSingleton<ContentRecommendationsService>();
 builder.Services.AddSingleton<FilesManager>();
 builder.Services.AddSingleton<CommunityService>();
+builder.Services.AddSingleton<SignalRService>();
 
 builder.Services.AddControllersWithViews();
+
+builder.Services.AddSignalR();
 
 builder.Services.AddCors();
 
@@ -49,5 +52,7 @@ app.MapControllerRoute(
     pattern: "{controller}/{action=Index}/{id?}");
 
 app.MapFallbackToFile("index.html");
+
+app.MapHub<SignalRService>("/hub");
 
 app.Run();
