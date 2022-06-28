@@ -158,6 +158,68 @@ namespace SkyPlaylistManager.Controllers
             }
         }
 
+        [HttpPost("getUsersUserFollows")]
+        public async Task<List<UserProfileDto>> GetUsersUserFollow(GetUsersUserFollowsDto request)
+        {
+            try
+            {
+                var userProfileDtoBuilder = new UserProfileDtoBuilder();
+
+                var requestingUserId = _sessionTokensService.GetUserIdFromToken(request.SessionToken);
+                var requestedUser = await _usersService.GetUserByUsername(request.Username);
+                if (requestedUser == null) return new List<UserProfileDto>();
+
+                var playlistIdsString = requestedUser.FollowingUsersIds.Select(p => p.ToString());
+                var followedUsersDocuments = await _usersService.GetUsersByIds(playlistIdsString);
+                if (followedUsersDocuments == null) return new List<UserProfileDto>();
+
+                var followedUsersInformation = new List<UserProfileDto>();
+                foreach (var followingUsersDocument in followedUsersDocuments)
+                {
+                    var userAlreadyBeingFollowed =
+                        await _communityService.UserAlreadyBeingFollowed(requestingUserId,
+                            followingUsersDocument.Id);
+
+                    followedUsersInformation.Add(userProfileDtoBuilder.BeginBuilding(followingUsersDocument)
+                        .AddFollowed(userAlreadyBeingFollowed).Build());
+                }
+
+                return followedUsersInformation;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.StackTrace);
+                return new List<UserProfileDto>();
+            }
+        }
+
+        [HttpPost("getPlaylistsUserFollows")]
+        public async Task<List<PlaylistInformationDto>> GetPlaylistsUserFollows(GetPlaylistsUserFollowsDto request)
+        {
+            try
+            {
+                var requestedUser = await _usersService.GetUserByUsername(request.Username);
+                if (requestedUser == null) return new List<PlaylistInformationDto>();
+
+                var playlistIdsString = requestedUser.FollowingUsersIds.Select(p => p.ToString());
+                var followedPlaylistsIds = await _playlistsService.GetPlaylistsByIds(playlistIdsString);
+                if (followedPlaylistsIds == null) return new List<PlaylistInformationDto>();
+
+                var followedPlaylistsInformation = new List<PlaylistInformationDto>();
+                foreach (var followingPlaylistDocument in followedPlaylistsIds)
+                {
+                    followedPlaylistsInformation.Add(new PlaylistInformationDto(followingPlaylistDocument!));
+                }
+
+                return followedPlaylistsInformation;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.StackTrace);
+                return new List<PlaylistInformationDto>();
+            }
+        }
+
 
         // UPDATE
 

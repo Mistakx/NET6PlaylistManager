@@ -39,6 +39,13 @@ namespace SkyPlaylistManager.Services
         public async Task<UserDocument?> GetUserById(string userId) =>
             await _usersCollection.Find(u => u.Id == userId).FirstOrDefaultAsync();
 
+        public async Task<List<UserDocument>?> GetUsersByIds(IEnumerable<string> userIds)
+        {
+            var filter = Builders<UserDocument>.Filter.In(p => p.Id, userIds);
+            return await _usersCollection.Find(filter).ToListAsync();
+        }
+
+        
         public async Task<UserDocument?> GetUserByUsername(string username) =>
             await _usersCollection.Find(u => u.Username == username).FirstOrDefaultAsync();
 

@@ -12,6 +12,13 @@ public class UserProfileDtoBuilder
             new UserProfileDto(user, viewablePlaylistsAmount);
         return this;
     }
+    
+    public UserProfileDtoBuilder BeginBuilding(UserDocument user)
+    {
+        _userProfileDto =
+            new UserProfileDto(user);
+        return this;
+    }
 
     public UserProfileDtoBuilder AddEmail(string email)
     {
