@@ -44,14 +44,36 @@ namespace SkyPlaylistManager.Services
 
             var message = connectedUserInformation.Username + " (" + connectedUserInformation.Name + ") is now Online.";
             NotifyMyFriends(databaseUserId, message);
-            
+            GetMyOnlineFriends(databaseUserId);
         }
 
-      
+
+        public async Task UserDisconnected(ConnectedUserDto request)
+        {
+            var databaseUserId = _sessionTokensService.GetUserIdFromToken(request.sessionToken);
+            var connectedUserInformation = await _usersService.GetUserById(databaseUserId);
+
+            var message = connectedUserInformation.Username + " (" + connectedUserInformation.Name + ") is now Offline.";
+            NotifyMyFriends(databaseUserId, message);
+
+            _connections.Remove(databaseUserId);
+        }
 
 
-        public async Task NewMessage(string message) =>
-            await Clients.All.SendAsync("messageReceived", message);
+        public async Task GetMyOnlineFriends(string databaseUserId)
+        {
+            var myFollowers = await _communityService.GetUsersFollowingUser(databaseUserId);
+
+            var myHubConnectionId = _connections[databaseUserId];
+
+            List<String> userKeys = _connections.Keys.ToList(); 
+
+            var myOnlineFollowers = myFollowers.Where(user => userKeys.Contains(user.Id));
+
+            await Clients.Client(myHubConnectionId).SendAsync("myFriends", myOnlineFollowers);
+
+        }
+
 
     }
 
