@@ -110,6 +110,9 @@ namespace SkyPlaylistManager.Controllers
         {
             try
             {
+                var userProfileDtoBuilder = new UserProfileDtoBuilder();
+
+                var requestingUserId = _sessionTokensService.GetUserIdFromToken(request.SessionToken);
                 var requestedUser = await _usersService.GetUserByUsername(request.Username);
                 if (requestedUser == null) return new List<UserProfileDto>();
 
@@ -119,7 +122,10 @@ namespace SkyPlaylistManager.Controllers
                 var followedUsersInformation = new List<UserProfileDto>();
                 foreach (var followingUsersDocument in followingUsersDocuments)
                 {
-                    followedUsersInformation.Add(new UserProfileDto(followingUsersDocument!));
+                    var playlistAlreadyBeingFollowed =
+                        await _communityService.UserAlreadyBeingFollowed(requestingUserId, followingUsersDocument.Id);
+                    followedUsersInformation.Add(userProfileDtoBuilder.BeginBuilding(followingUsersDocument)
+                        .AddFollowed(playlistAlreadyBeingFollowed).Build());
                 }
 
                 return followedUsersInformation;
@@ -136,17 +142,23 @@ namespace SkyPlaylistManager.Controllers
         {
             try
             {
+                var userProfileDtoBuilder = new UserProfileDtoBuilder();
+
+                var requestingUserId = _sessionTokensService.GetUserIdFromToken(request.SessionToken);
                 var requestedPlaylist = await _playlistsService.GetPlaylistById(request.PlaylistId);
                 if (requestedPlaylist == null) return new List<UserProfileDto>();
 
                 var followingUsersDocuments = await _communityService.GetUsersFollowingPlaylist(requestedPlaylist.Id);
                 if (followingUsersDocuments == null) return new List<UserProfileDto>();
 
-
                 var followedUsersInformation = new List<UserProfileDto>();
                 foreach (var followingUsersDocument in followingUsersDocuments)
                 {
-                    followedUsersInformation.Add(new UserProfileDto(followingUsersDocument!));
+                    var playlistAlreadyBeingFollowed =
+                        await _communityService.PlaylistAlreadyBeingFollowed(followingUsersDocument.Id,
+                            requestingUserId);
+                    followedUsersInformation.Add(userProfileDtoBuilder.BeginBuilding(followingUsersDocument)
+                        .AddFollowed(playlistAlreadyBeingFollowed).Build());
                 }
 
                 return followedUsersInformation;
@@ -198,17 +210,25 @@ namespace SkyPlaylistManager.Controllers
         {
             try
             {
+                var playlistInformationDtoBuilder = new PlaylistInformationDtoBuilder();
+
+                var requestingUserId = _sessionTokensService.GetUserIdFromToken(request.SessionToken);
                 var requestedUser = await _usersService.GetUserByUsername(request.Username);
                 if (requestedUser == null) return new List<PlaylistInformationDto>();
 
-                var playlistIdsString = requestedUser.FollowingUsersIds.Select(p => p.ToString());
+                var playlistIdsString = requestedUser.FollowingPlaylistsIds.Select(p => p.ToString());
                 var followedPlaylistsIds = await _playlistsService.GetPlaylistsByIds(playlistIdsString);
                 if (followedPlaylistsIds == null) return new List<PlaylistInformationDto>();
 
                 var followedPlaylistsInformation = new List<PlaylistInformationDto>();
                 foreach (var followingPlaylistDocument in followedPlaylistsIds)
                 {
-                    followedPlaylistsInformation.Add(new PlaylistInformationDto(followingPlaylistDocument!));
+                    var playlistAlreadyBeingFollowed =
+                        await _communityService.PlaylistAlreadyBeingFollowed(followingPlaylistDocument.Id,
+                            requestingUserId);
+
+                    followedPlaylistsInformation.Add(playlistInformationDtoBuilder
+                        .BeginBuilding(followingPlaylistDocument).AddFollowing(playlistAlreadyBeingFollowed).Build());
                 }
 
                 return followedPlaylistsInformation;

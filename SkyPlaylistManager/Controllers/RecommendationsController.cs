@@ -79,7 +79,7 @@ namespace SkyPlaylistManager.Controllers
             try
             {
                 var unknownContentResponseDtoBuilder = new UnknownContentResponseDtoBuilder();
-                _contentRecommendationsService.UpdateRecommendationsWeeklyViews();
+                _contentRecommendationsService.DeleteOldRecommendations();
                 var trendingResults = await _contentRecommendationsService.GetTrendingContent(request.Limit);
                 if (trendingResults == null) return new List<UnknownContentResponseDto>();
 
@@ -146,7 +146,7 @@ namespace SkyPlaylistManager.Controllers
                 var requestingUser = await _userService.GetUserById(requestingUserId);
                 if (requestingUser == null) return new List<UserProfileDto>();
 
-                _userRecommendationsService.UpdateRecommendationsWeeklyViews();
+                _userRecommendationsService.DeleteOldRecommendations();
 
                 var trendingUsers =
                     await _userRecommendationsService.GetTrendingUsers(request.Username, request.Limit);
@@ -273,7 +273,8 @@ namespace SkyPlaylistManager.Controllers
                 if (requestingUser == null) return new List<PlaylistInformationDto>();
                 var playlistInformationDtoBuilder = new PlaylistInformationDtoBuilder();
 
-                _playlistRecommendationsService.UpdateRecommendationsWeeklyViews();
+                _playlistRecommendationsService.DeleteOldRecommendations();
+                
                 var trendingPlaylistDocuments =
                     await _playlistRecommendationsService.GetTrendingPlaylists(request.PlaylistName, request.Limit);
                 if (trendingPlaylistDocuments == null) return new List<PlaylistInformationDto>();

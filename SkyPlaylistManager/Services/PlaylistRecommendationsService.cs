@@ -119,32 +119,7 @@ namespace SkyPlaylistManager.Services
 
 
         // UPDATE
-
-        public async void UpdateRecommendationsWeeklyViews()
-        {
-            var recommendationsWithOldDatesFilter =
-                Builders<PlaylistRecommendationsDocument>.Filter.ElemMatch<BsonValue>(
-                    "viewDates",
-                    new BsonDocument("$lt", DateTime.Now.AddDays(-7)));
-
-            var recommendationWithOldDates =
-                await _recommendationsCollection.Find(recommendationsWithOldDatesFilter).ToListAsync();
-
-            DeleteOldRecommendations();
-
-            foreach (var recommendation in recommendationWithOldDates)
-            {
-                var recommendationWithNewDates =
-                    await _recommendationsCollection.Find(
-                            Builders<PlaylistRecommendationsDocument>.Filter.Eq("_id", new ObjectId(recommendation.Id)))
-                        .FirstOrDefaultAsync();
-
-                await _recommendationsCollection.UpdateOneAsync(p => p.Id == recommendation.Id,
-                    Builders<PlaylistRecommendationsDocument>.Update.Set("viewsAmount",
-                        recommendationWithNewDates.WeeklyViewDates.Count));
-            }
-        }
-
+        
         public async Task AddViewToPlaylist(string playlistId, int totalViewAmount)
         {
             var filter = Builders<PlaylistRecommendationsDocument>.Filter.Eq(p => p.PlaylistId, playlistId);
@@ -158,15 +133,15 @@ namespace SkyPlaylistManager.Services
 
         // DELETE
 
-        private async void DeleteOldRecommendations()
+        public async void DeleteOldRecommendations()
         {
             var recommendationsWithOldDatesFilter =
                 Builders<PlaylistRecommendationsDocument>.Filter.ElemMatch<BsonValue>(
-                    "viewDates",
+                    "weeklyViewDates",
                     new BsonDocument("$lt", DateTime.Now.AddDays(-7)));
 
             var pullOldDates =
-                Builders<PlaylistRecommendationsDocument>.Update.Pull("viewDates",
+                Builders<PlaylistRecommendationsDocument>.Update.Pull("weeklyViewDates",
                     new BsonDocument("$lt", DateTime.Now.AddDays(-7)));
 
             await _recommendationsCollection.UpdateOneAsync(recommendationsWithOldDatesFilter, pullOldDates);

@@ -14,6 +14,12 @@ public class PlaylistInformationDtoBuilder
             new PlaylistInformationDto(playlistId, title, description, thumbnailUrl, resultsAmount);
         return this;
     }
+    public PlaylistInformationDtoBuilder BeginBuilding(PlaylistDocument playlistDocument)
+    {
+        _playlistInformationDto =
+            new PlaylistInformationDto(playlistDocument);
+        return this;
+    }
 
     public PlaylistInformationDtoBuilder AddViews(PlaylistRecommendationsDocument? playlistViews)
     {
