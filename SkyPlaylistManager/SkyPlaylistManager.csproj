@@ -146,6 +146,7 @@
     <TypeScriptCompile Include="NET6React\src\apiSearches\specificSearches\YouTubeSearchVideoByGeneral.ts" />
     <TypeScriptCompile Include="NET6React\src\authenticators\SpotifyAuthenticator.ts" />
     <TypeScriptCompile Include="NET6React\src\authenticators\TwitchAuthenticator.ts" />
+    <TypeScriptCompile Include="NET6React\src\components\cards\content\PodcastSearchItem.tsx" />
     <TypeScriptCompile Include="NET6React\src\components\homePage\HomePage.tsx" />
     <TypeScriptCompile Include="NET6React\src\components\loginPage\LoginPage.tsx" />
     <TypeScriptCompile Include="NET6React\src\components\players\CloseVideoButton.tsx" />
@@ -189,6 +190,7 @@
     <TypeScriptCompile Include="NET6React\src\models\backendSearches\Playlist.ts" />
     <TypeScriptCompile Include="NET6React\src\models\backendSearches\UserPlaylist.ts" />
     <TypeScriptCompile Include="NET6React\src\models\backendSearches\UserProfile.ts" />
+    <TypeScriptCompile Include="NET6React\src\models\components\pages\searchPage\searchItems\PodcastSearchItemProperties.ts" />
     <TypeScriptCompile Include="NET6React\src\models\components\players\MixcloudPlayerProperties.ts" />
     <TypeScriptCompile Include="NET6React\src\models\components\players\MultiPlatformPlayerProperties.ts" />
     <TypeScriptCompile Include="NET6React\src\models\components\players\SpotifyPlayerProperties.ts" />
@@ -219,6 +221,7 @@
     <TypeScriptCompile Include="NET6React\src\requests\apiRequests\converters\DailymotionVideosPageToListItemsConverter.ts" />
     <TypeScriptCompile Include="NET6React\src\requests\apiRequests\converters\MixcloudTracksPageToListItemsConverter.ts" />
     <TypeScriptCompile Include="NET6React\src\requests\apiRequests\converters\SoundcloudTracksPageToListItemsConverter.ts" />
+    <TypeScriptCompile Include="NET6React\src\requests\apiRequests\converters\SpotifyPodcastsPageToListItemsConverter.ts" />
     <TypeScriptCompile Include="NET6React\src\requests\apiRequests\platforms\Dailymotion.tsx" />
     <TypeScriptCompile Include="NET6React\src\requests\apiRequests\platforms\Facebook.tsx" />
     <TypeScriptCompile Include="NET6React\src\requests\apiRequests\platforms\Mixcloud.tsx" />
@@ -226,6 +229,7 @@
     <TypeScriptCompile Include="NET6React\src\requests\apiRequests\specificSearches\DailymotionSearchVideo.ts" />
     <TypeScriptCompile Include="NET6React\src\requests\apiRequests\specificSearches\MixcloudSearchTrack.ts" />
     <TypeScriptCompile Include="NET6React\src\requests\apiRequests\specificSearches\SoundcloudSearchTrackByAlbum.ts" />
+    <TypeScriptCompile Include="NET6React\src\requests\apiRequests\specificSearches\SpotifySearchPodcastsByName.ts" />
     <TypeScriptCompile Include="NET6React\src\searchLists\LivestreamSearchList.tsx" />
     <TypeScriptCompile Include="NET6React\src\searchLists\SearchList.ts" />
     <TypeScriptCompile Include="NET6React\src\searchLists\TrackSearchList.tsx" />
