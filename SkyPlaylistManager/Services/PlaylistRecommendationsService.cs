@@ -144,7 +144,7 @@ namespace SkyPlaylistManager.Services
                 Builders<PlaylistRecommendationsDocument>.Update.Pull("weeklyViewDates",
                     new BsonDocument("$lt", DateTime.Now.AddDays(-7)));
 
-            await _recommendationsCollection.UpdateOneAsync(recommendationsWithOldDatesFilter, pullOldDates);
+            await _recommendationsCollection.UpdateManyAsync(recommendationsWithOldDatesFilter, pullOldDates);
         }
     }
 }
