@@ -1,11 +1,10 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using System.Collections.Immutable;
+using Microsoft.AspNetCore.SignalR;
 using SkyPlaylistManager.Models.Database;
 using SkyPlaylistManager.Models.DTOs.HubRequests;
 
 namespace SkyPlaylistManager.Services
 {
-
-
 
 
     public class SignalRService : Hub
@@ -23,17 +22,28 @@ namespace SkyPlaylistManager.Services
             _connections = new Dictionary<string, string>();
         }
 
-        public async Task NotifyMyFriends(string databaseUserId, string message)
+        public async Task <List<UserDocument>> GetUserFriends(string databaseUserId) 
         {
             var myFollowers = await _communityService.GetUsersFollowingUser(databaseUserId);
-           
+            var myFollowedUsers = await _communityService.GetFollowedUsers(databaseUserId);
 
-            foreach (var follower in myFollowers)
-            {
-                await Clients.Client(_connections[follower.Id]).SendAsync("notify", message);
-            }
+            var mutualFollowers = myFollowers.Where(followerUser => myFollowedUsers.Any(followedUser => followedUser.Id == followerUser.Id)).ToList();
 
+            return mutualFollowers;
         }
+
+        public async Task NotifyMyFriends(string databaseUserId, string message)
+        {
+            var userFriends = await GetUserFriends(databaseUserId);
+
+            foreach (var friend in userFriends)
+            {
+                await Clients.Client(_connections[friend.Id]).SendAsync("notify", message);
+                await GetAndSendUserOnlineFriends(friend.Id);
+            }
+        }
+
+
 
         public async Task UserConnected(ConnectedUserDto request)
         {
@@ -43,10 +53,12 @@ namespace SkyPlaylistManager.Services
             _connections[databaseUserId] = request.hubconnectionId;
 
             var message = connectedUserInformation.Username + " (" + connectedUserInformation.Name + ") is now Online.";
-            NotifyMyFriends(databaseUserId, message);
-            GetMyOnlineFriends(databaseUserId);
+            await NotifyMyFriends(databaseUserId, message);
+
+            await GetAndSendUserOnlineFriends(databaseUserId);
         }
 
+   
 
         public async Task UserDisconnected(ConnectedUserDto request)
         {
@@ -54,25 +66,38 @@ namespace SkyPlaylistManager.Services
             var connectedUserInformation = await _usersService.GetUserById(databaseUserId);
 
             var message = connectedUserInformation.Username + " (" + connectedUserInformation.Name + ") is now Offline.";
-            NotifyMyFriends(databaseUserId, message);
+            await NotifyMyFriends(databaseUserId, message);
 
-            _connections.Remove(databaseUserId);
+            try
+            {
+                _connections.Remove(databaseUserId);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
         }
 
 
-        public async Task GetMyOnlineFriends(string databaseUserId)
+        public async Task GetAndSendUserOnlineFriends(string databaseUserId)
         {
-            var myFollowers = await _communityService.GetUsersFollowingUser(databaseUserId);
+            var userFriends = await GetUserFriends(databaseUserId);
 
-            var myHubConnectionId = _connections[databaseUserId];
+            var userHubConnectionId = _connections[databaseUserId];
 
             List<String> userKeys = _connections.Keys.ToList(); 
 
-            var myOnlineFollowers = myFollowers.Where(user => userKeys.Contains(user.Id));
+            var userOnlineFriends = userFriends.Where(user => userKeys.Contains(user.Id));
 
-            await Clients.Client(myHubConnectionId).SendAsync("myFriends", myOnlineFollowers);
-
+            await Clients.Client(userHubConnectionId).SendAsync("myOnlineFriends", userOnlineFriends);
         }
+
+        public async Task GetOnlineFriends(string sessionToken)
+        {
+            var databaseUserId = _sessionTokensService.GetUserIdFromToken(sessionToken);
+            await GetAndSendUserOnlineFriends(databaseUserId);
+        }
+
 
 
     }
