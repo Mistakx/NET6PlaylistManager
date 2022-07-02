@@ -99,13 +99,12 @@ public class UserController : ControllerBase
 
             HttpContext.Session.SetString("Session_user", foundUser.Id!);
             var session = HttpContext.Session.GetString("Session_user");
-            Console.WriteLine(session);
 
             return new LoginResponseDto(session!, foundUser.Username);
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex.StackTrace);
+            Console.WriteLine(ex);
             return BadRequest("Error occured while logging in");
         }
     }
@@ -261,7 +260,7 @@ public class UserController : ControllerBase
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex.StackTrace);
+            Console.WriteLine(ex);
             return new List<PlaylistInformationDto>();
         }
     }
@@ -282,7 +281,7 @@ public class UserController : ControllerBase
 
         catch (Exception ex)
         {
-            Console.WriteLine(ex.StackTrace);
+            Console.WriteLine(ex);
             return BadRequest("Error occurred while sorting playlist");
         }
     }
@@ -309,7 +308,7 @@ public class UserController : ControllerBase
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex.StackTrace);
+            Console.WriteLine(ex);
             return BadRequest("Error occured while changing profile picture");
         }
     }

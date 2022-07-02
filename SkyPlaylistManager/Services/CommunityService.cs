@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using SkyPlaylistManager.Models.Database;
@@ -154,7 +153,19 @@ namespace SkyPlaylistManager.Services
             return followers.Count;
         }
 
+        public async Task<List<UserDocument>> GetUserFriends(string userId)
+        {
+            var userFollowers = await GetUsersFollowingUser(userId);
+            if (userFollowers == null) return new List<UserDocument>();
+            var usersUserFollows = await GetFollowedUsers(userId);
+            if (usersUserFollows == null) return new List<UserDocument>();
 
+            var mutualFollowersDocuments = userFollowers.Where(followerUser =>
+                usersUserFollows.Any(followedUser => followedUser.Id == followerUser.Id)).ToList();
+
+            return mutualFollowersDocuments;
+        }
+        
         // UPDATE
 
         public async Task FollowPlaylist(string userFollowingId, ObjectId playlistToFollowId)

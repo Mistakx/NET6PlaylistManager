@@ -70,19 +70,7 @@ namespace SkyPlaylistManager
             {
                 Console.WriteLine(ex);
             }
-            //try
-            //{
-            //    var oldPhoto = await _usersService.GetUserProfilePhoto(sessionToken);
-            //    string oldUserPhotoPath = Path.Combine(Directory.GetCurrentDirectory(), "Images/",
-            //        (string) oldPhoto["profilePhotoUrl"]);
-            //    oldUserPhotoPath = oldUserPhotoPath.Replace("User/GetImage/", "");
-            //    FileInfo oldPhotoFileInfo = new FileInfo(oldUserPhotoPath);
-            //    oldPhotoFileInfo.Delete();
-            //}
-            //catch (Exception ex)
-            //{
-            //    Console.WriteLine(ex);
-            //}
+
         }
     }
 }

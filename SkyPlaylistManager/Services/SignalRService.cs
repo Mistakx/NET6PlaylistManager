@@ -1,76 +1,77 @@
-﻿using System.Collections.Immutable;
-using Microsoft.AspNetCore.SignalR;
+﻿using Microsoft.AspNetCore.SignalR;
 using SkyPlaylistManager.Models.Database;
 using SkyPlaylistManager.Models.DTOs.HubRequests;
 
 namespace SkyPlaylistManager.Services
 {
-
-
     public class SignalRService : Hub
     {
         private readonly UsersService _usersService;
         private readonly SessionTokensService _sessionTokensService;
         private readonly CommunityService _communityService;
-        private Dictionary<string, string> _connections;
+        private readonly Dictionary<string, List<string>> _userConnections;
 
-        public SignalRService(UsersService usersService, SessionTokensService sessionTokensService, CommunityService communityService)
+        public SignalRService(UsersService usersService, SessionTokensService sessionTokensService,
+            CommunityService communityService)
         {
             _usersService = usersService;
             _sessionTokensService = sessionTokensService;
             _communityService = communityService;
-            _connections = new Dictionary<string, string>();
+            _userConnections = new Dictionary<string, List<string>>();
         }
 
-        public async Task <List<UserDocument>> GetUserFriends(string databaseUserId) 
+        // Receive Endpoints
+        public async Task UserHasConnected(ConnectedUserDto request)
         {
-            var myFollowers = await _communityService.GetUsersFollowingUser(databaseUserId);
-            var myFollowedUsers = await _communityService.GetFollowedUsers(databaseUserId);
-
-            var mutualFollowers = myFollowers.Where(followerUser => myFollowedUsers.Any(followedUser => followedUser.Id == followerUser.Id)).ToList();
-
-            return mutualFollowers;
-        }
-
-        public async Task NotifyMyFriends(string databaseUserId, string message)
-        {
-            var userFriends = await GetUserFriends(databaseUserId);
-
-            foreach (var friend in userFriends)
+            try
             {
-                await Clients.Client(_connections[friend.Id]).SendAsync("notify", message);
-                await GetAndSendUserOnlineFriends(friend.Id);
+                var userId = _sessionTokensService.GetUserIdFromToken(request.sessionToken);
+                var connectedUserInformation = await _usersService.GetUserById(userId);
+
+                if (_userConnections.ContainsKey(userId))
+                {
+                    _userConnections[userId].Add(Context.ConnectionId);
+                    Console.WriteLine("User was already connected. Not sending notifications to friends.");
+                }
+                else
+                {
+                    var message =
+                        $"{connectedUserInformation?.Username} ({connectedUserInformation?.Name}) is now online.";
+
+                    _userConnections.Add(userId, new List<string> { Context.ConnectionId });
+                    Console.WriteLine("User wasn't connected yet. Sending notifications to friends.");
+                    await SendUserConnectedNotification(userId, message);
+                    await UpdateUserOnlineFriends(userId);
+                }
+                await UpdateUser(userId);
+
+                Console.WriteLine("\nUser Connected: " + connectedUserInformation?.Username);
+                Console.WriteLine("User Connected number of connections: " + _userConnections[userId].Count);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
             }
         }
 
-
-
-        public async Task UserConnected(ConnectedUserDto request)
+        public async Task UserHasDisconnected(ConnectedUserDto request)
         {
-            var databaseUserId = _sessionTokensService.GetUserIdFromToken(request.sessionToken);
-            var connectedUserInformation = await _usersService.GetUserById(databaseUserId);
-
-            _connections[databaseUserId] = request.hubconnectionId;
-
-            var message = connectedUserInformation.Username + " (" + connectedUserInformation.Name + ") is now Online.";
-            await NotifyMyFriends(databaseUserId, message);
-
-            await GetAndSendUserOnlineFriends(databaseUserId);
-        }
-
-   
-
-        public async Task UserDisconnected(ConnectedUserDto request)
-        {
-            var databaseUserId = _sessionTokensService.GetUserIdFromToken(request.sessionToken);
-            var connectedUserInformation = await _usersService.GetUserById(databaseUserId);
-
-            var message = connectedUserInformation.Username + " (" + connectedUserInformation.Name + ") is now Offline.";
-            await NotifyMyFriends(databaseUserId, message);
-
             try
             {
-                _connections.Remove(databaseUserId);
+                var userId = _sessionTokensService.GetUserIdFromToken(request.sessionToken);
+                var connectedUserInformation = await _usersService.GetUserById(userId);
+
+                var message =
+                    $"{connectedUserInformation?.Username} ({connectedUserInformation?.Name}) is now offline.";
+
+                await SendUserConnectedNotification(userId, message);
+
+                // _userConnections[userId].Remove(Context.ConnectionId);
+                // if (_userConnections[userId].Count == 0) _userConnections.Remove(userId);
+                _userConnections.Remove(userId);
+
+
+                Console.WriteLine("User Disconnected: " + userId);
             }
             catch (Exception ex)
             {
@@ -79,27 +80,88 @@ namespace SkyPlaylistManager.Services
         }
 
 
-        public async Task GetAndSendUserOnlineFriends(string databaseUserId)
+        // Send Endpoints
+        private async Task SendUserConnectedNotification(string userId, string message)
         {
-            var userFriends = await GetUserFriends(databaseUserId);
+            try
+            {
+                var userFriends = await _communityService.GetUserFriends(userId);
 
-            var userHubConnectionId = _connections[databaseUserId];
+                var userKeys = _userConnections.Keys.ToList();
 
-            List<String> userKeys = _connections.Keys.ToList(); 
+                var userOnlineFriends = userFriends.Where(user => userKeys.Contains(user.Id));
 
-            var userOnlineFriends = userFriends.Where(user => userKeys.Contains(user.Id));
-
-            await Clients.Client(userHubConnectionId).SendAsync("myOnlineFriends", userOnlineFriends);
+                foreach (var friend in userOnlineFriends)
+                {
+                    foreach (var connectionId in _userConnections[friend.Id])
+                    {
+                        await Clients.Client(connectionId).SendAsync("notify", message);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
         }
 
-        public async Task GetOnlineFriends(string sessionToken)
+
+        private async Task UpdateUserOnlineFriends(string userId)
         {
-            var databaseUserId = _sessionTokensService.GetUserIdFromToken(sessionToken);
-            await GetAndSendUserOnlineFriends(databaseUserId);
+            try
+            {
+                var userOnlineFriends = await GetUserOnlineFriends(userId);
+                Console.WriteLine("Updating User Online Friends: " + userId);
+                foreach (var friend in userOnlineFriends)
+                {
+                    Console.WriteLine("Friend: " + friend.Id);
+
+                    var friendOnlineFriends = await GetUserOnlineFriends(friend.Id);
+
+
+                    foreach (var connectionId in _userConnections[friend.Id])
+                    {
+                        await Clients.Client(connectionId).SendAsync("myOnlineFriends", friendOnlineFriends);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
         }
 
+        private async Task UpdateUser(string userId)
+        {
+            try
+            {
+                var userOnlineFriends = await GetUserOnlineFriends(userId);
+                Console.WriteLine("Updating User: " + userId);
 
+                foreach (var connectionId in _userConnections[userId])
+                {
+                    await Clients.Client(connectionId).SendAsync("myOnlineFriends", userOnlineFriends);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
+        }
 
+        private async Task<IEnumerable<UserDocument>> GetUserOnlineFriends(string userId)
+        {
+            try
+            {
+                var userFriends = await _communityService.GetUserFriends(userId);
+                var userOnlineFriends = userFriends.Where(user => _userConnections.ContainsKey(user.Id));
+                return userOnlineFriends;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+                return new List<UserDocument>();
+            }
+        }
     }
-
 }
