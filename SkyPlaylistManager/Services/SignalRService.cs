@@ -25,8 +25,11 @@ namespace SkyPlaylistManager.Services
         {
             try
             {
+
                 var userId = _sessionTokensService.GetUserIdFromToken(request.sessionToken);
                 var connectedUserInformation = await _usersService.GetUserById(userId);
+
+                Console.WriteLine("\nUser started connecting: " + connectedUserInformation?.Username);
 
                 if (_userConnections.ContainsKey(userId))
                 {
@@ -45,8 +48,9 @@ namespace SkyPlaylistManager.Services
                 }
                 await UpdateUser(userId);
 
-                Console.WriteLine("\nUser Connected: " + connectedUserInformation?.Username);
                 Console.WriteLine("User Connected number of connections: " + _userConnections[userId].Count);
+                Console.WriteLine("\nUser finished connecting.");
+
             }
             catch (Exception ex)
             {
@@ -60,16 +64,14 @@ namespace SkyPlaylistManager.Services
             {
                 var userId = _sessionTokensService.GetUserIdFromToken(request.sessionToken);
                 var connectedUserInformation = await _usersService.GetUserById(userId);
+                
+                _userConnections.Remove(userId);
 
                 var message =
                     $"{connectedUserInformation?.Username} ({connectedUserInformation?.Name}) is now offline.";
 
                 await SendUserConnectedNotification(userId, message);
-
-                // _userConnections[userId].Remove(Context.ConnectionId);
-                // if (_userConnections[userId].Count == 0) _userConnections.Remove(userId);
-                _userConnections.Remove(userId);
-
+                await UpdateUserOnlineFriends(userId);
 
                 Console.WriteLine("User Disconnected: " + userId);
             }
@@ -79,7 +81,16 @@ namespace SkyPlaylistManager.Services
             }
         }
 
-
+        public override async Task OnDisconnectedAsync(Exception ex){
+            // var name = Context.User.Identity.Name;
+            // var user = Context.User;
+            // Console.WriteLine("Disconnecting to SignalRHub for User: {0}", name);
+            //
+            // var msg = "some message";
+            // await Clients.Groups(name).SendAsync("jsListener", msg);
+            //                
+            // await base.OnDisconnectedAsync(ex);           
+        }
         // Send Endpoints
         private async Task SendUserConnectedNotification(string userId, string message)
         {
@@ -106,7 +117,7 @@ namespace SkyPlaylistManager.Services
         }
 
 
-        private async Task UpdateUserOnlineFriends(string userId)
+        public async Task UpdateUserOnlineFriends(string userId)
         {
             try
             {
@@ -131,7 +142,7 @@ namespace SkyPlaylistManager.Services
             }
         }
 
-        private async Task UpdateUser(string userId)
+        public async Task UpdateUser(string userId)
         {
             try
             {

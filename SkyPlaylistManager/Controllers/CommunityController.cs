@@ -18,6 +18,7 @@ namespace SkyPlaylistManager.Controllers
         private readonly PlaylistRecommendationsService _playlistRecommendationsService;
         private readonly UserRecommendationsService _userRecommendationsService;
         private readonly PlaylistsService _playlistsService;
+        private readonly SignalRService _signalRService;
 
 
         public CommunityController(
@@ -26,7 +27,8 @@ namespace SkyPlaylistManager.Controllers
             UsersService usersService,
             PlaylistRecommendationsService playlistRecommendationsService,
             PlaylistsService playlistsService,
-            UserRecommendationsService userRecommendationsService)
+            UserRecommendationsService userRecommendationsService,
+            SignalRService signalRService)
         {
             _communityService = communityService;
             _sessionTokensService = sessionTokensService;
@@ -34,6 +36,7 @@ namespace SkyPlaylistManager.Controllers
             _playlistRecommendationsService = playlistRecommendationsService;
             _playlistsService = playlistsService;
             _userRecommendationsService = userRecommendationsService;
+            _signalRService = signalRService;
         }
 
         // READ
@@ -287,14 +290,20 @@ namespace SkyPlaylistManager.Controllers
                 if (await _communityService.UserAlreadyBeingFollowed(requestingUserId, requestedUser.Id))
                 {
                     await _communityService.UnfollowUser(requestingUserId, ObjectId.Parse(requestedUser.Id));
+                    await _signalRService.UpdateUser(requestingUserId);
+                    await _signalRService.UpdateUser(requestedUser.Id);
                     return Ok("Successfully unfollowed user");
                 }
 
                 if (!await _communityService.UserAlreadyBeingFollowed(requestingUserId, requestedUser.Id))
                 {
                     await _communityService.FollowUser(requestingUserId, new ObjectId(requestedUser.Id));
+                    await _signalRService.UpdateUser(requestingUserId);
+                    await _signalRService.UpdateUser(requestedUser.Id);
                     return Ok("Successfully followed user");
                 }
+                
+
 
                 return BadRequest("Something went wrong while detecting if user already follows playlist");
             }
