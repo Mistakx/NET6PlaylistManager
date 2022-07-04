@@ -62,6 +62,9 @@ namespace SkyPlaylistManager
             try
             {
                 var fileName = fileToDelete.Replace("GetImage/" + folder +"/", "");
+                
+                if (fileName == "DefaultUserPhoto.jpeg") return;
+
                 string completeFilePath = Path.Combine(Directory.GetCurrentDirectory(), "Images/", folder, fileName);
                 FileInfo completeFilePathInfo = new FileInfo(completeFilePath);
                 completeFilePathInfo.Delete();
