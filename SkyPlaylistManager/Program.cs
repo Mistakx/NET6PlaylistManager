@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http.Connections;
 using SkyPlaylistManager.Models.Database;
 using SkyPlaylistManager.Services;
 using SkyPlaylistManager;
@@ -20,7 +21,11 @@ builder.Services.AddSingleton<SignalRService>();
 
 builder.Services.AddControllersWithViews();
 
-builder.Services.AddSignalR();
+builder.Services.AddSignalR(hubOptions =>
+{
+    hubOptions.EnableDetailedErrors = true;
+    hubOptions.KeepAliveInterval = TimeSpan.FromMinutes(1);
+});
 
 builder.Services.AddCors();
 
@@ -53,6 +58,14 @@ app.MapControllerRoute(
 
 app.MapFallbackToFile("index.html");
 
-app.MapHub<SignalRService>("/hub");
+app.MapHub<SignalRService>("/hub", options => { options.Transports = HttpTransportType.WebSockets; });
 
 app.Run();
+
+// dotnet dev-certs https --clean
+// dotnet dev-certs https --trust
+
+// https://stackoverflow.com/questions/50935730/how-do-i-disable-https-in-asp-net-core-2-1-kestrel
+// https://stackoverflow.com/questions/44574399/create-react-app-how-to-use-https-instead-of-http
+// https://stackoverflow.com/questions/55568697/blank-page-after-running-build-on-create-react-app
+// https://stackoverflow.com/questions/15512980/signalr-net-client-disconnecting

@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using System.Text.Json.Nodes;
+using Microsoft.AspNetCore.SignalR;
+using SkyPlaylistManager.Models;
 using SkyPlaylistManager.Models.Database;
-using SkyPlaylistManager.Models.DTOs.HubRequests;
+using SkyPlaylistManager.Models.DTOs.LiveRoomResponses;
 
 namespace SkyPlaylistManager.Services
 {
@@ -9,7 +11,7 @@ namespace SkyPlaylistManager.Services
         private readonly UsersService _usersService;
         private readonly SessionTokensService _sessionTokensService;
         private readonly CommunityService _communityService;
-        private readonly Dictionary<string, List<string>> _userConnections;
+        private readonly List<UserConnection> _userConnections;
 
         public SignalRService(UsersService usersService, SessionTokensService sessionTokensService,
             CommunityService communityService)
@@ -17,23 +19,48 @@ namespace SkyPlaylistManager.Services
             _usersService = usersService;
             _sessionTokensService = sessionTokensService;
             _communityService = communityService;
-            _userConnections = new Dictionary<string, List<string>>();
+            _userConnections = new List<UserConnection>();
         }
 
         // Receive Endpoints
-        public async Task UserHasConnected(ConnectedUserDto request)
+        // public async Task UserHasLoggedOut(UserLoggedOutDto request)
+        // {
+        //     try
+        //     {
+        //         var userId = _sessionTokensService.GetUserIdFromToken(request.SessionToken);
+        //         var connectedUserInformation = await _usersService.GetUserById(userId);
+        //
+        //         UserConnection.RemoveUserId(_userConnections, userId);
+        //
+        //         var message =
+        //             $"{connectedUserInformation?.Username} ({connectedUserInformation?.Name}) is now offline.";
+        //
+        //         await SendUserConnectedNotification(userId, message);
+        //         await UpdateUserOnlineFriends(userId);
+        //
+        //         Console.WriteLine("User logged out: " + userId);
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         Console.WriteLine(ex);
+        //     }
+        // }
+
+        public override async Task OnConnectedAsync()
         {
             try
             {
+                var connectionId = Context.ConnectionId;
+                var sessionToken = Context.GetHttpContext()?.Request.Query["sessionToken"];
+                var userId = _sessionTokensService.GetUserIdFromToken(sessionToken!);
 
-                var userId = _sessionTokensService.GetUserIdFromToken(request.sessionToken);
                 var connectedUserInformation = await _usersService.GetUserById(userId);
 
                 Console.WriteLine("\nUser started connecting: " + connectedUserInformation?.Username);
 
-                if (_userConnections.ContainsKey(userId))
+                if (UserConnection.ContainsUserId(_userConnections, userId))
                 {
-                    _userConnections[userId].Add(Context.ConnectionId);
+                    UserConnection.GetUserConnectionByUserId(_userConnections, userId).ConnectionIds.Add(connectionId);
                     Console.WriteLine("User was already connected. Not sending notifications to friends.");
                 }
                 else
@@ -41,31 +68,51 @@ namespace SkyPlaylistManager.Services
                     var message =
                         $"{connectedUserInformation?.Username} ({connectedUserInformation?.Name}) is now online.";
 
-                    _userConnections.Add(userId, new List<string> { Context.ConnectionId });
+                    var newUser = new UserConnection
+                    {
+                        UserId = userId,
+                    };
+                    newUser.ConnectionIds.Add(connectionId);
+                    _userConnections.Add(newUser);
                     Console.WriteLine("User wasn't connected yet. Sending notifications to friends.");
                     await SendUserConnectedNotification(userId, message);
                     await UpdateUserOnlineFriends(userId);
                 }
+
                 await UpdateUser(userId);
 
-                Console.WriteLine("User Connected number of connections: " + _userConnections[userId].Count);
-                Console.WriteLine("\nUser finished connecting.");
+                Console.WriteLine("User Connected number of connections: " + UserConnection
+                    .GetUserConnectionByUserId(_userConnections, userId).ConnectionIds.Count);
 
+                Console.WriteLine("User finished connecting.");
+
+                await base.OnConnectedAsync();
             }
-            catch (Exception ex)
+            catch (Exception exception)
             {
-                Console.WriteLine(ex);
+                Console.WriteLine(exception);
             }
         }
 
-        public async Task UserHasDisconnected(ConnectedUserDto request)
+        public override async Task OnDisconnectedAsync(Exception? ex)
         {
             try
             {
-                var userId = _sessionTokensService.GetUserIdFromToken(request.sessionToken);
+                var connectionId = Context.ConnectionId;
+                var userId = UserConnection.GetUserConnectionByConnectionId(_userConnections, connectionId).UserId;
+                Console.WriteLine("\nUser disconnected: " + userId);
+
+                if (userId.Equals(null))
+                {
+                    Console.WriteLine("User disconnected but was not connected.");
+                    return;
+                }
+
                 var connectedUserInformation = await _usersService.GetUserById(userId);
-                
-                _userConnections.Remove(userId);
+
+                UserConnection.RemoveConnectionId(_userConnections, connectionId);
+                if (UserConnection.GetUserConnectionByUserId(_userConnections, userId).ConnectionIds.Count == 0)
+                    UserConnection.RemoveUserId(_userConnections, userId);
 
                 var message =
                     $"{connectedUserInformation?.Username} ({connectedUserInformation?.Name}) is now offline.";
@@ -74,6 +121,21 @@ namespace SkyPlaylistManager.Services
                 await UpdateUserOnlineFriends(userId);
 
                 Console.WriteLine("User Disconnected: " + userId);
+
+                await base.OnDisconnectedAsync(ex);
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine(exception);
+            }
+        }
+
+        public async Task Ping(string request)
+        {
+            try
+            {
+                var connectionId = Context.ConnectionId;
+                await AnswerPing(connectionId);
             }
             catch (Exception ex)
             {
@@ -81,30 +143,40 @@ namespace SkyPlaylistManager.Services
             }
         }
 
-        public override async Task OnDisconnectedAsync(Exception ex){
-            // var name = Context.User.Identity.Name;
-            // var user = Context.User;
-            // Console.WriteLine("Disconnecting to SignalRHub for User: {0}", name);
-            //
-            // var msg = "some message";
-            // await Clients.Groups(name).SendAsync("jsListener", msg);
-            //                
-            // await base.OnDisconnectedAsync(ex);           
+        public async Task UpdateCurrentlyPlaying(JsonObject? request)
+        {
+            try
+            {
+                var connectionId = Context.ConnectionId;
+                var userConnection = UserConnection.GetUserConnectionByConnectionId(_userConnections, connectionId);
+                // Get title field of json object
+                Console.WriteLine($"\nUpdating currently playing {userConnection.UserId} {request?["title"]}");
+
+                userConnection.CurrentlyPlaying = request;
+                await UpdateUserOnlineFriends(userConnection.UserId);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
         }
+
         // Send Endpoints
+
         private async Task SendUserConnectedNotification(string userId, string message)
         {
             try
             {
                 var userFriends = await _communityService.GetUserFriends(userId);
 
-                var userKeys = _userConnections.Keys.ToList();
+                var userKeys = UserConnection.GetUserIds(_userConnections);
 
                 var userOnlineFriends = userFriends.Where(user => userKeys.Contains(user.Id));
 
                 foreach (var friend in userOnlineFriends)
                 {
-                    foreach (var connectionId in _userConnections[friend.Id])
+                    foreach (var connectionId in UserConnection.GetUserConnectionByUserId(_userConnections, friend.Id)
+                                 .ConnectionIds)
                     {
                         await Clients.Client(connectionId).SendAsync("notify", message);
                     }
@@ -116,23 +188,33 @@ namespace SkyPlaylistManager.Services
             }
         }
 
-
         public async Task UpdateUserOnlineFriends(string userId)
         {
             try
             {
                 var userOnlineFriends = await GetUserOnlineFriends(userId);
-                Console.WriteLine("Updating User Online Friends: " + userId);
+                Console.WriteLine("Updating user online friends.");
                 foreach (var friend in userOnlineFriends)
                 {
                     Console.WriteLine("Friend: " + friend.Id);
 
                     var friendOnlineFriends = await GetUserOnlineFriends(friend.Id);
 
-
-                    foreach (var connectionId in _userConnections[friend.Id])
+                    var onlineFriendsDto = new List<LiveRoomUserDto>();
+                    foreach (var onlineFriend in friendOnlineFriends)
                     {
-                        await Clients.Client(connectionId).SendAsync("myOnlineFriends", friendOnlineFriends);
+                        var onlineFriendConnection =
+                            UserConnection.GetUserConnectionByUserId(_userConnections, onlineFriend.Id);
+
+                        onlineFriendsDto.Add(new LiveRoomUserDto(onlineFriend,
+                            onlineFriendConnection.CurrentlyPlaying));
+                    }
+
+
+                    foreach (var connectionId in UserConnection.GetUserConnectionByUserId(_userConnections, friend.Id)
+                                 .ConnectionIds)
+                    {
+                        await Clients.Client(connectionId).SendAsync("myOnlineFriends", onlineFriendsDto);
                     }
                 }
             }
@@ -147,11 +229,26 @@ namespace SkyPlaylistManager.Services
             try
             {
                 var userOnlineFriends = await GetUserOnlineFriends(userId);
+                var onlineFriendsDto = new List<LiveRoomUserDto>();
+                foreach (var onlineFriend in userOnlineFriends)
+                {
+                    var onlineFriendConnection =
+                        UserConnection.GetUserConnectionByUserId(_userConnections, onlineFriend.Id);
+
+                    onlineFriendsDto.Add(new LiveRoomUserDto(onlineFriend,
+                        onlineFriendConnection.CurrentlyPlaying));
+                }
+
                 Console.WriteLine("Updating User: " + userId);
 
-                foreach (var connectionId in _userConnections[userId])
+                if (UserConnection.ContainsUserId(_userConnections,
+                        userId)) // When following a user, check if he is connected before trying to update him
                 {
-                    await Clients.Client(connectionId).SendAsync("myOnlineFriends", userOnlineFriends);
+                    foreach (var connectionId in UserConnection.GetUserConnectionByUserId(_userConnections, userId)
+                                 .ConnectionIds)
+                    {
+                        await Clients.Client(connectionId).SendAsync("myOnlineFriends", onlineFriendsDto);
+                    }
                 }
             }
             catch (Exception ex)
@@ -165,13 +262,26 @@ namespace SkyPlaylistManager.Services
             try
             {
                 var userFriends = await _communityService.GetUserFriends(userId);
-                var userOnlineFriends = userFriends.Where(user => _userConnections.ContainsKey(user.Id));
+                var userOnlineFriends =
+                    userFriends.Where(user => UserConnection.ContainsUserId(_userConnections, user.Id));
                 return userOnlineFriends;
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex);
                 return new List<UserDocument>();
+            }
+        }
+
+        public async Task AnswerPing(string connectionId)
+        {
+            try
+            {
+                await Clients.Client(connectionId).SendAsync("ping", "pong");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
             }
         }
     }
