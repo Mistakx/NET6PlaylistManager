@@ -73,21 +73,21 @@ namespace SkyPlaylistManager.Controllers
             }
         }
 
-        [HttpPost("getTrendingContent")]
-        public async Task<List<UnknownContentResponseDto>?> GetTrendingContent(GetTrendingContentDto request)
+        [HttpPost("getTrendingMonthlyContent")]
+        public async Task<List<UnknownContentResponseDto>?> GetTrendingMonthlyContent(GetTrendingContentDto request)
         {
             try
             {
                 var unknownContentResponseDtoBuilder = new UnknownContentResponseDtoBuilder();
-                _contentRecommendationsService.DeleteOldRecommendations();
-                var trendingResults = await _contentRecommendationsService.GetTrendingContent(request.Limit);
+                _contentRecommendationsService.DeleteMonthlyOldRecommendations();
+                var trendingResults = await _contentRecommendationsService.GetTrendingMonthlyContent(request.Limit);
                 if (trendingResults == null) return new List<UnknownContentResponseDto>();
 
                 var deserializedList = new List<UnknownContentResponseDto>();
                 foreach (var trendingResult in trendingResults)
                 {
                     deserializedList.Add(unknownContentResponseDtoBuilder
-                        .BeginBuilding(trendingResult.GeneralizedResult).AddViews(trendingResult).Build());
+                        .BeginBuilding(trendingResult.GeneralizedResult).AddMonthlyViews(trendingResult).Build());
                 }
 
                 return deserializedList;
@@ -99,6 +99,57 @@ namespace SkyPlaylistManager.Controllers
             }
         }
 
+        [HttpPost("getTrendingWeeklyContent")]
+        public async Task<List<UnknownContentResponseDto>?> GetTrendingWeeklyContent(GetTrendingContentDto request)
+        {
+            try
+            {
+                var unknownContentResponseDtoBuilder = new UnknownContentResponseDtoBuilder();
+                _contentRecommendationsService.DeleteWeeklyOldRecommendations();
+                var trendingResults = await _contentRecommendationsService.GetTrendingWeeklyContent(request.Limit);
+                if (trendingResults == null) return new List<UnknownContentResponseDto>();
+
+                var deserializedList = new List<UnknownContentResponseDto>();
+                foreach (var trendingResult in trendingResults)
+                {
+                    deserializedList.Add(unknownContentResponseDtoBuilder
+                        .BeginBuilding(trendingResult.GeneralizedResult).AddWeeklyViews(trendingResult).Build());
+                }
+
+                return deserializedList;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.StackTrace);
+                return null;
+            }
+        }
+
+        [HttpPost("getTrendingDailyContent")]
+        public async Task<List<UnknownContentResponseDto>?> GetTrendingDailyContent(GetTrendingContentDto request)
+        {
+            try
+            {
+                var unknownContentResponseDtoBuilder = new UnknownContentResponseDtoBuilder();
+                _contentRecommendationsService.DeleteDailyOldRecommendations();
+                var trendingResults = await _contentRecommendationsService.GetTrendingDailyContent(request.Limit);
+                if (trendingResults == null) return new List<UnknownContentResponseDto>();
+
+                var deserializedList = new List<UnknownContentResponseDto>();
+                foreach (var trendingResult in trendingResults)
+                {
+                    deserializedList.Add(unknownContentResponseDtoBuilder
+                        .BeginBuilding(trendingResult.GeneralizedResult).AddDailyViews(trendingResult).Build());
+                }
+
+                return deserializedList;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.StackTrace);
+                return null;
+            }
+        }
 
         //! Users
         [HttpPost("saveUserView")]
@@ -274,7 +325,7 @@ namespace SkyPlaylistManager.Controllers
                 var playlistInformationDtoBuilder = new PlaylistInformationDtoBuilder();
 
                 _playlistRecommendationsService.DeleteOldRecommendations();
-                
+
                 var trendingPlaylistDocuments =
                     await _playlistRecommendationsService.GetTrendingPlaylists(request.PlaylistName, request.Limit);
                 if (trendingPlaylistDocuments == null) return new List<PlaylistInformationDto>();

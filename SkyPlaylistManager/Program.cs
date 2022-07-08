@@ -18,6 +18,7 @@ builder.Services.AddSingleton<ContentRecommendationsService>();
 builder.Services.AddSingleton<FilesManager>();
 builder.Services.AddSingleton<CommunityService>();
 builder.Services.AddSingleton<SignalRService>();
+builder.Services.AddSingleton<DatabaseMigrationsService>();
 
 builder.Services.AddControllersWithViews();
 

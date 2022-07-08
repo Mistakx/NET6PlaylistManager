@@ -13,23 +13,24 @@ public class UnknownContentResponseDto
     public string ThumbnailUrl { get; set; }
     public string Creator { get; set; }
     public string? PlatformPlayerUrl { get; set; }
-    
+
     // Track
     public string? AlbumName { get; set; }
-    
+
     // Podcast 
     public string? Url { get; set; }
     public string? Href { get; set; }
-    
+
     // Livestream
     public string? GameName { get; set; }
-    
+
     // Radio
     public string? Website { get; set; }
     public string? Region { get; set; }
 
-
+    public int? MonthlyViewsAmount { get; set; }
     public int? WeeklyViewsAmount { get; set; }
+    public int? DailyViewsAmount { get; set; }
     public int? TotalViewsAmount { get; set; }
 
     public UnknownContentResponseDto(UnknownContentDocumentDto request)

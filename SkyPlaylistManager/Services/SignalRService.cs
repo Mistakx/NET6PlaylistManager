@@ -10,15 +10,19 @@ namespace SkyPlaylistManager.Services
     {
         private readonly UsersService _usersService;
         private readonly SessionTokensService _sessionTokensService;
+        private readonly DatabaseMigrationsService _databaseMigrationsService;
         private readonly CommunityService _communityService;
         private readonly List<UserConnection> _userConnections;
 
-        public SignalRService(UsersService usersService, SessionTokensService sessionTokensService,
-            CommunityService communityService)
+        public SignalRService(UsersService usersService, 
+            SessionTokensService sessionTokensService,
+            CommunityService communityService,
+            DatabaseMigrationsService databaseMigrationsService)
         {
             _usersService = usersService;
             _sessionTokensService = sessionTokensService;
             _communityService = communityService;
+            _databaseMigrationsService = databaseMigrationsService;
             _userConnections = new List<UserConnection>();
         }
 
@@ -50,6 +54,10 @@ namespace SkyPlaylistManager.Services
         {
             try
             {
+                // Console.WriteLine("starting migration");
+                // await _databaseMigrationsService.UpdateDatabase();
+                // Console.WriteLine("ended migration");
+                
                 var connectionId = Context.ConnectionId;
                 var sessionToken = Context.GetHttpContext()?.Request.Query["sessionToken"];
                 var userId = _sessionTokensService.GetUserIdFromToken(sessionToken!);
