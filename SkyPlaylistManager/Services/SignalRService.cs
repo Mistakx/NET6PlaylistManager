@@ -54,10 +54,7 @@ namespace SkyPlaylistManager.Services
         {
             try
             {
-                // Console.WriteLine("starting migration");
-                // await _databaseMigrationsService.UpdateDatabase();
-                // Console.WriteLine("ended migration");
-                
+
                 var connectionId = Context.ConnectionId;
                 var sessionToken = Context.GetHttpContext()?.Request.Query["sessionToken"];
                 var userId = _sessionTokensService.GetUserIdFromToken(sessionToken!);

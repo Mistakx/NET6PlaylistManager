@@ -1,0 +1,26 @@
+# Use peacock/sky as user/password credentials
+version: '3.1'
+
+services:
+
+  mongo:
+    image: mongo
+    ports:
+      - 27017:27017
+    volumes:
+      - mongo-data:/data/db
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: peacock
+      MONGO_INITDB_ROOT_PASSWORD: sky
+      MONGO_INITDB_DATABASE: skyplaylistmanager
+      
+  mongo-express:
+    image: mongo-express
+    restart: always
+    ports:
+      - 8081:8081
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: peacock
+      ME_CONFIG_MONGODB_ADMINPASSWORD: sky
+      ME_CONFIG_MONGODB_URL: mongodb://peacock:sky@mongo:27017/
