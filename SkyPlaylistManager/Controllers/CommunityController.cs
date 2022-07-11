@@ -157,11 +157,11 @@ namespace SkyPlaylistManager.Controllers
                 var followedUsersInformation = new List<UserProfileDto>();
                 foreach (var followingUsersDocument in followingUsersDocuments)
                 {
-                    var playlistAlreadyBeingFollowed =
-                        await _communityService.PlaylistAlreadyBeingFollowed(followingUsersDocument.Id,
-                            requestingUserId);
+                    var userBeingFollowed =
+                        await _communityService.UserAlreadyBeingFollowed(requestingUserId, followingUsersDocument.Id);
+                    
                     followedUsersInformation.Add(userProfileDtoBuilder.BeginBuilding(followingUsersDocument)
-                        .AddFollowed(playlistAlreadyBeingFollowed).Build());
+                        .AddFollowed(userBeingFollowed).Build());
                 }
 
                 return followedUsersInformation;
