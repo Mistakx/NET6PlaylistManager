@@ -219,9 +219,12 @@ namespace SkyPlaylistManager.Controllers
                     return BadRequest("Result already in playlist");
                 }
 
-                await _contentService.CreateContent(request.Content);
+                if (request.Content.DatabaseId == null)
+                {
+                    await _contentService.CreateContent(request.Content);
+                }
+                
                 var generalizedResultId = ObjectId.Parse(request.Content.DatabaseId);
-
                 await _playListsService.InsertContentIdInPlaylist(request.PlaylistId, generalizedResultId);
                 return Ok("Successfully added to playlist");
             }
