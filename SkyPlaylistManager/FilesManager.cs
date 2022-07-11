@@ -23,9 +23,10 @@ namespace SkyPlaylistManager
         {
             FileInfo fileInfo = new FileInfo(file.FileName);
             if (fileInfo.Extension == ".jpg" || fileInfo.Extension == ".png" ||
-                fileInfo.Extension == ".jpeg") return true;
+                fileInfo.Extension == ".jpeg" || fileInfo.Extension == ".JPEG" ||
+                fileInfo.Extension == ".JPG") return true;
 
-            else return false;
+            return false;
         }
 
         public string InsertInDirectory(IFormFile file, string folder)
@@ -61,8 +62,8 @@ namespace SkyPlaylistManager
         {
             try
             {
-                var fileName = fileToDelete.Replace("GetImage/" + folder +"/", "");
-                
+                var fileName = fileToDelete.Replace("GetImage/" + folder + "/", "");
+
                 if (fileName == "DefaultUserPhoto.jpeg") return;
 
                 string completeFilePath = Path.Combine(Directory.GetCurrentDirectory(), "Images/", folder, fileName);
@@ -73,7 +74,6 @@ namespace SkyPlaylistManager
             {
                 Console.WriteLine(ex);
             }
-
         }
     }
 }
