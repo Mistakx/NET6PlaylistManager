@@ -39,21 +39,21 @@ namespace SkyPlaylistManager.Services
         
         public async Task<List<ContentRecommendationsDocument>?> GetTrendingMonthlyContent(int limit)
         {
-            var trendingContentList = await _recommendationsCollection.Find(p => true).ToListAsync();
+            var trendingContentList = await _recommendationsCollection.Find(p => p.MonthlyViewDates.Count > 0).ToListAsync();
             trendingContentList.Sort((x, y) => y.MonthlyViewDates.Count.CompareTo(x.MonthlyViewDates.Count));
             return trendingContentList.Take(limit).ToList();
         }
 
         public async Task<List<ContentRecommendationsDocument>?> GetTrendingWeeklyContent(int limit)
         {
-            var trendingContentList = await _recommendationsCollection.Find(p => true).ToListAsync();
+            var trendingContentList = await _recommendationsCollection.Find(p => p.WeeklyViewDates.Count > 0).ToListAsync();
             trendingContentList.Sort((x, y) => y.WeeklyViewDates.Count.CompareTo(x.WeeklyViewDates.Count));
             return trendingContentList.Take(limit).ToList();
         }
         
         public async Task<List<ContentRecommendationsDocument>?> GetTrendingDailyContent(int limit)
         {
-            var trendingContentList = await _recommendationsCollection.Find(p => true).ToListAsync();
+            var trendingContentList = await _recommendationsCollection.Find(p => p.DailyViewDates.Count > 0).ToListAsync();
             trendingContentList.Sort((x, y) => y.DailyViewDates.Count.CompareTo(x.DailyViewDates.Count));
             return trendingContentList.Take(limit).ToList();
         }
