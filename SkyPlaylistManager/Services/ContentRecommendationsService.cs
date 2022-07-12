@@ -51,6 +51,91 @@ namespace SkyPlaylistManager.Services
             return trendingContentList.Take(limit).ToList();
         }
         
+        
+            // Get weekly trending by platform and result type
+        public async Task<List<ContentRecommendationsDocument>?> GetTrendingWeeklyYoutubeContent(int limit)
+        {
+            var trendingContentList = await _recommendationsCollection.Find(p => p.WeeklyViewDates.Count > 0 && p.GeneralizedResult.ResultType == "GenericVideoResult" && p.GeneralizedResult.PlatformName == "YouTube").ToListAsync();
+            trendingContentList.Sort((x, y) => y.WeeklyViewDates.Count.CompareTo(x.WeeklyViewDates.Count));
+            return trendingContentList.Take(limit).ToList();
+        }
+        
+        public async Task<List<ContentRecommendationsDocument>?> GetTrendingWeeklyVimeoContent(int limit)
+        {
+            var trendingContentList = await _recommendationsCollection.Find(p => p.WeeklyViewDates.Count > 0 && p.GeneralizedResult.ResultType == "GenericVideoResult" && p.GeneralizedResult.PlatformName == "Vimeo").ToListAsync();
+            trendingContentList.Sort((x, y) => y.WeeklyViewDates.Count.CompareTo(x.WeeklyViewDates.Count));
+            return trendingContentList.Take(limit).ToList();
+        }
+        
+        public async Task<List<ContentRecommendationsDocument>?> GetTrendingWeeklySpotifyTrackAndAlbumContent(int limit)
+        {
+            var trendingContentList = await _recommendationsCollection.Find(p => p.WeeklyViewDates.Count > 0 && p.GeneralizedResult.ResultType == "GenericTrackResult" && p.GeneralizedResult.PlatformName == "Spotify").ToListAsync();
+            trendingContentList.Sort((x, y) => y.WeeklyViewDates.Count.CompareTo(x.WeeklyViewDates.Count));
+            return trendingContentList.Take(limit).ToList();
+        }
+        
+        public async Task<List<ContentRecommendationsDocument>?> GetTrendingWeeklySpotifyPodcastContent(int limit)
+        {
+            var trendingContentList = await _recommendationsCollection.Find(p => p.WeeklyViewDates.Count > 0 && p.GeneralizedResult.ResultType == "GenericPodcastResult" && p.GeneralizedResult.PlatformName == "Spotify").ToListAsync();
+            trendingContentList.Sort((x, y) => y.WeeklyViewDates.Count.CompareTo(x.WeeklyViewDates.Count));
+            return trendingContentList.Take(limit).ToList();
+        }
+        
+        public async Task<List<ContentRecommendationsDocument>?> GetTrendingWeeklySoundCloudContent(int limit)
+        {
+            var trendingContentList = await _recommendationsCollection.Find(p => p.WeeklyViewDates.Count > 0 && p.GeneralizedResult.ResultType == "GenericTrackResult" && p.GeneralizedResult.PlatformName == "SoundCloud").ToListAsync();
+            trendingContentList.Sort((x, y) => y.WeeklyViewDates.Count.CompareTo(x.WeeklyViewDates.Count));
+            return trendingContentList.Take(limit).ToList();
+        }
+        
+        public async Task<List<ContentRecommendationsDocument>?> GetTrendingWeeklyMixCloudContent(int limit)
+        {
+            var trendingContentList = await _recommendationsCollection.Find(p => p.WeeklyViewDates.Count > 0 && p.GeneralizedResult.ResultType == "GenericTrackResult" && p.GeneralizedResult.PlatformName == "Mixcloud").ToListAsync();
+            trendingContentList.Sort((x, y) => y.WeeklyViewDates.Count.CompareTo(x.WeeklyViewDates.Count));
+            return trendingContentList.Take(limit).ToList();
+        }
+        
+        public async Task<List<ContentRecommendationsDocument>?> GetTrendingWeeklyDailymotionContent(int limit)
+        {
+            var trendingContentList = await _recommendationsCollection.Find(p => p.WeeklyViewDates.Count > 0 && p.GeneralizedResult.ResultType == "GenericTrackResult" && p.GeneralizedResult.PlatformName == "Dailymotion").ToListAsync();
+            trendingContentList.Sort((x, y) => y.WeeklyViewDates.Count.CompareTo(x.WeeklyViewDates.Count));
+            return trendingContentList.Take(limit).ToList();
+        }
+        
+        public async Task<List<ContentRecommendationsDocument>?> GetTrendingWeeklyTwitchLivestreamContent(int limit)
+        {
+            var trendingContentList = await _recommendationsCollection.Find(p => p.WeeklyViewDates.Count > 0 && p.GeneralizedResult.ResultType == "GenericLivestreamResult" && p.GeneralizedResult.PlatformName == "Twitch").ToListAsync();
+            trendingContentList.Sort((x, y) => y.WeeklyViewDates.Count.CompareTo(x.WeeklyViewDates.Count));
+            return trendingContentList.Take(limit).ToList();
+        }
+        
+        public async Task<List<ContentRecommendationsDocument>?> GetTrendingWeeklyTwitchClipContent(int limit)
+        {
+            var trendingContentList = await _recommendationsCollection.Find(p => p.WeeklyViewDates.Count > 0 && p.GeneralizedResult.ResultType == "GenericVideoResult" && p.GeneralizedResult.PlatformName == "Twitch" && p.GeneralizedResult.PlatformPlayerUrl == null).ToListAsync();
+            trendingContentList.Sort((x, y) => y.WeeklyViewDates.Count.CompareTo(x.WeeklyViewDates.Count));
+            return trendingContentList.Take(limit).ToList();
+        }
+        
+        public async Task<List<ContentRecommendationsDocument>?> GetTrendingWeeklyTwitchVideoContent(int limit)
+        {
+            var trendingContentList = await _recommendationsCollection.Find(p => p.WeeklyViewDates.Count > 0 && p.GeneralizedResult.ResultType == "GenericVideoResult" && p.GeneralizedResult.PlatformName == "Twitch" && p.GeneralizedResult.PlatformPlayerUrl != null).ToListAsync();
+            trendingContentList.Sort((x, y) => y.WeeklyViewDates.Count.CompareTo(x.WeeklyViewDates.Count));
+            return trendingContentList.Take(limit).ToList();
+        }
+        
+        public async Task<List<ContentRecommendationsDocument>?> GetTrendingWeeklyRadioContent(int limit)
+        {
+            var trendingContentList = await _recommendationsCollection.Find(p => p.WeeklyViewDates.Count > 0 && p.GeneralizedResult.ResultType == "GenericRadioResult" && p.GeneralizedResult.PlatformName == "Radio").ToListAsync();
+            trendingContentList.Sort((x, y) => y.WeeklyViewDates.Count.CompareTo(x.WeeklyViewDates.Count));
+            return trendingContentList.Take(limit).ToList();
+        }
+        
+        
+        
+        
+
+
+        
         public async Task<List<ContentRecommendationsDocument>?> GetTrendingDailyContent(int limit)
         {
             var trendingContentList = await _recommendationsCollection.Find(p => p.DailyViewDates.Count > 0).ToListAsync();

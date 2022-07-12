@@ -98,7 +98,7 @@ namespace SkyPlaylistManager.Controllers
                 return null;
             }
         }
-
+        
         [HttpPost("getTrendingWeeklyContent")]
         public async Task<List<UnknownContentResponseDto>?> GetTrendingWeeklyContent(GetTrendingContentDto request)
         {
@@ -124,6 +124,285 @@ namespace SkyPlaylistManager.Controllers
                 return null;
             }
         }
+
+        
+        // Weekly trending content by platform
+        [HttpPost("getTrendingWeeklyYoutubeContent")]
+        public async Task<List<UnknownContentResponseDto>?> GetTrendingWeeklyYoutubeContent(GetTrendingContentDto request)
+        {
+            try
+            {
+                var unknownContentResponseDtoBuilder = new UnknownContentResponseDtoBuilder();
+                var trendingResults = await _contentRecommendationsService.GetTrendingWeeklyYoutubeContent(request.Limit);
+                if (trendingResults == null) return new List<UnknownContentResponseDto>();
+
+                var deserializedList = new List<UnknownContentResponseDto>();
+                foreach (var trendingResult in trendingResults)
+                {
+                    deserializedList.Add(unknownContentResponseDtoBuilder
+                        .BeginBuilding(trendingResult.GeneralizedResult).Build());
+                }
+
+                return deserializedList;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.StackTrace);
+                return null;
+            }
+        }
+        
+        [HttpPost("getTrendingWeeklyVimeoContent")]
+        public async Task<List<UnknownContentResponseDto>?> GetTrendingWeeklyVimeoContent(GetTrendingContentDto request)
+        {
+            try
+            {
+                var unknownContentResponseDtoBuilder = new UnknownContentResponseDtoBuilder();
+                var trendingResults = await _contentRecommendationsService.GetTrendingWeeklyVimeoContent(request.Limit);
+                if (trendingResults == null) return new List<UnknownContentResponseDto>();
+
+                var deserializedList = new List<UnknownContentResponseDto>();
+                foreach (var trendingResult in trendingResults)
+                {
+                    deserializedList.Add(unknownContentResponseDtoBuilder
+                        .BeginBuilding(trendingResult.GeneralizedResult).Build());
+                }
+
+                return deserializedList;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.StackTrace);
+                return null;
+            }
+        }
+        
+        [HttpPost("getTrendingWeeklySpotifyTrackAndAlbumContent")]
+        public async Task<List<UnknownContentResponseDto>?> GetTrendingWeeklySpotifyTrackAndAlbumContent(GetTrendingContentDto request)
+        {
+            try
+            {
+                var unknownContentResponseDtoBuilder = new UnknownContentResponseDtoBuilder();
+                var trendingResults = await _contentRecommendationsService.GetTrendingWeeklySpotifyTrackAndAlbumContent(request.Limit);
+                if (trendingResults == null) return new List<UnknownContentResponseDto>();
+
+                var deserializedList = new List<UnknownContentResponseDto>();
+                foreach (var trendingResult in trendingResults)
+                {
+                    deserializedList.Add(unknownContentResponseDtoBuilder
+                        .BeginBuilding(trendingResult.GeneralizedResult).Build());
+                }
+
+                return deserializedList;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.StackTrace);
+                return null;
+            }
+        }
+        
+        [HttpPost("getTrendingWeeklySpotifyPodcastContent")]
+        public async Task<List<UnknownContentResponseDto>?> GetTrendingWeeklySpotifyPodcastContent(GetTrendingContentDto request)
+        {
+            try
+            {
+                var unknownContentResponseDtoBuilder = new UnknownContentResponseDtoBuilder();
+                var trendingResults = await _contentRecommendationsService.GetTrendingWeeklySpotifyPodcastContent(request.Limit);
+                if (trendingResults == null) return new List<UnknownContentResponseDto>();
+
+                var deserializedList = new List<UnknownContentResponseDto>();
+                foreach (var trendingResult in trendingResults)
+                {
+                    deserializedList.Add(unknownContentResponseDtoBuilder
+                        .BeginBuilding(trendingResult.GeneralizedResult).Build());
+                }
+
+                return deserializedList;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.StackTrace);
+                return null;
+            }
+        }
+        
+        [HttpPost("getTrendingWeeklySoundCloudContent")]
+        public async Task<List<UnknownContentResponseDto>?> GetTrendingWeeklySoundCloudContent(GetTrendingContentDto request)
+        {
+            try
+            {
+                var unknownContentResponseDtoBuilder = new UnknownContentResponseDtoBuilder();
+                var trendingResults = await _contentRecommendationsService.GetTrendingWeeklySoundCloudContent(request.Limit);
+                if (trendingResults == null) return new List<UnknownContentResponseDto>();
+
+                var deserializedList = new List<UnknownContentResponseDto>();
+                foreach (var trendingResult in trendingResults)
+                {
+                    deserializedList.Add(unknownContentResponseDtoBuilder
+                        .BeginBuilding(trendingResult.GeneralizedResult).Build());
+                }
+
+                return deserializedList;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.StackTrace);
+                return null;
+            }
+        }
+        
+        [HttpPost("getTrendingWeeklyMixCloudContent")]
+        public async Task<List<UnknownContentResponseDto>?> GetTrendingWeeklyMixCloudContent(GetTrendingContentDto request)
+        {
+            try
+            {
+                var unknownContentResponseDtoBuilder = new UnknownContentResponseDtoBuilder();
+                var trendingResults = await _contentRecommendationsService.GetTrendingWeeklyMixCloudContent(request.Limit);
+                if (trendingResults == null) return new List<UnknownContentResponseDto>();
+
+                var deserializedList = new List<UnknownContentResponseDto>();
+                foreach (var trendingResult in trendingResults)
+                {
+                    deserializedList.Add(unknownContentResponseDtoBuilder
+                        .BeginBuilding(trendingResult.GeneralizedResult).Build());
+                }
+
+                return deserializedList;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.StackTrace);
+                return null;
+            }
+        }
+        
+        [HttpPost("getTrendingWeeklyDailymotionContent")]
+        public async Task<List<UnknownContentResponseDto>?> GetTrendingWeeklyDailymotionContent(GetTrendingContentDto request)
+        {
+            try
+            {
+                var unknownContentResponseDtoBuilder = new UnknownContentResponseDtoBuilder();
+                var trendingResults = await _contentRecommendationsService.GetTrendingWeeklyDailymotionContent(request.Limit);
+                if (trendingResults == null) return new List<UnknownContentResponseDto>();
+
+                var deserializedList = new List<UnknownContentResponseDto>();
+                foreach (var trendingResult in trendingResults)
+                {
+                    deserializedList.Add(unknownContentResponseDtoBuilder
+                        .BeginBuilding(trendingResult.GeneralizedResult).Build());
+                }
+
+                return deserializedList;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.StackTrace);
+                return null;
+            }
+        }
+        
+        [HttpPost("getTrendingWeeklyTwitchLivestreamContent")]
+        public async Task<List<UnknownContentResponseDto>?> GetTrendingWeeklyTwitchLivestreamContent(GetTrendingContentDto request)
+        {
+            try
+            {
+                var unknownContentResponseDtoBuilder = new UnknownContentResponseDtoBuilder();
+                var trendingResults = await _contentRecommendationsService.GetTrendingWeeklyTwitchLivestreamContent(request.Limit);
+                if (trendingResults == null) return new List<UnknownContentResponseDto>();
+
+                var deserializedList = new List<UnknownContentResponseDto>();
+                foreach (var trendingResult in trendingResults)
+                {
+                    deserializedList.Add(unknownContentResponseDtoBuilder
+                        .BeginBuilding(trendingResult.GeneralizedResult).Build());
+                }
+
+                return deserializedList;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.StackTrace);
+                return null;
+            }
+        }
+        
+        [HttpPost("GetTrendingWeeklyTwitchClipContent")]
+        public async Task<List<UnknownContentResponseDto>?> GetTrendingWeeklyTwitchClipContent(GetTrendingContentDto request)
+        {
+            try
+            {
+                var unknownContentResponseDtoBuilder = new UnknownContentResponseDtoBuilder();
+                var trendingResults = await _contentRecommendationsService.GetTrendingWeeklyTwitchClipContent(request.Limit);
+                if (trendingResults == null) return new List<UnknownContentResponseDto>();
+
+                var deserializedList = new List<UnknownContentResponseDto>();
+                foreach (var trendingResult in trendingResults)
+                {
+                    deserializedList.Add(unknownContentResponseDtoBuilder
+                        .BeginBuilding(trendingResult.GeneralizedResult).Build());
+                }
+
+                return deserializedList;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.StackTrace);
+                return null;
+            }
+        }
+        [HttpPost("getTrendingWeeklyTwitchVideoContent")]
+        public async Task<List<UnknownContentResponseDto>?> GetTrendingWeeklyTwitchVideoChannelContent(GetTrendingContentDto request)
+        {
+            try
+            {
+                var unknownContentResponseDtoBuilder = new UnknownContentResponseDtoBuilder();
+                var trendingResults = await _contentRecommendationsService.GetTrendingWeeklyTwitchVideoContent(request.Limit);
+                if (trendingResults == null) return new List<UnknownContentResponseDto>();
+
+                var deserializedList = new List<UnknownContentResponseDto>();
+                foreach (var trendingResult in trendingResults)
+                {
+                    deserializedList.Add(unknownContentResponseDtoBuilder
+                        .BeginBuilding(trendingResult.GeneralizedResult).Build());
+                }
+
+                return deserializedList;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.StackTrace);
+                return null;
+            }
+        }
+
+        [HttpPost("getTrendingWeeklyRadioContent")]
+        public async Task<List<UnknownContentResponseDto>?> GetTrendingWeeklyRadioContent(GetTrendingContentDto request)
+        {
+            try
+            {
+                var unknownContentResponseDtoBuilder = new UnknownContentResponseDtoBuilder();
+                var trendingResults = await _contentRecommendationsService.GetTrendingWeeklyRadioContent(request.Limit);
+                if (trendingResults == null) return new List<UnknownContentResponseDto>();
+
+                var deserializedList = new List<UnknownContentResponseDto>();
+                foreach (var trendingResult in trendingResults)
+                {
+                    deserializedList.Add(unknownContentResponseDtoBuilder
+                        .BeginBuilding(trendingResult.GeneralizedResult).Build());
+                }
+
+                return deserializedList;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.StackTrace);
+                return null;
+            }
+        }
+        
+        
+        
 
         [HttpPost("getTrendingDailyContent")]
         public async Task<List<UnknownContentResponseDto>?> GetTrendingDailyContent(GetTrendingContentDto request)
